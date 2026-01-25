@@ -1,0 +1,11 @@
+{
+  "name": "SnackHub",
+  "short_name": "SnackHub",
+  "description": "Regional snacks from verified shops near you.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFBF5",
+  "theme_color": "#FF7A00",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }],
+  "shortcuts": [{ "name": "Rider app", "url": "/rider" }, { "name": "Seller console", "url": "/seller" }]
+}

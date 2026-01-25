@@ -1,0 +1,35 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+
+// Public build: customer, seller and rider apps. The admin console is a
+// separate build (vite.admin.config.js) so no admin code ships here (doc 16.3).
+export default defineConfig({
+  plugins: [
+    react(),
+    tailwindcss(),
+    {
+      // Dev convenience: /admin.html/* deep links reload into the admin entry, so it shares the mock data
+      name: 'admin-dev-fallback',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url?.startsWith('/admin.html/')) req.url = '/admin.html';
+          next();
+        });
+      },
+    },
+  ],
+  server: { port: 5173, strictPort: true },
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      input: 'index.html',
+      output: {
+        manualChunks: {
+          three: ['three', '@react-three/fiber', '@react-three/drei'],
+          gsap: ['gsap'],
+        },
+      },
+    },
+  },
+});

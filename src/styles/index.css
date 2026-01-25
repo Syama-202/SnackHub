@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+/* Colour tokens, doc 22.1. These are the only brand values in the app. */
+@theme {
+  --color-sun: #FFC300;
+  --color-orange: #FF7A00;
+  --color-orange-deep: #E86A00;
+  --color-red: #E23744;
+  --color-red-text: #C4222F;
+  --color-red-strong: #D62839;
+  --color-grey-50: #F3F4F6;
+  --color-grey-400: #9CA3AF;
+  --color-grey-600: #4B5563;
+  --color-grey-800: #1F2937;
+  --color-grey-900: #111827;
+  --color-cream: #FFF8EC;
+
+  --font-display: "Baloo 2", ui-rounded, system-ui, sans-serif;
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-glass: 20px;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  --grad-hero: linear-gradient(135deg, #FFC300, #FF7A00 55%, #E23744);
+  --grad-primary: linear-gradient(135deg, #FFC300, #FF7A00);
+  --grad-danger: linear-gradient(135deg, #F25C54, #D62839);
+  --grad-text: linear-gradient(135deg, #E86A00, #C4222F);
+  --page-bg:
+    radial-gradient(60rem 40rem at 110% -10%, rgba(255, 195, 0, 0.22), transparent 60%),
+    radial-gradient(50rem 36rem at -10% 20%, rgba(255, 122, 0, 0.14), transparent 60%),
+    radial-gradient(40rem 30rem at 50% 110%, rgba(226, 55, 68, 0.10), transparent 60%),
+    #FFFBF5;
+  --lane-h: 0px;
+  color-scheme: light;
+}
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-grey-800);
+  background: var(--page-bg);
+  background-attachment: fixed;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: var(--lane-h);
+}
+
+h1, h2, h3, h4, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+:focus-visible {
+  outline: 3px solid var(--color-orange-deep);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+::selection { background: rgba(255, 195, 0, 0.45); }
+
+/* Glass recipe, doc 22.2. At most three glass layers on screen at once. */
+.glass {
+  background: rgba(255, 255, 255, 0.58);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: var(--radius-glass);
+  box-shadow: 0 10px 30px rgba(226, 55, 68, 0.14);
+}
+.glass-strong { background: rgba(255, 255, 255, 0.82); }
+@supports not (backdrop-filter: blur(1px)) {
+  .glass { background: rgba(255, 255, 255, 0.92); }
+}
+
+.bg-hero { background: var(--grad-hero); }
+.bg-primary { background: var(--grad-primary); }
+.bg-danger { background: var(--grad-danger); }
+/* Gradient text only on large headings, never yellow on white. */
+.text-gradient {
+  background: var(--grad-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Button shine, doc 22.3 */
+.shine { position: relative; overflow: hidden; isolation: isolate; }
+.shine::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.7s var(--ease-out-soft);
+  z-index: -1;
+}
+.shine:hover::after { transform: translateX(120%); }
+
+/* Hover lift */
+.lift { transition: transform 0.25s var(--ease-out-soft), box-shadow 0.25s var(--ease-out-soft); }
+.lift:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(226, 55, 68, 0.16); }
+
+/* Scroll reveal: IntersectionObserver adds .is-in */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s var(--ease-out-soft), transform 0.7s var(--ease-out-soft); }
+.reveal.is-in { opacity: 1; transform: none; }
+
+/* Snack pop-up: spring in, then float */
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.3) rotate(-18deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes float-y {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-10px) rotate(var(--r, 0deg)); }
+}
+.pop { animation: pop-in 0.7s var(--ease-spring) both; }
+.float { animation: float-y 5s ease-in-out infinite; }
+
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+.bump { animation: bump 0.45s var(--ease-spring); }
+
+@keyframes bell { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
+.bell { animation: bell 1s ease-in-out infinite; transform-origin: top center; }
+
+@keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+.skeleton {
+  background: linear-gradient(90deg, #F3F4F6 0px, #FFF4E0 160px, #F3F4F6 320px);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 12px;
+}
+
+@keyframes road { from { transform: translateX(0); } to { transform: translateX(-60px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Reduced motion: every animation has a static end state (doc 22.3) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
+
+.safe-bottom { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Console theme (seller, rider, admin): calmer page, same tokens */
+.console-bg { background: #F7F7F8; background-attachment: initial; }
