@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { api } from '../../lib/api';
-import { actions } from '../../store/web';
+import { actions } from '../../store/webStore';
 import { useDocumentVisible } from '../../lib/hooks';
 
 /**

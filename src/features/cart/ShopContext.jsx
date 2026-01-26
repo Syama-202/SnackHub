@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCart, useSetCartQty } from '../../lib/queries';
 import { api } from '../../lib/api';
-import { actions } from '../../store/web';
+import { actions } from '../../store/webStore';
 import { Button, Modal, CloseButton, LogoMark } from '../../components/ui';
 import ProductModal from '../catalog/ProductModal';
 import GoogleG from '../../components/GoogleG';

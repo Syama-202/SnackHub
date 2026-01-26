@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'motion/react';
 import ConsoleLayout from '../../layouts/ConsoleLayout';
 import { api } from '../../lib/api';
-import { actions } from '../../store/web';
+import { actions } from '../../store/webStore';
 import { rupees } from '../../domain/money';
 import { useNow } from '../../lib/hooks';
 import { Button, Card, Pill, Icon, TempBadge, Skeleton, cx } from '../../components/ui';

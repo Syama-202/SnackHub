@@ -1,3 +1,3 @@
-import { makeStore } from './index';
+import { makeStore } from './makeStore';
 
 export const { store, actions } = makeStore('web');

@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import { actions } from '../../store/web';
+import { actions } from '../../store/webStore';
 import { Card, Icon, LogoMark, cx } from '../../components/ui';
 import GoogleG from '../../components/GoogleG';
 

@@ -5,7 +5,7 @@ import { Button, Icon } from '../../components/ui';
 import SnackArt from '../../components/SnackArt';
 import { hasWebGL, prefersLite, useInView, useReducedMotion } from '../../lib/hooks';
 import { useAddresses } from '../../lib/queries';
-import { actions } from '../../store/web';
+import { actions } from '../../store/webStore';
 import { PROMISE_WORDING } from '../../domain/promise';
 
 const HeroScene = lazy(() => import('./scene/HeroScene'));

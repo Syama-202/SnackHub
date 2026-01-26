@@ -7,7 +7,7 @@ import { useTracking } from './useTracking';
 import { Lane, laneStatus } from './RiderLane';
 import { TIMELINE, STATE_LABEL, customerCanCancel } from '../../domain/orderStates';
 import { rupees } from '../../domain/money';
-import { actions } from '../../store/web';
+import { actions } from '../../store/webStore';
 import { Button, Card, Icon, Pill, EmptyState, Spinner, cx } from '../../components/ui';
 
 export default function OrderTracking() {

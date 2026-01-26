@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import ConsoleLayout from '../../layouts/ConsoleLayout';
 import { api } from '../../lib/api';
-import { actions } from '../../store/web';
+import { actions } from '../../store/webStore';
 import { rupees, rupeesExact } from '../../domain/money';
 import { distanceM } from '../../domain/geo';
 import { useNow } from '../../lib/hooks';

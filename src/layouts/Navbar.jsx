@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAddresses, useCart, useDeliveryPoint, useNotifications } from '../lib/queries';
-import { actions } from '../store/web';
+import { actions } from '../store/webStore';
 import { Logo, Icon, cx } from '../components/ui';
 import SnackArt from '../components/SnackArt';
 import { rupees } from '../domain/money';

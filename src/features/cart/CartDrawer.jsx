@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AnimatePresence, motion } from 'motion/react';
 import { Drawer, CloseButton, Button, QtyControl, EmptyState, TempBadge, Pill } from '../../components/ui';
 import SnackArt from '../../components/SnackArt';
-import { actions } from '../../store/web';
+import { actions } from '../../store/webStore';
 import { rupees } from '../../domain/money';
 import { useShop } from './ShopContext';
 import { useCart } from '../../lib/queries';

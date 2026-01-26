@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, newIdempotencyKey } from '../../lib/api';
 import { useAddresses, useCart, useSetCartQty } from '../../lib/queries';
-import { actions } from '../../store/web';
+import { actions } from '../../store/webStore';
 import { rupees } from '../../domain/money';
 import { PROMISE_WORDING } from '../../domain/promise';
 import { Button, Card, Icon, Pill, EmptyState, TempBadge, Spinner, cx } from '../../components/ui';

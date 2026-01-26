@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import CustomerLayout from './layouts/CustomerLayout';
-import { PageFallback, RequireRole } from './components/routing';
+import { PageFallback, RequireRole } from './components/RouteGuards';
 
 // Route-level code splitting (doc 5.1): 3D and GSAP load only where used
 const Landing = lazy(() => import('./features/landing/Landing'));

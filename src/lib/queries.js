@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { api } from './api';
-import { actions } from '../store/web';
+import { actions } from '../store/webStore';
 
 export function useAddresses() {
   // Customer-only endpoints: other roles would get 403 on every poll

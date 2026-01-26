@@ -8,8 +8,8 @@ import Footer from './Footer';
 import CartDrawer from '../features/cart/CartDrawer';
 import { ShopProvider } from '../features/cart/ShopContext';
 import RiderLane from '../features/tracking/RiderLane';
-import { actions } from '../store/web';
-import { PageFallback } from '../components/routing';
+import { actions } from '../store/webStore';
+import { PageFallback } from '../components/RouteGuards';
 
 export default function CustomerLayout() {
   const dispatch = useDispatch();

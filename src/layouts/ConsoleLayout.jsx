@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import DemoBanner from '../components/DemoBanner';
 import Toaster from '../components/Toaster';
 import { Logo, Icon, cx } from '../components/ui';
-import { actions } from '../store/web';
+import { actions } from '../store/webStore';
 
 /** Shared shell for the seller console and the rider app. */
 export default function ConsoleLayout({ title, tabs, children, mobileTabs = false }) {
