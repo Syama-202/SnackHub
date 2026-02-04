@@ -1,0 +1,218 @@
+@import "tailwindcss";
+
+/* ===== SNACKHUB DESIGN SYSTEM (doc 22.1 to 22.3) ===== */
+@theme {
+  /* Colour tokens, 22.1. The only brand values in the app. */
+  --color-sun: #FFC300;
+  --color-orange: #FF7A00;
+  --color-orange-deep: #E86A00;
+  --color-red: #E23744;
+  --color-red-text: #C4222F;
+  --color-red-strong: #D62839;
+  --color-grey-50: #F3F4F6;
+  --color-grey-400: #9CA3AF;
+  --color-grey-600: #4B5563;
+  --color-grey-800: #1F2937;
+  --color-grey-900: #111827;
+  --color-cream: #FFFBF5;
+  --color-console: #F7F7F8;
+
+  /* Fonts: Baloo 2 for headings, Nunito Sans for text */
+  --font-display: "Baloo 2", ui-rounded, system-ui, sans-serif;
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-glass: 20px;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --shadow-glass: 0 10px 30px rgba(226, 55, 68, 0.14);
+  --shadow-card: 0 6px 24px rgba(31, 41, 55, 0.06);
+  --shadow-card-hover: 0 18px 40px rgba(226, 55, 68, 0.16);
+  --shadow-cta: 0 8px 20px rgba(255, 122, 0, 0.28);
+  --shadow-lane: 0 -10px 30px rgba(0, 0, 0, 0.25);
+
+  /* Motion, 22.3: snack pop-up, float, cart bump, bell, shimmer */
+  --animate-pop: pop-in 0.7s var(--ease-spring) both;
+  --animate-float: float-y 5s ease-in-out infinite;
+  --animate-pop-float: pop-in 0.7s var(--ease-spring) both, float-y 5s ease-in-out 0.7s infinite;
+  --animate-bump: bump 0.45s var(--ease-spring);
+  --animate-bell: bell 1s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  --animate-road: road 0.9s linear infinite;
+  --animate-marquee: marquee 14s linear infinite;
+  --animate-wheel: spin 0.5s linear infinite;
+
+  @keyframes pop-in {
+    0% { opacity: 0; transform: scale(0.3) rotate(-18deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+  @keyframes float-y {
+    0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+    50% { transform: translateY(-10px) rotate(var(--r, 0deg)); }
+  }
+  @keyframes bump {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+  @keyframes bell {
+    0%, 100% { transform: rotate(0); }
+    20% { transform: rotate(14deg); }
+    40% { transform: rotate(-12deg); }
+    60% { transform: rotate(8deg); }
+    80% { transform: rotate(-4deg); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+  @keyframes road {
+    from { transform: translateX(0); }
+    to { transform: translateX(-60px); }
+  }
+  @keyframes marquee {
+    to { transform: translateX(-50%); }
+  }
+}
+
+/* ===== Brand utilities: usable with any variant (hover:, md:, motion-reduce:) ===== */
+
+/* Glass recipe, 22.2. At most three glass layers on screen at once. */
+@utility glass {
+  background: rgba(255, 255, 255, 0.58);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--shadow-glass);
+  @supports not (backdrop-filter: blur(1px)) {
+    background: rgba(255, 255, 255, 0.92);
+  }
+}
+@utility glass-strong {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+/* Gradients, 22.1 */
+@utility bg-hero {
+  background-image: linear-gradient(135deg, #FFC300, #FF7A00 55%, #E23744);
+}
+@utility bg-primary {
+  background-image: linear-gradient(135deg, #FFC300, #FF7A00);
+}
+@utility bg-danger {
+  background-image: linear-gradient(135deg, #F25C54, #D62839);
+}
+/* Gradient text only on large headings, never yellow on white */
+@utility text-gradient {
+  background-image: linear-gradient(135deg, #E86A00, #C4222F);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@utility bg-page {
+  background:
+    radial-gradient(60rem 40rem at 110% -10%, rgba(255, 195, 0, 0.22), transparent 60%),
+    radial-gradient(50rem 36rem at -10% 20%, rgba(255, 122, 0, 0.14), transparent 60%),
+    radial-gradient(40rem 30rem at 50% 110%, rgba(226, 55, 68, 0.10), transparent 60%),
+    var(--color-cream);
+  background-attachment: fixed;
+}
+
+/* Hover lift, 22.3 */
+@utility lift {
+  transition: transform 0.25s var(--ease-out-soft), box-shadow 0.25s var(--ease-out-soft);
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+/* Button shine: a light sweep across primary buttons */
+@utility shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s var(--ease-out-soft);
+    z-index: -1;
+  }
+  &:hover::after {
+    transform: translateX(120%);
+  }
+}
+
+/* Scroll reveal: IntersectionObserver adds .is-in */
+@utility reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s var(--ease-out-soft), transform 0.7s var(--ease-out-soft);
+  &.is-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility skeleton {
+  background: linear-gradient(90deg, #F3F4F6 0px, #FFF4E0 160px, #F3F4F6 320px);
+  background-size: 800px 100%;
+  animation: var(--animate-shimmer);
+  border-radius: 12px;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* ===== Base ===== */
+@layer base {
+  :root {
+    --lane-h: 0px;
+    color-scheme: light;
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-page min-h-dvh font-sans text-grey-800 antialiased;
+    padding-bottom: var(--lane-h);
+  }
+  h1, h2, h3, h4 {
+    @apply font-display tracking-[-0.01em];
+  }
+  :focus-visible {
+    @apply rounded-lg outline-3 outline-offset-2 outline-orange-deep;
+  }
+  ::selection {
+    background: rgba(255, 195, 0, 0.45);
+  }
+}
+
+/* Reduced motion: every animation has a static end state (doc 22.3) */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

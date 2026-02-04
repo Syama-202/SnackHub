@@ -7,7 +7,7 @@ const cx = (...c) => c.filter(Boolean).join(' ');
 
 // ---------- Button: primary gradient with grey-800 text, danger with white text (doc 22.1)
 const BTN = {
-  primary: 'bg-primary text-grey-800 shadow-[0_8px_20px_rgba(255,122,0,0.28)] hover:shadow-[0_10px_26px_rgba(255,122,0,0.38)] shine',
+  primary: 'bg-primary text-grey-800 shadow-cta hover:shadow-lg shine',
   danger: 'bg-danger text-white shine',
   dark: 'bg-grey-800 text-white hover:bg-grey-900',
   ghost: 'bg-white/70 text-grey-800 border border-grey-800/10 hover:bg-white',
@@ -41,7 +41,7 @@ export function Spinner({ className = 'h-5 w-5' }) {
 
 export function Card({ className, glass, children, as: As = 'div', ...rest }) {
   return (
-    <As className={cx(glass ? 'glass' : 'rounded-[20px] border border-grey-800/[0.06] bg-white shadow-[0_6px_24px_rgba(31,41,55,0.06)]', className)} {...rest}>
+    <As className={cx(glass ? 'glass' : 'rounded-[20px] border border-grey-800/[0.06] bg-white shadow-card', className)} {...rest}>
       {children}
     </As>
   );

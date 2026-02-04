@@ -65,16 +65,49 @@ export function assignRider(db, order, rider) {
   order.riderAssignedAt = Date.now();
 }
 
+/** Close any open rider offers once an order can no longer be delivered. */
+export function closeOffers(db, order) {
+  db.assignments.filter((a) => a.orderId === order.id && a.status === 'OFFERED').forEach((a) => {
+    a.status = 'EXPIRED';
+    a.respondedAt = Date.now();
+  });
+}
+
+/** A captured payment on an order that will not be delivered is refunded automatically (doc 10.9). */
+export function refundIfCaptured(db, order) {
+  if (order.paymentStatus !== 'CAPTURED') return;
+  order.paymentStatus = 'REFUND_PENDING';
+  const p = db.payments.find((x) => x.orderId === order.id);
+  if (p) p.status = 'REFUND_PENDING';
+  notify(db, order.customerId, order.id, 'payment.refund', 'Your payment is being refunded to the original method.');
+}
+
+/** Cancel or reject an order: release the stock hold, close offers, refund if paid. */
+export function closeOrder(db, order, to, role, reason) {
+  addEvent(db, order, to, role);
+  order.cancelReason = reason;
+  releaseStock(db, order);
+  closeOffers(db, order);
+  refundIfCaptured(db, order);
+}
+
+/** The policy version the order was priced under; later changes never apply to it (doc 8.4a). */
+export const policyFor = (db, order) => db.policyHistory.find((p) => p.version === order.policyVersion) || db.policy;
+
 export function deliver(db, order, role = 'rider') {
   addEvent(db, order, 'DELIVERED', role);
   order.deliveredAt = Date.now();
-  if (order.paymentMode === 'COD') order.paymentStatus = order.paymentStatus === 'COD_COLLECTED' ? 'COD_COLLECTED' : 'COD_PENDING';
+  // A simulated rider collects the exact amount; a real one records it at the door
+  if (order.paymentMode === 'COD' && order.paymentStatus !== 'COD_COLLECTED') {
+    order.collectedPaise = order.totalPaise;
+    order.paymentStatus = 'COD_COLLECTED';
+  }
   notify(db, order.customerId, order.id, 'order.delivered', 'Delivered. Enjoy!');
   const seller = db.sellers.find((s) => s.id === order.sellerId);
   const km = distanceM(seller, order.drop) / 1000;
   const lateMin = (order.deliveredAt - order.promisedAt) / 60000;
   const sellerDelayMin = order.sellerDelayMin || 0;
-  const e = computeEarning({ km, lateMin, sellerDelayMin }, db.policy);
+  const e = computeEarning({ km, lateMin, sellerDelayMin }, policyFor(db, order));
   db.earnings.push({ id: nextId(db, 'earning'), orderId: order.id, riderId: order.riderId, status: 'OK', createdAt: Date.now(), ...e });
   delete db.otpPlain[order.id];
 }
@@ -103,15 +136,23 @@ export function trackState(db, order) {
 export function tick(db) {
   const now = Date.now();
   for (const o of db.orders) {
-    if (['DELIVERED', 'CANCELLED', 'REJECTED', 'PENDING_PAYMENT'].includes(o.status)) continue;
+    // Unpaid orders hold stock for the 10 minute payment window, then release it (doc 10.9)
+    if (o.status === 'PENDING_PAYMENT') {
+      if (o.holdExpiresAt && now > o.holdExpiresAt) {
+        closeOrder(db, o, 'CANCELLED', 'system', 'Payment was not completed within 10 minutes');
+        o.paymentStatus = 'EXPIRED';
+        const p = db.payments.find((x) => x.orderId === o.id);
+        if (p && p.status === 'CREATED') p.status = 'EXPIRED';
+      }
+      continue;
+    }
+    if (['DELIVERED', 'CANCELLED', 'REJECTED'].includes(o.status)) continue;
     const t = (now - o.placedAt) / SEC;
 
     // Seller auto-cancel after 2 minutes without acceptance (doc 10.1)
     if (o.status === 'PLACED' && !o.simSeller && now - o.placedAt > db.policy.sellerAcceptTimeoutSec * SEC) {
-      addEvent(db, o, 'CANCELLED', 'system');
-      o.cancelReason = 'The shop did not accept in 2 minutes';
-      releaseStock(db, o);
-      notify(db, o.customerId, o.id, 'order.cancelled', 'The shop did not respond, so your order was cancelled. You were not charged.');
+      closeOrder(db, o, 'CANCELLED', 'system', 'The shop did not accept in 2 minutes');
+      notify(db, o.customerId, o.id, 'order.cancelled', o.paymentMode === 'ONLINE' ? 'The shop did not respond, so your order was cancelled and your payment is being refunded.' : 'The shop did not respond, so your order was cancelled. You were not charged.');
       continue;
     }
 

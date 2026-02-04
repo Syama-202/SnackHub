@@ -86,17 +86,20 @@ export function useInView(rootMargin = '200px') {
 export function useCountUp(target, ms = 900) {
   const reduced = useReducedMotion();
   const [v, setV] = useState(reduced ? target : 0);
+  const shown = useRef(reduced ? target : 0);
   useEffect(() => {
     if (reduced) {
+      shown.current = target;
       setV(target);
       return;
     }
     let raf;
     const start = performance.now();
-    const from = 0;
+    const from = shown.current;
     const step = (t) => {
       const k = Math.min(1, (t - start) / ms);
-      setV(from + (target - from) * (1 - (1 - k) ** 3));
+      shown.current = from + (target - from) * (1 - (1 - k) ** 3);
+      setV(shown.current);
       if (k < 1) raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
@@ -112,6 +115,24 @@ export function useNow(intervalMs = 1000) {
     return () => clearInterval(t);
   }, [intervalMs]);
   return now;
+}
+
+/**
+ * Run `callback` now and then every `ms` while enabled, slower while the tab
+ * is hidden. Stands in for socket pushes until Socket.io is wired (Phase 3).
+ */
+export function usePolling(callback, ms, enabled = true) {
+  const saved = useRef(callback);
+  const visible = useDocumentVisible();
+  useEffect(() => {
+    saved.current = callback;
+  });
+  useEffect(() => {
+    if (!enabled) return;
+    saved.current();
+    const t = setInterval(() => saved.current(), visible ? ms : ms * 4);
+    return () => clearInterval(t);
+  }, [ms, enabled, visible]);
 }
 
 export function useDocumentVisible() {

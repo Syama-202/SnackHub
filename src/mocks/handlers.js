@@ -1,6 +1,6 @@
 import { http, HttpResponse, delay } from 'msw';
 import { getDb, saveDb, resetDb, nextId } from './db';
-import { tick, addEvent, notify, acceptOrder, assignRider, deliver, trackState, releaseStock } from './simulate';
+import { tick, addEvent, notify, acceptOrder, assignRider, deliver, trackState, closeOrder, policyFor } from './simulate';
 import { deliveryPromise, cartTempClass } from '../domain/promise';
 import { distanceM } from '../domain/geo';
 import { canTransition } from '../domain/orderStates';
@@ -44,16 +44,40 @@ function adminGuard(request, { stepUp = false } = {}) {
   return { u };
 }
 
+// Stand-in for the httpOnly refresh cookie: only this mock server reads it, never app code.
+// Kept per tab so a seller tab and a rider tab can stay signed in side by side in the demo.
+const cookieKey = (request) => `snackhub.refresh.${request.headers.get('x-snackhub-host') || 'web'}`;
+function setRefreshCookie(request, session) {
+  try {
+    if (session) sessionStorage.setItem(cookieKey(request), JSON.stringify(session));
+    else sessionStorage.removeItem(cookieKey(request));
+  } catch {
+    /* storage blocked: session ends with the page */
+  }
+}
+function readRefreshCookie(request) {
+  try {
+    return JSON.parse(sessionStorage.getItem(cookieKey(request)));
+  } catch {
+    return null;
+  }
+}
+
 function audit(db, actor, action, before, after) {
   db.audit.unshift({ id: nextId(db, 'audit'), actor: `admin:${actor.userId}`, action, before, after, at: Date.now() });
 }
 
-/** Wrap a handler: load db, run the simulator, save after. */
+/**
+ * Wrap a handler: load db, run the simulator, save after. The body is read
+ * first and the handler is synchronous, so nothing awaits between loading and
+ * saving: concurrent requests then never overwrite each other's changes.
+ */
 const withDb = (fn) => async (ctx) => {
+  const body = ['GET', 'HEAD'].includes(ctx.request.method) ? undefined : await ctx.request.clone().json().catch(() => undefined);
   await delay(120 + Math.random() * 180);
   const db = getDb();
   tick(db);
-  const res = await fn({ ...ctx, db });
+  const res = fn({ ...ctx, body: body ?? {}, db });
   saveDb(db);
   return res;
 };
@@ -147,8 +171,7 @@ export const handlers = [
   })),
 
   // ---------- identity
-  http.post(`${API}/auth/google`, withDb(async ({ request, db }) => {
-    const body = await request.json();
+  http.post(`${API}/auth/google`, withDb(({ body, request, db }) => {
     // Google sign-in always creates a customer. Seller, rider and admin accounts are seeded (demo).
     const user = db.users.find((u) => u.role === (body.demoRole || 'customer'));
     if (!user) return fail(400, 'BAD_REQUEST', 'Unknown demo account');
@@ -156,15 +179,29 @@ export const handlers = [
       if (request.headers.get('x-snackhub-host') !== 'admin') return fail(404, 'NOT_FOUND', 'Not found');
       return ok({ mfaPending: true, halfToken: `demo.mfa_pending.${user.id}`, user });
     }
-    return ok({ accessToken: `demo.${user.role}.${user.id}`, user });
+    const accessToken = `demo.${user.role}.${user.id}`;
+    setRefreshCookie(request, { accessToken, user });
+    return ok({ accessToken, user });
   })),
-  http.post(`${API}/admin/auth/mfa`, withDb(async ({ request, db }) => {
+  // Rotate the refresh cookie into a new access token (doc 16.1)
+  http.post(`${API}/auth/refresh`, withDb(({ request }) => {
+    const s = readRefreshCookie(request);
+    if (!s) return fail(401, 'NO_SESSION', 'No active session');
+    return ok(s);
+  })),
+  http.post(`${API}/auth/logout`, ({ request }) => {
+    setRefreshCookie(request, null);
+    return new HttpResponse(null, { status: 204 });
+  }),
+  http.post(`${API}/admin/auth/mfa`, withDb(({ body, request, db }) => {
     if (request.headers.get('x-snackhub-host') !== 'admin') return fail(404, 'NOT_FOUND', 'Not found');
-    const { code } = await request.json();
+    const { code } = body;
     const user = db.users.find((u) => u.role === 'admin');
     if (code !== '246810') return fail(401, 'MFA_INVALID', 'That code is not right. 5 wrong codes lock the account for 15 minutes.');
     audit(db, { userId: user.id }, 'admin.login', null, { amr: ['google', 'totp'] });
-    return ok({ accessToken: `demo.admin.${user.id}.${Date.now()}`, user, amr: ['google', 'totp'] });
+    const accessToken = `demo.admin.${user.id}.${Date.now()}`;
+    setRefreshCookie(request, { accessToken, user });
+    return ok({ accessToken, user, amr: ['google', 'totp'] });
   })),
   http.get(`${API}/me`, withDb(({ request, db }) => {
     const g = guard(request);
@@ -176,10 +213,10 @@ export const handlers = [
     if (g.res) return g.res;
     return ok(db.addresses);
   })),
-  http.post(`${API}/me/addresses`, withDb(async ({ request, db }) => {
+  http.post(`${API}/me/addresses`, withDb(({ body, request, db }) => {
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
-    const b = await request.json();
+    const b = body;
     const a = { id: Math.max(0, ...db.addresses.map((x) => x.id)) + 1, ...b };
     db.addresses.push(a);
     return ok(a, 201);
@@ -267,10 +304,10 @@ export const handlers = [
     if (g.res) return g.res;
     return ok(cartView(db, g.u.userId));
   })),
-  http.put(`${API}/cart`, withDb(async ({ request, db }) => {
+  http.put(`${API}/cart`, withDb(({ body, request, db }) => {
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
-    const { productId, qty, replace } = await request.json();
+    const { productId, qty, replace } = body;
     const p = db.products.find((x) => x.id === productId);
     if (!p) return fail(404, 'NOT_FOUND', 'Snack not found');
     const cart = db.carts[g.u.userId] || { sellerId: null, items: [] };
@@ -299,19 +336,20 @@ export const handlers = [
   })),
 
   // ---------- orders
-  http.post(`${API}/orders/quote`, withDb(async ({ request, db }) => {
+  http.post(`${API}/orders/quote`, withDb(({ body, request, db }) => {
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
-    const { addressId } = await request.json();
+    const { addressId } = body;
     const cart = cartView(db, g.u.userId);
     const addr = db.addresses.find((a) => a.id === addressId);
     if (!cart.items.length) return fail(400, 'CART_EMPTY', 'Your cart is empty');
+    if (!addr) return fail(422, 'ADDRESS_REQUIRED', 'Choose a delivery address');
     const seller = db.sellers.find((s) => s.id === cart.sellerId);
     const promise = promiseFor(db, seller, addr, cart.tempClass);
     const credit = db.credits.find((c) => c.customerId === g.u.userId && !c.usedOrderId && c.expiresAt > Date.now());
     return ok({ ...cart, promise, codEnabled: db.policy.codEnabled, creditPaise: credit?.amountPaise || 0 });
   })),
-  http.post(`${API}/orders`, withDb(async ({ request, db }) => {
+  http.post(`${API}/orders`, withDb(({ body, request, db }) => {
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const key = request.headers.get('idempotency-key');
@@ -321,7 +359,6 @@ export const handlers = [
       const prev = db.orders.find((o) => o.id === db.idem[idemKey]);
       return ok({ order: orderView(db, prev), replayed: true });
     }
-    const body = await request.json();
     const cart = cartView(db, g.u.userId);
     if (!cart.items.length) return fail(400, 'CART_EMPTY', 'Your cart is empty');
     const addr = db.addresses.find((a) => a.id === body.addressId);
@@ -336,6 +373,7 @@ export const handlers = [
     const sorted = [...cart.items].sort((a, b) => a.productId - b.productId);
     for (const it of sorted) {
       const p = db.products.find((x) => x.id === it.productId);
+      if (!p.active) return fail(409, 'PRODUCT_UNAVAILABLE', `${p.title} is no longer available. Remove it from your cart to continue.`, { productId: p.id, title: p.title });
       if (p.stock < it.qty) return fail(409, 'OUT_OF_STOCK', p.stock ? `Only ${p.stock} ${p.title} left` : `${p.title} just sold out`, { productId: p.id, title: p.title, available: p.stock });
     }
     sorted.forEach((it) => (db.products.find((x) => x.id === it.productId).stock -= it.qty));
@@ -396,47 +434,47 @@ export const handlers = [
     const o = db.orders.find((x) => x.id === Number(params.id));
     if (!o || o.customerId !== g.u.userId) return fail(404, 'NOT_FOUND', 'Order not found');
     if (!canTransition(o.status, 'CANCELLED', 'customer')) return fail(409, 'CANNOT_CANCEL', 'Cancelling is free until the order is packed. After that, contact support.');
-    addEvent(db, o, 'CANCELLED', 'customer');
-    o.cancelReason = 'Cancelled by you';
-    releaseStock(db, o);
-    if (o.paymentStatus === 'CAPTURED') o.paymentStatus = 'REFUND_PENDING';
+    closeOrder(db, o, 'CANCELLED', 'customer', 'Cancelled by you');
     return ok(orderView(db, o));
   })),
-  http.post(`${API}/orders/:id/review`, withDb(async ({ request, params, db }) => {
+  http.post(`${API}/orders/:id/review`, withDb(({ body, request, params, db }) => {
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const o = db.orders.find((x) => x.id === Number(params.id));
     if (!o || o.customerId !== g.u.userId) return fail(404, 'NOT_FOUND', 'Order not found');
-    o.review = await request.json();
+    o.review = body;
     return ok({ ok: true });
   })),
-  http.post(`${API}/orders/:id/complaints`, withDb(async ({ request, params, db }) => {
+  http.post(`${API}/orders/:id/complaints`, withDb(({ body, request, params, db }) => {
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const o = db.orders.find((x) => x.id === Number(params.id));
     if (!o || o.customerId !== g.u.userId) return fail(404, 'NOT_FOUND', 'Order not found');
-    const b = await request.json();
+    const b = body;
     if (o.status !== 'DELIVERED') return fail(409, 'NOT_DELIVERED', 'You can report a problem after delivery');
     const windowMs = b.category === 'FOOD_QUALITY' ? 2 * 3600000 : 24 * 3600000;
     if (Date.now() - o.deliveredAt > windowMs) return fail(409, 'WINDOW_CLOSED', b.category === 'FOOD_QUALITY' ? 'Food quality reports close 2 hours after delivery' : 'Reports close 24 hours after delivery');
     if (db.complaints.some((c) => c.orderId === o.id && c.category === b.category)) return fail(409, 'DUPLICATE', 'You already reported this category for this order');
     if (b.category === 'FOOD_QUALITY' && !(b.photoCount > 0)) return fail(422, 'PHOTO_REQUIRED', 'Add 1 to 3 photos');
     const lateMin = Math.max(0, (o.deliveredAt - o.promisedAt) / 60000);
+    const pol = policyFor(db, o);
     const evidence = {
-      promisedAt: o.promisedAt, deliveredAt: o.deliveredAt, sellerDelayMin: o.sellerDelayMin || 0, riderLateMin: Math.max(0, lateMin - (o.sellerDelayMin || 0) - db.policy.graceMin),
+      promisedAt: o.promisedAt, deliveredAt: o.deliveredAt, sellerDelayMin: o.sellerDelayMin || 0, riderLateMin: Math.max(0, lateMin - (o.sellerDelayMin || 0) - pol.graceMin),
       packedToPickedMin: o.pickedAt && o.packedAt ? (o.pickedAt - o.packedAt) / 60000 : 0, rideMin: o.arrivedAt && o.rideStartedAt ? (o.arrivedAt - o.rideStartedAt) / 60000 : 0,
       otpVerified: true, geofencePassed: true, pickupSealed: o.pickupSealed !== false, hasPhoto: b.photoCount > 0,
     };
-    const t = triage({ subtype: b.subtype, evidence, rideLimitMin: o.tempClass === 'HOT' ? db.policy.hot.maxRideMin : db.policy.ambient.maxRideMin });
+    const t = triage({ subtype: b.subtype, evidence, rideLimitMin: o.tempClass === 'HOT' ? pol.hot.maxRideMin : pol.ambient.maxRideMin });
     const affected = o.items.filter((i) => (b.itemIds || []).includes(i.productId)).reduce((s, i) => s + i.unitPricePaise * i.qty, 0) || o.subtotalPaise;
-    const auto = canAutoResolve(t, affected);
+    // Late deliveries get a small apology credit; item problems credit the affected value (doc 10.7)
+    const creditValue = b.subtype === 'LATE' ? Math.min(5000, Math.round(o.subtotalPaise * 0.2)) : affected;
+    const auto = canAutoResolve(t, creditValue);
     const c = {
       id: nextId(db, 'complaint'), orderId: o.id, customerId: g.u.userId, sellerId: o.sellerId, riderId: o.riderId, category: b.category, subtype: b.subtype,
       description: b.description, itemIds: b.itemIds || [], photoCount: b.photoCount || 0, ...t, autoDecided: auto, status: auto ? 'RESOLVED' : 'IN_REVIEW', evidence, createdAt: Date.now(),
     };
     if (auto) {
       c.resolution = 'VALID';
-      db.credits.push({ id: db.credits.length + 1, customerId: g.u.userId, complaintId: c.id, amountPaise: affected, expiresAt: Date.now() + 30 * 86400000, usedOrderId: null });
+      db.credits.push({ id: db.credits.length + 1, customerId: g.u.userId, complaintId: c.id, amountPaise: creditValue, expiresAt: Date.now() + 30 * 86400000, usedOrderId: null });
     }
     if (t.safety) {
       const s = db.sellers.find((x) => x.id === o.sellerId);
@@ -448,10 +486,10 @@ export const handlers = [
   })),
 
   // ---------- payments (Razorpay, mocked; the server decides the amount)
-  http.post(`${API}/payments`, withDb(async ({ request, db }) => {
+  http.post(`${API}/payments`, withDb(({ body, request, db }) => {
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
-    const { orderId } = await request.json();
+    const { orderId } = body;
     const o = db.orders.find((x) => x.id === orderId && x.customerId === g.u.userId);
     if (!o) return fail(404, 'NOT_FOUND', 'Order not found');
     if (o.status !== 'PENDING_PAYMENT') return fail(409, 'NOT_PAYABLE', 'This order is not waiting for payment');
@@ -463,10 +501,10 @@ export const handlers = [
     return ok({ providerOrderId: p.providerOrderId, keyId: 'rzp_test_demo_public', amountPaise: p.amountPaise, currency: 'INR' });
   })),
   // Browser fast path. It never marks the order paid on its own.
-  http.post(`${API}/payments/verify`, withDb(async ({ request, db }) => {
+  http.post(`${API}/payments/verify`, withDb(({ body, request, db }) => {
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
-    const b = await request.json();
+    const b = body;
     const p = db.payments.find((x) => x.providerOrderId === b.providerOrderId);
     if (!p) return fail(404, 'NOT_FOUND', 'Payment not found');
     const valid = b.signature === `sig_${b.providerOrderId}_${b.providerPaymentId}`;
@@ -477,10 +515,10 @@ export const handlers = [
     p.webhookDueAt = Date.now() + 2200;
     return ok({ verified: true, status: p.status });
   })),
-  http.post(`${API}/payments/fail`, withDb(async ({ request, db }) => {
+  http.post(`${API}/payments/fail`, withDb(({ body, request, db }) => {
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
-    const b = await request.json();
+    const b = body;
     const p = db.payments.find((x) => x.providerOrderId === b.providerOrderId);
     if (p) p.lastFailure = { reason: b.reason, at: Date.now() };
     return ok({ status: 'FAILED_ATTEMPT' });
@@ -492,13 +530,21 @@ export const handlers = [
     if (!o) return fail(404, 'NOT_FOUND', 'Order not found');
     const p = db.payments.find((x) => x.orderId === o.id);
     // Process the simulated webhook: payment.captured moves the order to PLACED
-    if (p && p.status === 'CREATED' && p.webhookDueAt && Date.now() >= p.webhookDueAt) {
+    // A capture can arrive after the window expired; it still has to be handled (and refunded)
+    if (p && ['CREATED', 'EXPIRED'].includes(p.status) && p.webhookDueAt && Date.now() >= p.webhookDueAt) {
       p.status = 'CAPTURED';
       p.capturedAt = Date.now();
       o.paymentStatus = 'CAPTURED';
-      addEvent(db, o, 'PLACED', 'system');
-      o.placedAt = Date.now();
-      notify(db, o.customerId, o.id, 'payment.captured', 'Payment received. Your order is with the shop.');
+      if (o.status === 'PENDING_PAYMENT') {
+        addEvent(db, o, 'PLACED', 'system');
+        o.placedAt = Date.now();
+        notify(db, o.customerId, o.id, 'payment.captured', 'Payment received. Your order is with the shop.');
+      } else {
+        // Paid after the order closed (expired or cancelled): refund automatically (doc 10.9)
+        p.status = 'REFUND_PENDING';
+        o.paymentStatus = 'REFUND_PENDING';
+        notify(db, o.customerId, o.id, 'payment.refund', 'Your payment arrived after the order closed, so it is being refunded.');
+      }
     }
     return ok({ status: p?.status || 'NONE', orderStatus: o.status, lastFailure: p?.lastFailure || null });
   })),
@@ -513,12 +559,12 @@ export const handlers = [
     const delivered = mine.filter((o) => o.status === 'DELIVERED');
     return ok({ ...s, stats: { ordersToday: mine.filter((o) => Date.now() - o.placedAt < 86400000).length, delivered: delivered.length, salesPaise: delivered.reduce((a, o) => a + o.subtotalPaise, 0) } });
   })),
-  http.patch(`${API}/seller/shop`, withDb(async ({ request, db }) => {
+  http.patch(`${API}/seller/shop`, withDb(({ body, request, db }) => {
     const g = guard(request, ['seller']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
     const s = db.sellers.find((x) => x.id === user.sellerId);
-    const b = await request.json();
+    const b = body;
     ['busyExtraMin', 'paused', 'openHours', 'radiusKm'].forEach((k) => k in b && (s[k] = b[k]));
     return ok(s);
   })),
@@ -528,27 +574,28 @@ export const handlers = [
     const user = db.users.find((u) => u.id === g.u.userId);
     return ok(db.products.filter((p) => p.sellerId === user.sellerId));
   })),
-  http.patch(`${API}/seller/products/:id/stock`, withDb(async ({ request, params, db }) => {
+  http.patch(`${API}/seller/products/:id/stock`, withDb(({ body, request, params, db }) => {
     const g = guard(request, ['seller']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
     const p = db.products.find((x) => x.id === Number(params.id));
     // seller_id from the token and a join, never from the body
     if (!p || p.sellerId !== user.sellerId) return fail(404, 'NOT_FOUND', 'Product not found');
-    const { delta, reason } = await request.json();
+    const { delta, reason } = body;
+    if (!Number.isInteger(delta) || !reason) return fail(422, 'BAD_ADJUSTMENT', 'An adjustment needs a whole-number change and a reason');
     // Edits are adjustments applied to the live row, not a replacement (doc 10.8)
     if (p.stock + delta < 0) return fail(422, 'NEGATIVE_STOCK', 'Stock cannot go below zero');
     p.stock += delta;
     p.lastAdjust = { delta, reason, at: Date.now() };
     return ok(p);
   })),
-  http.patch(`${API}/seller/products/:id`, withDb(async ({ request, params, db }) => {
+  http.patch(`${API}/seller/products/:id`, withDb(({ body, request, params, db }) => {
     const g = guard(request, ['seller']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
     const p = db.products.find((x) => x.id === Number(params.id));
     if (!p || p.sellerId !== user.sellerId) return fail(404, 'NOT_FOUND', 'Product not found');
-    const b = await request.json();
+    const b = body;
     ['active', 'pricePaise', 'prepMinutes'].forEach((k) => k in b && (p[k] = b[k]));
     return ok(p);
   })),
@@ -558,28 +605,28 @@ export const handlers = [
     const user = db.users.find((u) => u.id === g.u.userId);
     return ok(db.orders.filter((o) => o.sellerId === user.sellerId && o.status !== 'PENDING_PAYMENT').sort((a, b) => b.placedAt - a.placedAt).slice(0, 40).map((o) => orderView(db, o, 'seller')));
   })),
-  http.post(`${API}/seller/orders/:id/:action`, withDb(async ({ request, params, db }) => {
+  http.post(`${API}/seller/orders/:id/:action`, withDb(({ body, request, params, db }) => {
     const g = guard(request, ['seller']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
     const o = db.orders.find((x) => x.id === Number(params.id));
     if (!o || o.sellerId !== user.sellerId) return fail(404, 'NOT_FOUND', 'Order not found');
-    o.simSeller = false;
     const to = { accept: 'ACCEPTED', reject: 'REJECTED', start: 'PACKING', packed: 'PACKED' }[params.action];
     if (!to || !canTransition(o.status, to, 'seller')) return fail(409, 'BAD_TRANSITION', `Cannot ${params.action} an order that is ${o.status}`);
+    o.simSeller = false;
     if (to === 'ACCEPTED') acceptOrder(db, o, 'seller');
     else if (to === 'PACKED') {
       addEvent(db, o, 'PACKED', 'seller');
       o.packedAt = Date.now();
-      const prep = (o.tempClass === 'HOT' ? db.policy.hot.prepMin[1] : db.policy.ambient.prepMin[1]) * 60000;
+      const pol = policyFor(db, o);
+      const prep = (o.tempClass === 'HOT' ? pol.hot.prepMin[1] : pol.ambient.prepMin[1]) * 60000;
       o.sellerDelayMin = Math.max(0, (o.packedAt - (o.acceptedAt + prep)) / 60000);
       notify(db, o.customerId, o.id, 'order.packed', 'Your snacks are packed');
     } else {
-      addEvent(db, o, to, 'seller');
       if (to === 'REJECTED') {
-        releaseStock(db, o);
-        notify(db, o.customerId, o.id, 'order.rejected', 'The shop could not take your order. You were not charged.');
-      }
+        closeOrder(db, o, 'REJECTED', 'seller', 'The shop could not take the order');
+        notify(db, o.customerId, o.id, 'order.rejected', o.paymentMode === 'ONLINE' ? 'The shop could not take your order. Your payment is being refunded.' : 'The shop could not take your order. You were not charged.');
+      } else addEvent(db, o, to, 'seller');
     }
     return ok(orderView(db, o, 'seller'));
   })),
@@ -591,12 +638,12 @@ export const handlers = [
     const user = db.users.find((u) => u.id === g.u.userId);
     return ok(db.riders.find((r) => r.id === user.riderId));
   })),
-  http.put(`${API}/rider/status`, withDb(async ({ request, db }) => {
+  http.put(`${API}/rider/status`, withDb(({ body, request, db }) => {
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
     const r = db.riders.find((x) => x.id === user.riderId);
-    r.status = (await request.json()).status;
+    r.status = body.status;
     return ok(r);
   })),
   http.get(`${API}/rider/offers`, withDb(({ request, db }) => {
@@ -605,7 +652,8 @@ export const handlers = [
     const user = db.users.find((u) => u.id === g.u.userId);
     const r = db.riders.find((x) => x.id === user.riderId);
     if (r.status === 'OFFLINE') return ok([]);
-    const offers = db.assignments.filter((a) => a.riderId === r.id && a.status === 'OFFERED').map((a) => {
+    const needsRider = (o) => o && !o.riderId && ['ACCEPTED', 'PACKING', 'PACKED'].includes(o.status);
+    const offers = db.assignments.filter((a) => a.riderId === r.id && a.status === 'OFFERED' && needsRider(db.orders.find((x) => x.id === a.orderId))).map((a) => {
       const o = db.orders.find((x) => x.id === a.orderId);
       const s = db.sellers.find((x) => x.id === o.sellerId);
       const e = computeEarning({ km: o.distanceM / 1000, lateMin: 0 }, db.policy);
@@ -625,6 +673,10 @@ export const handlers = [
       a.status = 'DECLINED';
       o.simRider = true;
       return ok({ declined: true });
+    }
+    if (!['ACCEPTED', 'PACKING', 'PACKED'].includes(o.status)) {
+      a.status = 'EXPIRED';
+      return fail(410, 'OFFER_GONE', 'This order was cancelled');
     }
     // Atomic: UPDATE orders SET rider_id = ? WHERE id = ? AND rider_id IS NULL
     if (o.riderId) {
@@ -647,17 +699,17 @@ export const handlers = [
     const holdMin = o.packedAt && o.status === 'PACKED' && o.tempClass === 'HOT' ? (Date.now() - o.packedAt) / 60000 : 0;
     return ok({ ...orderView(db, o, 'rider'), track: t, insideGeofence: t.distanceM <= db.policy.arrivalGeofenceM, hotHoldWarning: holdMin > 10 });
   })),
-  http.post(`${API}/rider/location`, withDb(async ({ request, db }) => {
+  http.post(`${API}/rider/location`, withDb(({ body, request, db }) => {
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
-    const { lat, lng } = await request.json();
+    const { lat, lng } = body;
     const r = db.riders.find((x) => x.id === user.riderId);
     const o = db.orders.find((x) => x.riderId === r.id && !x.simRider && ['ACCEPTED', 'PACKING', 'PACKED', 'PICKED_UP', 'ON_THE_WAY'].includes(x.status));
     // Reject impossible jumps (over about 120 km/h) as spoofed GPS (doc 16.2)
     if (r.lastPingAt) {
       const v = distanceM(r, { lat, lng }) / ((Date.now() - r.lastPingAt) / 1000);
-      if (v > 33 * 4) return fail(422, 'GPS_JUMP', 'Location jump rejected');
+      if (v > 34) return fail(422, 'GPS_JUMP', 'Location jump rejected');
     }
     r.lat = lat;
     r.lng = lng;
@@ -665,14 +717,14 @@ export const handlers = [
     if (o) o.riderPos = { lat, lng };
     return ok({ ok: true });
   })),
-  http.post(`${API}/rider/orders/:id/:step`, withDb(async ({ request, params, db }) => {
+  http.post(`${API}/rider/orders/:id/:step`, withDb(({ body, request, params, db }) => {
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
     const o = db.orders.find((x) => x.id === Number(params.id));
     // Only orders with rider_id = token user
     if (!o || o.riderId !== user.riderId) return fail(404, 'NOT_FOUND', 'Order not found');
-    const b = await request.json().catch(() => ({}));
+    const b = body;
     const seller = db.sellers.find((s) => s.id === o.sellerId);
     if (params.step === 'picked-up') {
       if (!canTransition(o.status, 'PICKED_UP', 'rider')) return fail(409, 'BAD_TRANSITION', 'The order is not packed yet');
@@ -681,6 +733,9 @@ export const handlers = [
       o.pickedAt = Date.now();
       o.pickupSealed = true;
       o.riderPos = { lat: seller.lat, lng: seller.lng };
+      // The rider is at the shop now; the next GPS ping is measured from here
+      const rider = db.riders.find((x) => x.id === user.riderId);
+      Object.assign(rider, { lat: seller.lat, lng: seller.lng, lastPingAt: Date.now() });
       addEvent(db, o, 'ON_THE_WAY', 'system');
       o.rideStartedAt = Date.now();
       notify(db, o.customerId, o.id, 'order.picked_up', 'Your rider is on the way');
@@ -719,7 +774,7 @@ export const handlers = [
     const user = db.users.find((u) => u.id === g.u.userId);
     return ok(db.earnings.filter((e) => e.riderId === user.riderId).sort((a, b) => b.createdAt - a.createdAt));
   })),
-  http.post(`${API}/rider/earnings/:id/dispute`, withDb(async ({ request, params, db }) => {
+  http.post(`${API}/rider/earnings/:id/dispute`, withDb(({ body, request, params, db }) => {
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -727,7 +782,7 @@ export const handlers = [
     if (!e) return fail(404, 'NOT_FOUND', 'Not found');
     if (Date.now() - e.createdAt > 48 * 3600000) return fail(409, 'APPEAL_WINDOW_CLOSED', 'Disputes close 48 hours after delivery');
     e.status = 'DISPUTED';
-    e.dispute = { reason: (await request.json()).reason, at: Date.now() };
+    e.dispute = { reason: body.reason, at: Date.now() };
     return ok(e);
   })),
 
@@ -771,12 +826,13 @@ export const handlers = [
     if (g.res) return g.res;
     return ok(db.applications);
   })),
-  http.post(`${API}/admin/applications/:id/:action`, withDb(async ({ request, params, db }) => {
-    const g = adminGuard(request, { stepUp: true });
+  http.post(`${API}/admin/applications/:id/:action`, withDb(({ body, request, params, db }) => {
+    // Ticking a checklist item is routine; approving or rejecting needs fresh MFA
+    const g = adminGuard(request, { stepUp: params.action !== 'check' });
     if (g.res) return g.res;
     const a = db.applications.find((x) => x.id === Number(params.id));
     if (!a) return fail(404, 'NOT_FOUND', 'Not found');
-    const b = await request.json().catch(() => ({}));
+    const b = body;
     const before = a.status;
     if (params.action === 'approve') {
       if (a.kind === 'SELLER' && Object.values(a.checks).some((v) => !v)) return fail(422, 'CHECKS_INCOMPLETE', 'Every verification check must pass before approval');
@@ -801,12 +857,13 @@ export const handlers = [
     if (g.res) return g.res;
     return ok(db.complaints.slice().sort((a, b) => b.createdAt - a.createdAt));
   })),
-  http.post(`${API}/admin/complaints/:id/decide`, withDb(async ({ request, params, db }) => {
+  http.post(`${API}/admin/complaints/:id/decide`, withDb(({ body, request, params, db }) => {
     const g = adminGuard(request, { stepUp: true });
     if (g.res) return g.res;
     const c = db.complaints.find((x) => x.id === Number(params.id));
     if (!c) return fail(404, 'NOT_FOUND', 'Not found');
-    const b = await request.json();
+    if (c.status !== 'IN_REVIEW') return fail(409, 'ALREADY_DECIDED', 'This complaint was already decided');
+    const b = body;
     if (!b.reason) return fail(422, 'REASON_REQUIRED', 'A reason is required');
     const o = db.orders.find((x) => x.id === c.orderId);
     c.status = 'RESOLVED';
@@ -842,10 +899,10 @@ export const handlers = [
     if (g.res) return g.res;
     return ok({ current: db.policy, history: db.policyHistory });
   })),
-  http.put(`${API}/admin/policy`, withDb(async ({ request, db }) => {
+  http.put(`${API}/admin/policy`, withDb(({ body, request, db }) => {
     const g = adminGuard(request, { stepUp: true });
     if (g.res) return g.res;
-    const b = await request.json();
+    const b = body;
     const before = db.policy;
     // A policy change applies only to later orders: each order stores its policy version
     db.policy = { ...db.policy, ...b, version: db.policy.version + 1 };
@@ -858,11 +915,11 @@ export const handlers = [
     if (g.res) return g.res;
     return ok(db.earnings);
   })),
-  http.post(`${API}/admin/earnings/:id/resolve`, withDb(async ({ request, params, db }) => {
+  http.post(`${API}/admin/earnings/:id/resolve`, withDb(({ body, request, params, db }) => {
     const g = adminGuard(request, { stepUp: true });
     if (g.res) return g.res;
     const e = db.earnings.find((x) => x.id === Number(params.id));
-    const b = await request.json();
+    const b = body;
     e.status = b.reverse ? 'ADJUSTED' : 'OK';
     if (b.reverse) e.adjustment = { paise: e.penaltyPaise, reason: b.reason, at: Date.now() };
     audit(db, g.u, 'earning.resolve', null, { id: e.id, reverse: b.reverse });

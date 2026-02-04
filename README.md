@@ -29,24 +29,33 @@ Demo admin authenticator code: `246810`. "Reset demo" in the banner restores the
 - **Admin:** `/admin.html`, Google step, code. "Expire my MFA" then save the policy to see
   the step-up. Approvals, complaint review, policy preview of the three worked penalty cases.
 
-## Where things are
+## Stack and structure
+
+React 19, Redux Toolkit and Tailwind CSS v4, laid out like the legacy `frontend/` folder.
 
 | Area | Path |
 | --- | --- |
-| Tokens, glass, motion (22.1 to 22.3) | `src/styles/index.css`, `/design` page |
+| Pages (one file per screen) | `src/pages/`, `src/pages/seller/`, `src/pages/rider/` |
+| Shared components | `src/components/`, `src/components/landing/`, `src/components/tracking/` |
+| Redux store and slices | `src/store/store.js`, `src/store/slices/*Slice.js` (auth, toast, ui, products, cart, profile, orders, notifications, seller, rider, admin) |
+| API client | `src/lib/api.js` (`apiFetch`, in-memory access token, silent refresh) |
+| Design tokens and utilities (22.1 to 22.3) | `src/index.css` (`@theme` tokens and animations, `@utility glass`, `bg-hero`, `lift`, `shine`, `reveal`) |
 | Business rules as pure functions | `src/domain/` (promise 8.3, penalty 8.4, states 10.1, triage 10.7) |
 | Mock API, seed, simulator | `src/mocks/` |
-| Landing (22.9c) and R3F hero | `src/features/landing/` |
-| Rider lane, 3D and SVG (22.5) | `src/features/tracking/` |
-| Seller, rider, admin | `src/features/seller`, `src/features/rider`, `src/admin` |
+| Admin console (separate build and store) | `src/admin/` |
+
+All server data goes through `createAsyncThunk` thunks in the slices (shared error handling in
+`src/store/apiThunk.js`). Components read with `useSelector` and write with `dispatch`; live
+screens refresh with the `usePolling` hook until Socket.io arrives in Phase 3.
 
 ## Decisions applied
 
 - Brand SnackHub, tokens from 22.1, Baloo 2 + Nunito Sans; promise wording
   "Estimated delivery in 25 to 30 minutes, subject to serviceability and preparation time."
-- Redux for auth and UI only; TanStack Query for server state; server cart with optimistic UI.
-- CSS and IntersectionObserver first, Motion for layout, GSAP ScrollTrigger only on the
-  landing story, no Lenis. Every animation has a reduced-motion end state.
+- Redux holds all client and server state; the cart lives on the server and the cart slice
+  mirrors it with an optimistic update and rollback.
+- CSS and IntersectionObserver first, Motion for layout and page transitions, GSAP
+  ScrollTrigger only on the landing story, no Lenis. Every animation has a reduced-motion end state.
 - Hero and lane 3D lazy-load, cap DPR, pause offscreen or when the tab is hidden, and fall
   back to a poster or the SVG lane without WebGL or with reduced motion.
 - Order payloads never contain the delivery code; it comes only from `/orders/:id/otp`.

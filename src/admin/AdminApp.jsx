@@ -1,17 +1,18 @@
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { useQueryClient } from '@tanstack/react-query';
-import { api } from '../lib/api';
 import DemoBanner from '../components/DemoBanner';
-import Toaster from '../components/Toaster';
+import Toast from '../components/Toast';
 import { Button, Card, Icon, Logo, Modal, cx } from '../components/ui';
 import GoogleG from '../components/GoogleG';
-import LiveOps from './LiveOps';
-import Approvals from './Approvals';
-import Complaints from './Complaints';
-import PolicyEditor from './PolicyEditor';
-import AuditLog from './AuditLog';
+import { PageFallback } from '../components/RouteGuards';
+import { logoutUser, restoreSession, signInWithGoogle, verifyAdminMfa } from '../store/slices/authSlice';
+import { addToast } from '../store/slices/toastSlice';
+import LiveOps from './pages/LiveOps';
+import Approvals from './pages/Approvals';
+import Complaints from './pages/Complaints';
+import PolicyEditor from './pages/PolicyEditor';
+import AuditLog from './pages/AuditLog';
 
 const AdminCtx = createContext(null);
 export const useAdmin = () => useContext(AdminCtx);
@@ -24,36 +25,52 @@ const TABS = [
   { to: '/audit', label: 'Audit log', icon: 'list' },
 ];
 
-export default function AdminApp({ actions }) {
+const AdminApp = () => {
   const dispatch = useDispatch();
-  const token = useSelector((s) => s.auth.token);
-  const user = useSelector((s) => s.auth.user);
-  const toasts = useSelector((s) => s.ui.toasts);
-  const qc = useQueryClient();
-  const toast = useCallback((t) => dispatch(actions.toast(t)), [dispatch, actions]);
+  const { user, accessToken, isInitializing } = useSelector((state) => state.auth);
 
-  // Step-up: a sensitive action answering 401 MFA_REQUIRED asks for the code again, then retries
+  useEffect(() => {
+    dispatch(restoreSession());
+  }, [dispatch]);
+
+  // Step-up: an action that rejects with MFA_REQUIRED asks for the code again, then retries.
+  // `action` returns a promise, usually dispatch(thunk(arg)).unwrap(). Resolves with its
+  // result, or with undefined when it failed or the step-up was cancelled.
   const [stepUp, setStepUp] = useState(null);
   const run = useCallback(
-    async (fn) => {
+    async (action) => {
       try {
-        return await fn();
+        return await action();
       } catch (e) {
         if (e.code === 'MFA_REQUIRED') {
-          return new Promise((resolve, reject) => setStepUp({ retry: () => fn().then(resolve, reject), cancel: () => reject(e) }));
+          return new Promise((resolve) =>
+            setStepUp({
+              retry: () =>
+                action().then(resolve, (err) => {
+                  dispatch(addToast({ type: 'error', title: 'Action failed', message: err.message }));
+                  resolve(undefined);
+                }),
+              cancel: () => resolve(undefined),
+            }),
+          );
         }
-        toast({ title: 'Action failed', body: e.message, tone: 'error' });
-        throw e;
+        dispatch(addToast({ type: 'error', title: 'Action failed', message: e.message }));
+        return undefined;
       }
     },
-    [toast],
+    [dispatch],
   );
+  const cancelStepUp = () => {
+    stepUp?.cancel();
+    setStepUp(null);
+  };
 
-  if (!token || user?.role !== 'admin') return <AdminSignIn actions={actions} />;
+  if (isInitializing) return <PageFallback />;
+  if (!accessToken || user?.role !== 'admin') return <AdminSignIn />;
 
   return (
-    <AdminCtx.Provider value={{ run, toast, actions }}>
-      <div className="console-bg min-h-dvh">
+    <AdminCtx.Provider value={{ run }}>
+      <div className="min-h-dvh bg-console">
         <DemoBanner tone="dark" />
         <div className="flex">
           <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-grey-800/10 bg-white p-4 lg:flex">
@@ -69,7 +86,7 @@ export default function AdminApp({ actions }) {
             <div className="mt-auto rounded-2xl bg-grey-50 p-3 text-xs text-grey-600">
               <p className="font-bold text-grey-800">{user.name}</p>
               <p>Signed in with Google + TOTP</p>
-              <button onClick={() => { dispatch(actions.signedOut()); qc.clear(); }} className="mt-2 font-bold text-red-text">Sign out everywhere</button>
+              <button onClick={() => dispatch(logoutUser())} className="mt-2 font-bold text-red-text">Sign out everywhere</button>
             </div>
           </aside>
           <div className="min-w-0 flex-1">
@@ -89,59 +106,49 @@ export default function AdminApp({ actions }) {
             </main>
           </div>
         </div>
-        <MfaModal
-          open={Boolean(stepUp)}
-          title="Confirm it is you"
-          body="This action needs a second-factor check from the last 5 minutes."
-          actions={actions}
-          onDone={() => {
-            const s = stepUp;
-            setStepUp(null);
-            s.retry();
-          }}
-          onCancel={() => {
-            stepUp?.cancel();
-            setStepUp(null);
-          }}
-        />
-        <Toaster toasts={toasts} onDismiss={(id) => dispatch(actions.dismissToast(id))} />
+        <Modal open={Boolean(stepUp)} onClose={cancelStepUp} title="Confirm it is you">
+          <div className="p-6">
+            <p className="text-sm font-bold text-red-text">Confirm it is you</p>
+            <p className="text-sm text-grey-600">This action needs a second-factor check from the last 5 minutes.</p>
+            <MfaForm
+              heading="Authenticator code"
+              onDone={() => {
+                const s = stepUp;
+                setStepUp(null);
+                s.retry();
+              }}
+            />
+            <Button variant="quiet" className="mt-2 w-full" onClick={cancelStepUp}>Cancel</Button>
+          </div>
+        </Modal>
+        <Toast />
       </div>
     </AdminCtx.Provider>
   );
-}
+};
 
 /** Google sign-in returns a half-session (mfa_pending); no admin API accepts it. */
-function AdminSignIn({ actions }) {
+function AdminSignIn() {
   const dispatch = useDispatch();
-  const pending = useSelector((s) => s.auth.mfaPending);
-  const [err, setErr] = useState(null);
-  const google = async () => {
-    setErr(null);
-    try {
-      const r = await api('/auth/google', { method: 'POST', body: { demoRole: 'admin' } });
-      dispatch(actions.mfaPending({ user: r.user, halfToken: r.halfToken }));
-    } catch (e) {
-      setErr(e.message);
-    }
-  };
+  const { mfaPending, error, isLoading } = useSelector((state) => state.auth);
   return (
-    <div className="console-bg min-h-dvh">
+    <div className="min-h-dvh bg-console">
       <DemoBanner tone="dark" />
       <div className="mx-auto grid min-h-[80vh] max-w-md place-items-center px-4">
         <Card className="w-full p-8">
           <Logo />
           <p className="mt-1 text-xs font-extrabold uppercase tracking-wider text-red-text">Admin console · private host</p>
-          {!pending ? (
+          {!mfaPending ? (
             <>
               <h1 className="mt-6 text-2xl font-extrabold">Step 1 of 2: Google</h1>
               <p className="mt-1 text-sm text-grey-600">Your email must be verified and on the admin list.</p>
-              <button onClick={google} className="mt-5 flex h-12 w-full items-center justify-center gap-3 rounded-full border border-grey-800/15 bg-white font-bold shadow-sm hover:shadow-md">
+              <button onClick={() => dispatch(signInWithGoogle({ demoRole: 'admin' }))} disabled={isLoading} className="mt-5 flex h-12 w-full items-center justify-center gap-3 rounded-full border border-grey-800/15 bg-white font-bold shadow-sm hover:shadow-md disabled:opacity-60">
                 <GoogleG /> Continue with Google <span className="text-xs text-grey-600">(demo)</span>
               </button>
-              {err && <p className="mt-3 text-sm font-bold text-red-text">{err}</p>}
+              {error && <p className="mt-3 text-sm font-bold text-red-text">{error}</p>}
             </>
           ) : (
-            <MfaForm actions={actions} heading="Step 2 of 2: authenticator code" />
+            <MfaForm heading="Step 2 of 2: authenticator code" />
           )}
           <p className="mt-6 text-xs text-grey-600">Admin accounts come only from a seed list; there is no admin sign-up. Every login and MFA failure is written to the audit log.</p>
         </Card>
@@ -150,26 +157,22 @@ function AdminSignIn({ actions }) {
   );
 }
 
-function MfaForm({ actions, heading, onDone }) {
+function MfaForm({ heading, onDone }) {
   const dispatch = useDispatch();
+  const isLoading = useSelector((state) => state.auth.isLoading);
   const [code, setCode] = useState('');
   const [err, setErr] = useState(null);
-  const [busy, setBusy] = useState(false);
   const input = useRef(null);
   const submit = async (e) => {
     e.preventDefault();
-    setBusy(true);
     setErr(null);
     try {
-      const r = await api('/admin/auth/mfa', { method: 'POST', body: { code } });
-      dispatch(actions.signedIn({ token: r.accessToken, user: r.user }));
+      await dispatch(verifyAdminMfa({ code })).unwrap();
       onDone?.();
     } catch (e2) {
       setErr(e2.message);
       setCode('');
       input.current?.focus();
-    } finally {
-      setBusy(false);
     }
   };
   return (
@@ -179,21 +182,10 @@ function MfaForm({ actions, heading, onDone }) {
       <label htmlFor="totp" className="sr-only">Authenticator code</label>
       <input ref={input} id="totp" autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} className="mt-4 h-14 w-full rounded-2xl border-2 border-grey-800/15 text-center font-mono text-2xl tracking-[0.4em] focus:border-orange focus:outline-none" />
       {err && <p className="mt-2 text-sm font-bold text-red-text" role="alert">{err}</p>}
-      <Button type="submit" className="mt-4 w-full" disabled={code.length !== 6} loading={busy}>Verify</Button>
+      <Button type="submit" className="mt-4 w-full" disabled={code.length !== 6} loading={isLoading}>Verify</Button>
       <p className="mt-3 text-xs text-grey-600">Passkey (WebAuthn) is the primary factor in the real console; TOTP is the fallback. 10 single-use recovery codes are stored hashed.</p>
     </form>
   );
 }
 
-function MfaModal({ open, onDone, onCancel, actions, title, body }) {
-  return (
-    <Modal open={open} onClose={onCancel} title={title}>
-      <div className="p-6">
-        <p className="text-sm font-bold text-red-text">{title}</p>
-        <p className="text-sm text-grey-600">{body}</p>
-        <MfaForm actions={actions} heading="Authenticator code" onDone={onDone} />
-        <Button variant="quiet" className="mt-2 w-full" onClick={onCancel}>Cancel</Button>
-      </div>
-    </Modal>
-  );
-}
+export default AdminApp;

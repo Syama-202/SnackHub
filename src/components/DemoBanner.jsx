@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { api } from '../lib/api';
+import { apiFetch } from '../lib/api';
 
 /** "Show a Demo data banner in the app" (doc 23). */
 export default function DemoBanner({ tone = 'light' }) {
   const [busy, setBusy] = useState(false);
   const reset = async () => {
     setBusy(true);
-    await api('/dev/reset', { method: 'POST' }).catch(() => {});
+    await apiFetch('/dev/reset', { method: 'POST' }).catch(() => {});
     window.location.reload();
   };
   return (

@@ -106,7 +106,19 @@ export function getDb() {
   return mem;
 }
 
+const GEN_KEY = `${KEY}.gen`;
+const currentGen = () => {
+  try {
+    return localStorage.getItem(GEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
 export function saveDb(db) {
+  // A request that loaded the data before a reset must not write the old data back
+  const gen = currentGen();
+  if (gen && db.gen !== gen) return;
   mem = db;
   try {
     localStorage.setItem(KEY, JSON.stringify(db));
@@ -116,7 +128,12 @@ export function saveDb(db) {
 }
 
 export function resetDb() {
-  mem = fresh();
+  mem = { ...fresh(), gen: String(Date.now()) };
+  try {
+    localStorage.setItem(GEN_KEY, mem.gen);
+  } catch {
+    /* ignore */
+  }
   saveDb(mem);
   return mem;
 }

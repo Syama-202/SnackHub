@@ -1,36 +1,17 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Provider } from 'react-redux';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import './styles/index.css';
-import { store, actions } from './store/webStore';
-import { configureApi } from './lib/api';
-import App from './App';
-
-configureApi({
-  tokenGetter: () => store.getState().auth.token,
-  unauthorized: () => store.dispatch(actions.signedOut()),
-});
-
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: (n, e) => n < 2 && (!e?.status || e.status >= 500), refetchOnWindowFocus: false } },
-});
+import './index.css';
+import App from './App.jsx';
 
 async function boot() {
+  // Phase 1: every /api/v1 call is served by the in-browser mock (MSW)
   if (import.meta.env.VITE_USE_MOCKS !== 'false') {
     const { startMocks } = await import('./mocks/browser');
     await startMocks();
   }
   createRoot(document.getElementById('root')).render(
     <StrictMode>
-      <Provider store={store}>
-        <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </QueryClientProvider>
-      </Provider>
+      <App />
     </StrictMode>,
   );
 }
