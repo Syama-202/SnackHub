@@ -109,7 +109,7 @@ function cartView(db, userId) {
   const items = cart.items
     .map((i) => {
       const p = db.products.find((x) => x.id === i.productId);
-      return p ? { productId: p.id, qty: i.qty, title: p.title, pricePaise: p.pricePaise, servingTemp: p.servingTemp, stock: p.stock, art: p.art, weight: p.weight } : null;
+      return p ? { productId: p.id, slug: p.slug, qty: i.qty, title: p.title, pricePaise: p.pricePaise, servingTemp: p.servingTemp, stock: p.stock, art: p.art, weight: p.weight } : null;
     })
     .filter(Boolean);
   const subtotalPaise = items.reduce((s, i) => s + i.pricePaise * i.qty, 0);
@@ -294,7 +294,7 @@ export const handlers = [
       if (term.length > 3 && lev(t.split(' ')[0], term) <= 2) return 1;
       return 0;
     };
-    const res = db.products.filter((p) => near.has(p.sellerId) && p.active).map((p) => ({ p, s: score(p) })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 8).map((x) => ({ id: x.p.id, title: x.p.title, sellerId: x.p.sellerId, shopName: db.sellers.find((s) => s.id === x.p.sellerId).shopName, pricePaise: x.p.pricePaise, art: x.p.art, servingTemp: x.p.servingTemp }));
+    const res = db.products.filter((p) => near.has(p.sellerId) && p.active).map((p) => ({ p, s: score(p) })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 8).map((x) => ({ id: x.p.id, slug: x.p.slug, title: x.p.title, sellerId: x.p.sellerId, shopName: db.sellers.find((s) => s.id === x.p.sellerId).shopName, pricePaise: x.p.pricePaise, art: x.p.art, servingTemp: x.p.servingTemp }));
     return ok({ q, results: res, provider: 'mock-fulltext' });
   })),
 

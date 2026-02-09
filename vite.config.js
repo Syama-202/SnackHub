@@ -22,14 +22,9 @@ export default defineConfig({
   server: { port: 5173, strictPort: true },
   build: {
     outDir: 'dist',
-    rollupOptions: {
-      input: 'index.html',
-      output: {
-        manualChunks: {
-          three: ['three', '@react-three/fiber', '@react-three/drei'],
-          gsap: ['gsap'],
-        },
-      },
-    },
+    // No manualChunks: three.js, React Three Fiber and GSAP are only reached through
+    // lazy imports, so Rollup keeps them out of the entry. Forcing them into a named
+    // chunk let shared helpers land there and pulled all of three.js into every page.
+    rollupOptions: { input: 'index.html' },
   },
 });

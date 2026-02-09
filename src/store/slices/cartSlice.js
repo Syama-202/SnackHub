@@ -48,7 +48,7 @@ const cartSlice = createSlice({
         state.snapshot = { sellerId: state.sellerId, items: state.items.map((i) => ({ ...i })), subtotalPaise: state.subtotalPaise };
         const line = state.items.find((i) => i.productId === product.id);
         if (line) line.qty = qty;
-        else if (qty > 0) state.items.push({ productId: product.id, qty, title: product.title, pricePaise: product.pricePaise, servingTemp: product.servingTemp, art: product.art, weight: product.weight, stock: product.stock });
+        else if (qty > 0) state.items.push({ productId: product.id, slug: product.slug, qty, title: product.title, pricePaise: product.pricePaise, servingTemp: product.servingTemp, art: product.art, weight: product.weight, stock: product.stock });
         state.items = state.items.filter((i) => i.qty > 0);
         state.sellerId = state.items.length ? product.sellerId : null;
         state.subtotalPaise = total(state.items);

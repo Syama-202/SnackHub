@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button, Icon } from '../ui';
@@ -29,7 +29,6 @@ export function HeroPoster({ className = '' }) {
         <path d="M150 140 L150 240" stroke="#9E1B26" strokeWidth="2" />
         <path d="M40 110 L150 140 L260 110" fill="none" stroke="#9E1B26" strokeWidth="2" />
         <path d="M40 150 L150 180 L260 150 L260 172 L150 202 L40 172 Z" fill="#FFC300" />
-        <text x="96" y="186" fontSize="18" fontWeight="800" fill="#1F2937" transform="skewY(15) translate(0 -40)">SNACKHUB</text>
         <path d="M150 140 L40 110 L20 60 L132 88 Z" fill="#FF5560" />
       </svg>
       {ring.map((r, i) => (
@@ -41,11 +40,31 @@ export function HeroPoster({ className = '' }) {
   );
 }
 
+/** True once the page has loaded and the browser is idle, so 3D never delays the first paint (doc 22.9a). */
+function useAfterLoadIdle() {
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    let handle;
+    const go = () => {
+      handle = window.requestIdleCallback ? window.requestIdleCallback(() => setOk(true), { timeout: 2500 }) : setTimeout(() => setOk(true), 1200);
+    };
+    if (document.readyState === 'complete') go();
+    else window.addEventListener('load', go, { once: true });
+    return () => {
+      window.removeEventListener('load', go);
+      if (window.cancelIdleCallback && handle) window.cancelIdleCallback(handle);
+      else clearTimeout(handle);
+    };
+  }, []);
+  return ok;
+}
+
 export default function Hero() {
   const reduced = useReducedMotion();
   const [ref, inView] = useInView('0px');
   const [ready, setReady] = useState(false);
   const live = !reduced && hasWebGL() && !prefersLite();
+  const idle = useAfterLoadIdle();
   return (
     <section ref={ref} className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
@@ -58,7 +77,7 @@ export default function Hero() {
         </div>
         <div className="relative order-1 aspect-[5/4] w-full lg:order-2 lg:aspect-square">
           <HeroPoster className={`absolute inset-0 transition-opacity duration-700 ${live && ready ? 'opacity-0' : 'opacity-100'}`} />
-          {live && (
+          {live && idle && (
             <Suspense fallback={null}>
               <div className={`absolute inset-0 transition-opacity duration-700 ${ready ? 'opacity-100' : 'opacity-0'}`}>
                 <HeroScene active={inView} onReady={() => setTimeout(() => setReady(true), 200)} />
@@ -96,7 +115,7 @@ function HeroCopy() {
       <form onSubmit={go} className="mt-6 flex flex-col gap-2 sm:flex-row">
         <label htmlFor="hero-loc" className="sr-only">Enter your delivery location</label>
         <div className="relative flex-1">
-          <Icon name="pin" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-orange-deep" />
+          <Icon name="pin" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-orange-text" />
           <input id="hero-loc" value={place} onChange={(e) => setPlace(e.target.value)} placeholder="Enter your delivery location" className="h-13 w-full rounded-full border border-grey-800/10 bg-white pl-11 pr-4 text-[15px] focus:border-orange focus:outline-none focus:ring-4 focus:ring-orange/15" />
         </div>
         <Button size="lg" type="submit">Show snacks near me</Button>

@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import SnackArt from '../SnackArt';
+import LoopVideo from '../LoopVideo';
 import { Button, Icon, SectionTitle, Pill, cx } from '../ui';
 import { REGIONS, MOODS } from '../../lib/catalogMeta';
 import ProductCard, { ProductCardSkeleton } from '../ProductCard';
@@ -69,7 +70,7 @@ export function RegionalDiscovery() {
                 <h3 className="font-display text-2xl font-bold">{r.id}</h3>
                 <p className="mt-1 text-grey-600">{r.blurb}</p>
                 <p className="mt-2 text-sm font-semibold text-grey-800">{r.snacks}</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-sm font-extrabold text-orange-deep">Explore collection <Icon name="arrowRight" className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-extrabold text-orange-text">Explore collection <Icon name="arrowRight" className="h-4 w-4 transition group-hover:translate-x-1" /></span>
               </div>
             </Link>
           ))}
@@ -86,7 +87,7 @@ export function Bestsellers() {
     <section className="mx-auto max-w-7xl px-4 py-24">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <SectionTitle eyebrow="Bestsellers near you" title="The Snacks Everyone's Talking About." />
-        <Link to="/shop?sort=bestsellers" className="font-extrabold text-orange-deep">See all</Link>
+        <Link to="/shop?sort=bestsellers" className="font-extrabold text-orange-text">See all</Link>
       </div>
       <div className="mt-8">
         <Carousel label="Bestsellers">
@@ -113,13 +114,13 @@ export function DeliveryStory() {
     <section id="delivery" ref={ref} className="scroll-mt-24 bg-sun py-24">
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 lg:grid-cols-[1fr_1.1fr]">
         <div>
-          <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-grey-800/70">How delivery works</p>
+          <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-grey-800">How delivery works</p>
           <h2 className="mt-2 text-[clamp(2.2rem,5vw,3.8rem)] font-extrabold leading-[1.02] text-grey-800">Craving Now? We're Already on Our Way.</h2>
           <div className="mt-8 flex items-end gap-3">
             <span className="font-display text-[clamp(5rem,14vw,9rem)] font-extrabold leading-[0.8] text-grey-800">25</span>
             <span className="pb-3 font-display text-3xl font-extrabold text-red-text">to 30<br />MIN</span>
           </div>
-          <p className="mt-4 max-w-md text-sm text-grey-800/80">{PROMISE_WORDING} A shop that cannot reach you in time is simply not shown.</p>
+          <p className="mt-4 max-w-md text-sm text-grey-800">{PROMISE_WORDING} A shop that cannot reach you in time is simply not shown.</p>
         </div>
         <div className="relative min-w-0">
           <svg viewBox="0 0 400 60" className="absolute -top-8 left-0 hidden w-full lg:block" aria-hidden="true">
@@ -164,8 +165,8 @@ export function MoodTiles() {
         {MOODS.map((m, i) => (
           <button key={m.id} onClick={() => navigate(`/shop?mood=${m.id}`)} className={cx('reveal group lift relative flex min-h-44 flex-col justify-between overflow-hidden rounded-[26px] bg-gradient-to-br p-5 text-left ring-1 ring-grey-800/5', m.tint)} style={{ transitionDelay: `${i * 50}ms` }}>
             <span className="relative z-10 max-w-[70%] font-display text-[clamp(1.25rem,2.4vw,1.9rem)] font-extrabold leading-tight text-grey-800">{m.label}</span>
-            <span className="relative z-10 inline-flex items-center gap-1 text-sm font-extrabold text-orange-deep">Show me <Icon name="arrowRight" className="h-4 w-4 transition group-hover:translate-x-1" /></span>
-            <SnackArt shape={m.art.shape} colors={m.art.colors} plate={false} className="absolute -bottom-4 -right-4 w-[58%] transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6" />
+            <span className="relative z-10 inline-flex items-center gap-1 text-sm font-extrabold text-orange-text">Show me <Icon name="arrowRight" className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+            <LoopVideo id={`mood-${m.id}`} label={m.label} className="absolute inset-0 -z-0 opacity-90" fallback={<SnackArt shape={m.art.shape} colors={m.art.colors} plate={false} className="absolute -bottom-4 -right-4 w-[58%] transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6" />} />
           </button>
         ))}
       </div>
@@ -217,7 +218,7 @@ export function Offers() {
         <div className="relative grid gap-8 lg:grid-cols-[1fr_1.4fr]">
           <div>
             <h2 className="text-[clamp(2rem,4.5vw,3.4rem)] font-extrabold leading-[1.02] text-grey-800">More Crunch. More Joy. Better Deals.</h2>
-            <p className="mt-3 text-grey-800/80">Demo offers for this preview. Prices are always checked at checkout.</p>
+            <p className="mt-3 text-grey-800">Demo offers for this preview. Prices are always checked at checkout.</p>
             <Button variant="dark" size="lg" className="mt-6" onClick={() => navigate('/shop?sort=bestsellers')}>Shop offers</Button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">

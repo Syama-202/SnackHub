@@ -31,7 +31,7 @@ export default function ProductHotspots() {
               key={s.id}
               onClick={() => setActive(s.id)}
               aria-pressed={active === s.id}
-              aria-label={s.title}
+              aria-label={`${i + 1}. ${s.title}`}
               className={cx('absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full font-extrabold shadow-lg transition', active === s.id ? 'scale-110 bg-grey-800 text-white' : 'bg-white text-grey-800 hover:scale-105')}
               style={{ left: `${s.x}%`, top: `${s.y}%` }}
             >

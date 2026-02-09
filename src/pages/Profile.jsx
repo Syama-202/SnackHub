@@ -76,7 +76,7 @@ const Profile = () => {
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {addresses.map((a) => (
             <Card key={a.id} className="flex items-start gap-3 p-4">
-              <Icon name="pin" className="mt-0.5 h-5 w-5 text-orange-deep" />
+              <Icon name="pin" className="mt-0.5 h-5 w-5 text-orange-text" />
               <div className="flex-1">
                 <p className="font-bold">{a.label}</p>
                 <p className="text-sm text-grey-600">{a.line}</p>

@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { Modal, CloseButton, Pill, Price, SpiceMeter, TempBadge, QtyControl, Icon } from './ui';
-import SnackArt from './SnackArt';
+import SnackImage from './SnackImage';
 import { closeProduct } from '../store/slices/uiSlice';
 import { updateQuantity } from '../store/slices/cartSlice';
 
@@ -15,7 +15,7 @@ export default function ProductModal() {
       {p && (
         <div className="grid sm:grid-cols-2">
           <div className="relative bg-gradient-to-br from-sun/30 via-orange/15 to-red/10 p-6 sm:rounded-l-[28px]">
-            <SnackArt shape={p.art.shape} colors={p.art.colors} title={p.title} className="mx-auto w-full max-w-xs drop-shadow-xl" />
+            <SnackImage slug={p.slug} art={p.art} title={p.title} sizes="(min-width: 640px) 384px, 100vw" priority className="mx-auto w-full max-w-xs drop-shadow-xl" />
             <p className="mt-2 text-center text-xs text-grey-600">Illustration, not a photo of the actual item</p>
           </div>
           <div className="relative p-6 sm:p-8">

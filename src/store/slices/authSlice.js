@@ -1,13 +1,16 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { apiThunk } from '../apiThunk';
-import { refreshAccessToken, setAccessToken } from '../../lib/api';
+import { getApiHost, refreshAccessToken, setAccessToken } from '../../lib/api';
 
 // Google sign-in (doc 16.1), simulated: the server verifies the ID token and
 // issues our own tokens. A new Google account is always a customer; the demo
 // seller and rider accounts are seeded, approved applications.
 export const signInWithGoogle = apiThunk('auth/google', async ({ demoRole = 'customer' }, { apiFetch }) => {
   const data = await apiFetch('/auth/google', { method: 'POST', body: { demoRole }, retry: false });
-  if (data.accessToken) setAccessToken(data.accessToken);
+  if (data.accessToken) {
+    setAccessToken(data.accessToken);
+    hint.set(true);
+  }
   return data;
 });
 
@@ -15,15 +18,46 @@ export const signInWithGoogle = apiThunk('auth/google', async ({ demoRole = 'cus
 export const verifyAdminMfa = apiThunk('auth/verifyMfa', async ({ code }, { apiFetch }) => {
   const data = await apiFetch('/admin/auth/mfa', { method: 'POST', body: { code }, retry: false });
   setAccessToken(data.accessToken);
+  hint.set(true);
   return data;
 });
 
+// Not a secret: only a hint that a refresh cookie may exist, so a first visit skips the call.
+// Kept per app, so the admin console and the customer site never clear each other's hint.
+const HINT = () => `snackhub.hasSession.${getApiHost() || 'web'}`;
+const hint = {
+  get: () => {
+    try {
+      return localStorage.getItem(HINT()) === '1';
+    } catch {
+      return true;
+    }
+  },
+  set: (on) => {
+    try {
+      if (on) localStorage.setItem(HINT(), '1');
+      else localStorage.removeItem(HINT());
+    } catch {
+      /* storage blocked */
+    }
+  },
+};
+
 // Called once on app load: turns the httpOnly refresh cookie, if any, back into an access token
-export const restoreSession = apiThunk('auth/restoreSession', async () => refreshAccessToken());
+export const restoreSession = apiThunk('auth/restoreSession', async () => {
+  if (!hint.get()) throw Object.assign(new Error('No session'), { code: 'NO_SESSION' });
+  try {
+    return await refreshAccessToken();
+  } catch (e) {
+    hint.set(false);
+    throw e;
+  }
+});
 
 export const logoutUser = apiThunk('auth/logout', async (_, { apiFetch }) => {
   await apiFetch('/auth/logout', { method: 'POST', retry: false }).catch(() => {});
   setAccessToken(null);
+  hint.set(false);
   return null;
 });
 

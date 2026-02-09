@@ -65,7 +65,7 @@ const Login = () => {
           <GoogleG /> Continue with Google <span className="text-xs font-semibold text-grey-600">(demo)</span>
         </button>
         <p className="mt-4 text-xs leading-relaxed text-grey-600">
-          Demo sign-in, no Google account is used. In the real app a new Google account is always a customer; sellers and riders apply and an admin approves them. Nobody can promote themselves. The admin console is a separate private app. <Link to="/" className="font-bold text-orange-deep">Back home</Link>
+          Demo sign-in, no Google account is used. In the real app a new Google account is always a customer; sellers and riders apply and an admin approves them. Nobody can promote themselves. The admin console is a separate private app. <Link to="/" className="font-bold text-orange-text">Back home</Link>
         </p>
       </Card>
     </div>

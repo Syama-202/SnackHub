@@ -5,7 +5,8 @@
   /* Colour tokens, 22.1. The only brand values in the app. */
   --color-sun: #FFC300;
   --color-orange: #FF7A00;
-  --color-orange-deep: #E86A00;
+  --color-orange-deep: #E86A00; /* large gradient headings and accents only */
+  --color-orange-text: #B34D00; /* small orange text: 5.3:1 on white, WCAG AA (doc 22.6) */
   --color-red: #E23744;
   --color-red-text: #C4222F;
   --color-red-strong: #D62839;

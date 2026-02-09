@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Logo, Icon, cx } from './ui';
-import SnackArt from './SnackArt';
+import SnackImage from './SnackImage';
 import { rupees } from '../domain/money';
 import { logoutUser } from '../store/slices/authSlice';
 import { openCart, setAddress } from '../store/slices/uiSlice';
@@ -92,9 +92,9 @@ function LocationSelector() {
   return (
     <div className="relative min-w-0 flex-1 md:flex-none" ref={ref}>
       <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="listbox" className="flex h-11 min-w-0 items-center gap-1.5 rounded-xl px-2 text-left transition hover:bg-grey-800/5">
-        <Icon name="pin" className="h-5 w-5 shrink-0 text-orange-deep" />
+        <Icon name="pin" className="h-5 w-5 shrink-0 text-orange-text" />
         <span className="min-w-0">
-          <span className="block text-[11px] font-extrabold uppercase leading-none tracking-wide text-orange-deep">Deliver to</span>
+          <span className="block text-[11px] font-extrabold uppercase leading-none tracking-wide text-orange-text">Deliver to</span>
           <span className="block max-w-[110px] truncate text-sm font-bold leading-tight sm:max-w-[170px]">{point.label}</span>
         </span>
         <Icon name="chevronDown" className="h-4 w-4 shrink-0" />
@@ -113,7 +113,7 @@ function LocationSelector() {
                 }}
                 className={cx('flex w-full items-start gap-2 rounded-xl px-3 py-2.5 text-left hover:bg-grey-50', a.id === point.id && 'bg-sun/15')}
               >
-                <Icon name="pin" className="mt-0.5 h-4 w-4 text-orange-deep" />
+                <Icon name="pin" className="mt-0.5 h-4 w-4 text-orange-text" />
                 <span>
                   <span className="block text-sm font-bold">{a.label}</span>
                   <span className="block text-xs text-grey-600">{a.line}</span>
@@ -122,10 +122,10 @@ function LocationSelector() {
             ))
           ) : (
             <div className="p-3 text-sm text-grey-600">
-              Browsing from <b className="text-grey-800">Brodipet, Guntur</b> (demo). <Link to="/signin" className="font-bold text-orange-deep underline">Sign in</Link> to pick a saved address.
+              Browsing from <b className="text-grey-800">Brodipet, Guntur</b> (demo). <Link to="/signin" className="font-bold text-orange-text underline">Sign in</Link> to pick a saved address.
             </div>
           )}
-          {isCustomer && <Link to="/account" onClick={() => setOpen(false)} className="mt-1 block rounded-xl px-3 py-2 text-sm font-bold text-orange-deep hover:bg-grey-50">Manage addresses</Link>}
+          {isCustomer && <Link to="/account" onClick={() => setOpen(false)} className="mt-1 block rounded-xl px-3 py-2 text-sm font-bold text-orange-text hover:bg-grey-50">Manage addresses</Link>}
         </div>
       )}
     </div>
@@ -197,7 +197,7 @@ function SearchBox() {
           {results.map((r, i) => (
             <li key={r.id} role="option" aria-selected={i === active}>
               <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => go(r)} className={cx('flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-grey-50', i === active && 'bg-sun/15')}>
-                <SnackArt shape={r.art.shape} colors={r.art.colors} plate={false} className="h-10 w-12" />
+                <SnackImage slug={r.slug} art={r.art} title={r.title} plate={false} sizes="48px" className="h-10 w-12 rounded-md" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-bold">{r.title}</span>
                   <span className="block truncate text-xs text-grey-600">{r.shopName}</span>

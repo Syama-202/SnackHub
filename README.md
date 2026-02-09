@@ -60,14 +60,32 @@ screens refresh with the `usePolling` hook until Socket.io arrives in Phase 3.
   back to a poster or the SVG lane without WebGL or with reduced motion.
 - Order payloads never contain the delivery code; it comes only from `/orders/:id/otp`.
 
-## Not done yet (placeholders)
+## Media (doc 6.2, 22.8, 25)
 
-- Snack pictures are SVG illustrations and the 3D models are primitives in code; the AI
-  images, videos and compressed GLBs from doc section 25 still need to be made
-  (`public/models/README.md`).
-- Phase 1 gate items still open: Playwright UI tests per screen, Lighthouse numbers, and a
-  screen-reader pass. Real Socket.io, Razorpay checkout.js and Google Identity Services
-  arrive in Phase 3.
+`assets/manifest.json` lists every image, video and 3D model the UI needs: one catalogue
+image and one cut-out per snack slug, plus the hero, region, mood, story and video assets,
+each with its prompt, target size and status (needed, generated, processed, ready).
+
+```bash
+npm run assets:manifest   # regenerate after the catalogue changes (keeps status and files)
+npm run assets:check      # files marked ready: present, under budget, no duplicate images
+```
+
+Put processed files under `public/assets/` (or a CDN set in `VITE_ASSET_BASE`), mark them
+`ready`, and run `assets:manifest`. `SnackImage` and `LoopVideo` pick them up and fall back to
+the illustrations until then, so there is never a broken image.
+
+## Tests
+
+Testing is manual (doc 27.2). The test plan and results live in `docs/manual-tests.md` and
+`docs/test-results.md` on the developer's machine; they are ignored by git and not published.
+
+## Not done yet
+
+- The AI images, videos and compressed GLBs from doc section 25 still need to be made;
+  the manifest lists all of them.
+- Manual test results to record (keyboard path, no-WebGL, three-wrong-codes lock, tablet width).
+- Largest contentful paint is 2.7 s without the mock (target 2.5 s).
 
 Dev only: `localStorage['snackhub.motion'] = 'force'` previews full motion on a machine
 with reduced motion turned on.

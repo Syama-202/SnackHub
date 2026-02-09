@@ -42,7 +42,7 @@ export default function VariantPicker() {
                   <span>
                     <span className="block font-display text-xl font-bold">{x.label}</span>
                     <span className="block text-sm text-grey-600">{x.body}</span>
-                    <span className="mt-1 block text-xs font-bold text-orange-deep">{x.body2}</span>
+                    <span className="mt-1 block text-xs font-bold text-orange-text">{x.body2}</span>
                   </span>
                 </label>
               ))}

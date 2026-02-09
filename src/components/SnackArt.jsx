@@ -5,13 +5,13 @@ import { memo, useId } from 'react';
  * One SVG per shape so the catalogue looks consistent and never shows a
  * broken image. Labelled "AI illustration placeholder" through imageAlt.
  */
-function SnackArtImpl({ shape = 'ball', colors = ['#E8A23A', '#F4C26B'], title, className = '', plate = true }) {
+function SnackArtImpl({ shape = 'ball', colors = ['#E8A23A', '#F4C26B'], title, className = '', plate = true, decorative = false }) {
   const uid = useId().replace(/:/g, '');
   const [a, b] = colors;
   const g = `g${uid}`;
   const h = `h${uid}`;
   return (
-    <svg viewBox="0 0 200 160" className={className} role="img" aria-label={title ? `${title} (illustration)` : 'Snack illustration'}>
+    <svg viewBox="0 0 200 160" className={className} {...(decorative ? { 'aria-hidden': true } : { role: 'img', 'aria-label': title ? `${title} (illustration)` : 'Snack illustration' })}>
       <defs>
         <radialGradient id={g} cx="35%" cy="30%" r="75%">
           <stop offset="0%" stopColor="#fff" stopOpacity="0.55" />

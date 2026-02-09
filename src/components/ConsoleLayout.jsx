@@ -33,7 +33,7 @@ const ConsoleLayout = ({ title, tabs, children, mobileTabs = false }) => {
               </NavLink>
             ))}
           </nav>
-          <button onClick={signOut} className="ml-auto inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-bold text-grey-600 hover:bg-grey-800/5">
+          <button onClick={signOut} aria-label="Sign out" className="ml-auto inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-bold text-grey-600 hover:bg-grey-800/5">
             <Icon name="logout" className="h-4 w-4" /> <span className="hidden sm:inline">Sign out</span>
           </button>
         </div>
@@ -41,7 +41,7 @@ const ConsoleLayout = ({ title, tabs, children, mobileTabs = false }) => {
       <main id="main" className={cx('mx-auto max-w-7xl px-4 py-6', mobileTabs && 'pb-28 md:pb-6')}>{children}</main>
       <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 grid border-t border-grey-800/10 bg-white md:hidden" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }} aria-label={`${title} sections`}>
         {tabs.map((t) => (
-          <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold', isActive ? 'text-orange-deep' : 'text-grey-600')}>
+          <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold', isActive ? 'text-orange-text' : 'text-grey-600')}>
             <Icon name={t.icon} className="h-6 w-6" /> {t.label}
           </NavLink>
         ))}

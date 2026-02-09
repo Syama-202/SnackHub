@@ -10,7 +10,7 @@ import { createPayment, fetchOrders, fetchPaymentStatus, fetchQuote, placeOrder,
 import { rupees } from '../domain/money';
 import { PROMISE_WORDING } from '../domain/promise';
 import { Button, Card, Icon, Pill, EmptyState, TempBadge, Spinner, cx } from '../components/ui';
-import SnackArt from '../components/SnackArt';
+import SnackImage from '../components/SnackImage';
 import RazorpayMock from '../components/RazorpayMock';
 
 const METHODS = [
@@ -91,7 +91,7 @@ const Checkout = () => {
 
   if (phase === 'confirming') return <Confirming orderId={payment.order.id} />;
 
-  if (cart.isLoading && !cart.items.length) return <div className="grid min-h-[50vh] place-items-center"><Spinner className="h-8 w-8 text-orange-deep" /></div>;
+  if (cart.isLoading && !cart.items.length) return <div className="grid min-h-[50vh] place-items-center"><Spinner className="h-8 w-8 text-orange-text" /></div>;
   if (!cart.items.length && !payment)
     return <EmptyState title="Your cart is empty" body="Add snacks from a shop near you to check out." action={<Link to="/shop"><Button>Explore snacks</Button></Link>} />;
 
@@ -114,7 +114,7 @@ const Checkout = () => {
                 </label>
               ))}
             </div>
-            <Link to="/account" className="mt-2 inline-block text-sm font-bold text-orange-deep">Add or edit addresses</Link>
+            <Link to="/account" className="mt-2 inline-block text-sm font-bold text-orange-text">Add or edit addresses</Link>
           </Card>
 
           <Card className="p-5">
@@ -134,7 +134,7 @@ const Checkout = () => {
             <label className="mt-4 flex items-start gap-3 rounded-2xl bg-grey-50 p-3 text-sm">
               <input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} className="mt-0.5 h-4 w-4 accent-orange-deep" />
               <span>
-                <b>Simulate the shop and rider</b> (demo). Turn this off to accept and pack the order yourself in the <Link className="font-bold text-orange-deep underline" to="/seller" target="_blank">seller console</Link> and deliver it in the <Link className="font-bold text-orange-deep underline" to="/rider" target="_blank">rider app</Link>.
+                <b>Simulate the shop and rider</b> (demo). Turn this off to accept and pack the order yourself in the <Link className="font-bold text-orange-text underline" to="/seller" target="_blank">seller console</Link> and deliver it in the <Link className="font-bold text-orange-text underline" to="/rider" target="_blank">rider app</Link>.
               </span>
             </label>
           </Card>
@@ -147,7 +147,7 @@ const Checkout = () => {
             <ul className="mt-3 divide-y divide-grey-800/5">
               {(lines.length ? lines : payment?.order.items.map((i) => ({ ...i, pricePaise: i.unitPricePaise, art: null })) || []).map((i) => (
                 <li key={i.productId} className="flex items-center gap-3 py-2">
-                  {i.art && <SnackArt shape={i.art.shape} colors={i.art.colors} plate={false} className="h-10 w-12" />}
+                  {i.art && <SnackImage slug={i.slug} art={i.art} title={i.title} plate={false} sizes="48px" className="h-10 w-12 rounded-md" />}
                   <span className="flex-1 text-sm"><b>{i.title}</b> × {i.qty}</span>
                   <span className="text-sm font-bold">{rupees(i.pricePaise * i.qty)}</span>
                 </li>
@@ -233,7 +233,7 @@ function Confirming({ orderId }) {
   return (
     <div className="mx-auto grid min-h-[60vh] max-w-md place-items-center px-4 text-center" aria-live="polite">
       <div>
-        <div className={cx('mx-auto grid h-24 w-24 place-items-center rounded-full', done ? 'bg-emerald-500 text-white' : 'bg-sun/30 text-orange-deep')}>
+        <div className={cx('mx-auto grid h-24 w-24 place-items-center rounded-full', done ? 'bg-emerald-500 text-white' : 'bg-sun/30 text-orange-text')}>
           {done ? <Icon name="check" className="h-12 w-12" /> : <Spinner className="h-12 w-12" />}
         </div>
         <h1 className="mt-6 text-3xl font-extrabold">{done ? 'Payment received' : 'Confirming your payment'}</h1>

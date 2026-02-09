@@ -12,6 +12,14 @@ export const setAccessToken = (token) => {
 // The admin console marks every request with its host name. The public host
 // answers 404 for admin routes (doc 15.0: Host-based gating).
 let apiHost = null;
+
+// In Phase 1 the mock service worker must be running before the first request.
+// Requests wait for it; the page itself renders straight away.
+let apiReady = Promise.resolve();
+export const setApiReady = (promise) => {
+  apiReady = promise.catch(() => {});
+};
+export const getApiHost = () => apiHost;
 export const setApiHost = (host) => {
   apiHost = host;
 };
@@ -32,6 +40,7 @@ let refreshPromise = null;
 
 /** One refresh at a time, however many requests hit 401 together. */
 export async function refreshAccessToken() {
+  await apiReady;
   if (!refreshPromise) {
     refreshPromise = fetch(`${API_URL}/auth/refresh`, { method: 'POST', credentials: 'include', headers: baseHeaders() })
       .then(async (res) => {
@@ -56,6 +65,7 @@ export async function refreshAccessToken() {
  * retries once after a silent refresh if the server answers 401.
  */
 export async function apiFetch(path, { method = 'GET', body, idempotencyKey, retry = true } = {}) {
+  await apiReady;
   const doFetch = (token) =>
     fetch(`${API_URL}${path}`, {
       method,

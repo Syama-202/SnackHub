@@ -12,7 +12,7 @@ const BTN = {
   dark: 'bg-grey-800 text-white hover:bg-grey-900',
   ghost: 'bg-white/70 text-grey-800 border border-grey-800/10 hover:bg-white',
   quiet: 'text-grey-800 hover:bg-grey-800/5',
-  outline: 'border-2 border-orange text-orange-deep bg-white hover:bg-orange/5',
+  outline: 'border-2 border-orange text-orange-text bg-white hover:bg-orange/5',
 };
 const SIZE = { sm: 'h-9 px-3.5 text-sm', md: 'h-11 px-5 text-[15px]', lg: 'h-13 px-7 text-base' };
 
@@ -49,7 +49,7 @@ export function Card({ className, glass, children, as: As = 'div', ...rest }) {
 
 const PILL = {
   sun: 'bg-sun text-grey-800',
-  orange: 'bg-orange/15 text-orange-deep',
+  orange: 'bg-orange/15 text-orange-text',
   red: 'bg-red/10 text-red-text',
   grey: 'bg-grey-50 text-grey-600',
   green: 'bg-emerald-50 text-emerald-700',
@@ -202,7 +202,7 @@ export function Price({ paise, mrp, className }) {
 export function SpiceMeter({ level = 0 }) {
   if (!level) return null;
   return (
-    <span className="inline-flex items-center gap-0.5" aria-label={`Spice level ${level} of 3`} title={`Spice ${level}/3`}>
+    <span role="img" className="inline-flex items-center gap-0.5" aria-label={`Spice level ${level} of 3`} title={`Spice ${level}/3`}>
       {[1, 2, 3].map((i) => (
         <svg key={i} viewBox="0 0 12 16" className={cx('h-3.5 w-2.5', i <= level ? 'text-red' : 'text-grey-400/50')} aria-hidden="true">
           <path d="M6 3c3 0 5 3 4 7-1 3-3 5-5 5-1 0-1-1 0-2 2-1 2-3 1-5S4 4 6 3z M6 3c0-1 1-2 2-2" fill="currentColor" stroke="currentColor" strokeWidth=".8" />
@@ -231,8 +231,8 @@ export function QtyControl({ qty, onChange, max = 99, disabled, size = 'md', lab
       <button
         onClick={() => onChange(1)}
         disabled={disabled}
-        className={cx(h, 'min-w-[84px] rounded-xl border-2 border-orange bg-white px-4 text-sm font-extrabold tracking-wide text-orange-deep transition hover:bg-orange hover:text-grey-800 active:scale-95 disabled:border-grey-400 disabled:text-grey-400 disabled:hover:bg-white')}
-        aria-label={`Add ${label}`}
+        className={cx(h, 'min-w-[84px] rounded-xl border-2 border-orange bg-white px-4 text-sm font-extrabold tracking-wide text-orange-text transition hover:bg-orange hover:text-grey-800 active:scale-95 disabled:border-grey-400 disabled:text-grey-400 disabled:hover:bg-white')}
+        aria-label={disabled ? `Sold out, ${label}` : `Add ${label}`}
       >
         {disabled ? 'SOLD OUT' : 'ADD'}
       </button>
@@ -297,7 +297,7 @@ export function EmptyState({ title, body, action, art }) {
 export function SectionTitle({ eyebrow, title, sub, className, align = 'left' }) {
   return (
     <div className={cx(align === 'center' && 'mx-auto text-center', 'max-w-2xl', className)}>
-      {eyebrow && <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.14em] text-orange-deep">{eyebrow}</p>}
+      {eyebrow && <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.14em] text-orange-text">{eyebrow}</p>}
       <h2 className="text-[clamp(1.9rem,4vw,3rem)] font-extrabold leading-[1.05] text-grey-800">{title}</h2>
       {sub && <p className="mt-3 text-lg text-grey-600">{sub}</p>}
     </div>

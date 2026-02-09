@@ -1,13 +1,14 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { Provider, useDispatch, useSelector } from 'react-redux';
+import { Provider, useDispatch } from 'react-redux';
 import store from './store/store';
 import { restoreSession } from './store/slices/authSlice';
 import CustomerLayout from './components/CustomerLayout';
 import { PageFallback, RequireRole } from './components/RouteGuards';
+// The landing page is the first screen most visitors see, so it ships in the entry bundle
+import Home from './pages/Home';
 
 // Route-level code splitting (doc 5.1): 3D and GSAP load only where used
-const Home = lazy(() => import('./pages/Home'));
 const ProductList = lazy(() => import('./pages/ProductList'));
 const ShopDetail = lazy(() => import('./pages/ShopDetail'));
 const Checkout = lazy(() => import('./pages/Checkout'));
@@ -41,9 +42,6 @@ function ScrollToTop() {
 }
 
 function AppRoutes() {
-  const isInitializing = useSelector((state) => state.auth.isInitializing);
-  // Wait for the session check so role-gated pages do not bounce to sign-in on refresh
-  if (isInitializing) return <PageFallback />;
   return (
     <Suspense fallback={<PageFallback />}>
       <Routes>

@@ -12,7 +12,7 @@ import { Button, Card, Icon, Pill, EmptyState, Spinner, cx } from '../components
 const OrderTracking = () => {
   const { id } = useParams();
   const { track: t, isLoading, error } = useTracking(id);
-  if (isLoading) return <div className="grid min-h-[50vh] place-items-center"><Spinner className="h-8 w-8 text-orange-deep" /></div>;
+  if (isLoading) return <div className="grid min-h-[50vh] place-items-center"><Spinner className="h-8 w-8 text-orange-text" /></div>;
   if (error && !t) return <EmptyState title="Order not found" body="It may belong to another account." action={<Link to="/orders"><Button>Your orders</Button></Link>} />;
   const o = t.order;
   const terminal = ['DELIVERED', 'CANCELLED', 'REJECTED'].includes(o.status);

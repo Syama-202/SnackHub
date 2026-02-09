@@ -47,7 +47,7 @@ const ProductList = () => {
     <div className="mx-auto max-w-7xl px-4 pt-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-extrabold uppercase tracking-[0.14em] text-orange-deep">Near {point.label}</p>
+          <p className="text-sm font-extrabold uppercase tracking-[0.14em] text-orange-text">Near {point.label}</p>
           <h1 className="text-[clamp(2rem,5vw,3.2rem)] font-extrabold leading-none">{q ? <>Results for “{q}”</> : region || 'Snacks near you'}</h1>
           <p className="mt-2 text-grey-600">Only verified shops that can reach you within 30 minutes are shown.</p>
         </div>

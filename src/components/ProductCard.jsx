@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import SnackArt from './SnackArt';
+import SnackImage from './SnackImage';
 import { Pill, Price, QtyControl, SpiceMeter, Icon, cx } from './ui';
 import { openProduct } from '../store/slices/uiSlice';
 import { updateQuantity } from '../store/slices/cartSlice';
@@ -12,16 +12,19 @@ const ProductCard = ({ product: p, className, highlight }) => {
   const soldOut = p.stock === 0;
   return (
     <article className={cx('group lift relative flex flex-col rounded-[22px] border border-grey-800/[0.06] bg-white p-3 shadow-card', highlight && 'ring-4 ring-sun', className)}>
-      <button onClick={() => dispatch(openProduct(p))} className="relative block overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFF4DA] via-[#FFE9CF] to-[#FFE1DA] text-left" aria-label={`View ${p.title} details`}>
-        <SnackArt shape={p.art.shape} colors={p.art.colors} title={p.title} className={cx('aspect-[5/4] w-full transition-transform duration-500 group-hover:-rotate-2 group-hover:scale-[1.06]', soldOut && 'opacity-50 grayscale')} />
-        <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+      <div className="relative">
+        <button onClick={() => dispatch(openProduct(p))} className="block w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFF4DA] via-[#FFE9CF] to-[#FFE1DA] text-left" aria-label={`View ${p.title} details`}>
+          <SnackImage slug={p.slug} art={p.art} title={p.title} decorative className={cx('aspect-[5/4] w-full transition-transform duration-500 group-hover:-rotate-2 group-hover:scale-[1.06]', soldOut && 'opacity-50 grayscale')} />
+        </button>
+        {/* Badges sit over the picture but outside the button, so its name stays "View … details" */}
+        <div className="pointer-events-none absolute left-2 top-2 flex flex-wrap gap-1">
           {p.servingTemp === 'HOT' && <Pill tone="red" className="bg-white/90">Hot</Pill>}
           {p.bestseller && <Pill tone="sun">Bestseller</Pill>}
           {!p.bestseller && p.trending && <Pill tone="dark">Trending</Pill>}
         </div>
-        {soldOut && <span className="absolute inset-x-0 bottom-2 mx-auto w-fit rounded-full bg-grey-800 px-3 py-1 text-xs font-bold text-white">Sold out today</span>}
-        {!soldOut && p.stock <= 3 && <span className="absolute inset-x-0 bottom-2 mx-auto w-fit rounded-full bg-white px-3 py-1 text-xs font-bold text-red-text shadow">Only {p.stock} left</span>}
-      </button>
+        {soldOut && <span className="pointer-events-none absolute inset-x-0 bottom-2 mx-auto w-fit rounded-full bg-grey-800 px-3 py-1 text-xs font-bold text-white">Sold out today</span>}
+        {!soldOut && p.stock <= 3 && <span className="pointer-events-none absolute inset-x-0 bottom-2 mx-auto w-fit rounded-full bg-white px-3 py-1 text-xs font-bold text-red-text shadow">Only {p.stock} left</span>}
+      </div>
       <button onClick={() => setFav((f) => !f)} aria-pressed={fav} aria-label={fav ? `Remove ${p.title} from favourites` : `Save ${p.title} to favourites`} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-grey-600 shadow-sm transition hover:text-red">
         <Icon name="heart" className={cx('h-[18px] w-[18px]', fav && 'fill-red text-red')} />
       </button>

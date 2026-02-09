@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AnimatePresence, motion } from 'motion/react';
 import { Drawer, CloseButton, Button, QtyControl, EmptyState, TempBadge, Pill } from './ui';
-import SnackArt from './SnackArt';
+import SnackImage from './SnackImage';
 import { closeCart } from '../store/slices/uiSlice';
 import { updateQuantity } from '../store/slices/cartSlice';
 import { rupees } from '../domain/money';
@@ -54,7 +54,7 @@ export default function CartDrawer() {
                 {items.map((i) => (
                   <motion.li key={i.productId} layout initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20, height: 0 }} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
                     <div className="grid h-16 w-20 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sun/25 to-orange/10">
-                      <SnackArt shape={i.art.shape} colors={i.art.colors} plate={false} className="h-14 w-16" title={i.title} />
+                      <SnackImage slug={i.slug} art={i.art} plate={false} sizes="64px" className="h-14 w-16 rounded-lg" title={i.title} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold">{i.title}</p>
@@ -84,7 +84,7 @@ export default function CartDrawer() {
               <Button variant="ghost" onClick={close}>Continue shopping</Button>
               <Button onClick={() => go('/checkout')}>Checkout · {rupees(total)}</Button>
             </div>
-            <Link to={`/shop/${cart.sellerId}`} onClick={close} className="mt-2 block py-2 text-center text-sm font-bold text-orange-deep">Add more from this shop</Link>
+            <Link to={`/shop/${cart.sellerId}`} onClick={close} className="mt-2 block py-2 text-center text-sm font-bold text-orange-text">Add more from this shop</Link>
           </div>
         </>
       )}
