@@ -1,4 +1,4 @@
-import index from '../assets/assetIndex.json';
+import index from '../assets/ready.json';
 
 // Media base: an object store with a CDN in production (doc 22.8), /assets locally.
 // Changing CDN later means changing this one helper, not every product (doc 6.2).

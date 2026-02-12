@@ -1,7 +1,7 @@
 // Turns generated images into web files (doc 6.2, 22.8). Run: npm run assets:process
 // For each crop in assets/crops.json: cut the box out of the source in assets/raw, write
 // <name>-400/-800/-1200.webp plus <name>.webp to public/assets, then mark the asset
-// ready in assets/manifest.json with its size and checksum and refresh assetIndex.json.
+// ready in assets/manifest.json with its size and checksum and refresh src/assets/ready.json.
 // A source that is missing locally is skipped, so the files already in public/assets stay.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -40,5 +40,5 @@ for (const c of crops) {
 
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 const index = Object.fromEntries(manifest.assets.filter((a) => a.status === 'ready' && a.file).map((a) => [a.id, a.file]));
-writeFileSync(root('src/assets/assetIndex.json'), JSON.stringify(index, null, 2) + '\n');
+writeFileSync(root('src/assets/ready.json'), JSON.stringify(index, null, 2) + '\n');
 console.log(`processed ${done} of ${crops.length} crops; ${Object.keys(index).length} assets ready`);

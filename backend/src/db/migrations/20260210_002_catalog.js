@@ -1,6 +1,6 @@
 // Catalog module: shops, products, stock and stock holds (doc 12.1, 12.1b, 10.8),
 // plus shop verification (doc 16.4).
-import { runAll, dropAll, outbox, latLngChecks } from '../helpers/ddl.js';
+import { runAll, dropAll, outbox, latLngChecks } from '../ddl.js';
 
 export async function up(knex) {
   await runAll(knex, [

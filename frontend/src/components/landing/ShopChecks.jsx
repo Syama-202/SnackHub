@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { SectionTitle, cx, Icon } from '../ui';
 import { AssetImage } from '../ui/SnackImage';
-import { useReveal } from '../../hooks/uiHooks';
+import { useReveal } from '../../hooks';
 
 /**
  * Section 4, "Every shop is checked" (doc 22.9c, 16.4). Hotspots are real
@@ -24,7 +24,7 @@ const Box = () => (
   </div>
 );
 
-export default function ProductHotspots() {
+export default function ShopChecks() {
   const [active, setActive] = useState('licence');
   const ref = useReveal();
   const spot = SPOTS.find((s) => s.id === active);

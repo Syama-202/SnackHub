@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProducts, fetchSellers } from '../store/slices/productsSlice';
-import { selectDeliveryPoint } from '../store/slices/profileSlice';
+import { fetchProducts, fetchSellers } from '../store/slices/products';
+import { selectDeliveryPoint } from '../store/slices/profile';
 
 /** Snacks near the selected delivery point, loaded into the products slice. */
 export function useNearbyProducts() {

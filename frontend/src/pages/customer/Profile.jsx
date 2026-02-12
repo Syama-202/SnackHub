@@ -3,9 +3,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { addAddress, deleteAddress, fetchCredits } from '../../store/slices/profileSlice';
-import { setAddress } from '../../store/slices/uiSlice';
-import { addToast } from '../../store/slices/toastSlice';
+import { addAddress, deleteAddress, fetchCredits } from '../../store/slices/profile';
+import { setAddress } from '../../store/slices/ui';
+import { addToast } from '../../store/slices/toast';
 import { rupees } from '@shared/domain/money';
 import { Button, Card, Input, Icon, Pill } from '../../components/ui';
 

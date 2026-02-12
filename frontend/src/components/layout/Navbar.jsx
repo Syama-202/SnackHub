@@ -4,12 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Logo, Icon, cx } from '../ui';
 import SnackImage from '../ui/SnackImage';
 import { rupees } from '@shared/domain/money';
-import { logoutUser } from '../../store/slices/authSlice';
-import { openCart, setAddress } from '../../store/slices/uiSlice';
-import { searchProducts } from '../../store/slices/productsSlice';
-import { selectDeliveryPoint } from '../../store/slices/profileSlice';
-import { selectCartCount } from '../../store/slices/cartSlice';
-import { selectUnreadCount } from '../../store/slices/notificationSlice';
+import { logoutUser } from '../../store/slices/auth';
+import { openCart, setAddress } from '../../store/slices/ui';
+import { searchProducts } from '../../store/slices/products';
+import { selectDeliveryPoint } from '../../store/slices/profile';
+import { selectCartCount } from '../../store/slices/cart';
+import { selectUnreadCount } from '../../store/slices/notification';
 
 const LINKS = [
   { to: '/shop?view=regions', label: 'Regional snacks' },

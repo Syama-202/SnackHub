@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { apiThunk } from '../apiThunk';
-import { bumpCart, setCartConflict, setSignInPrompt } from './uiSlice';
-import { addToast } from './toastSlice';
+import { bumpCart, setCartConflict, setSignInPrompt } from './ui';
+import { addToast } from './toast';
 
 /**
  * Server cart (Redis hash cart:{userId}, one shop only, doc 11.1). Fixes the

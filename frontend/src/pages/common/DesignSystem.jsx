@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { Button, Card, Pill, Input, Modal, Drawer, CloseButton, QtyControl, SpiceMeter, TempBadge, Price, Skeleton, Logo, Icon, SectionTitle } from '../../components/ui';
 import SnackArt from '../../components/ui/SnackArt';
 import LaneSvg from '../../components/tracking/LaneSvg';
-import { addToast } from '../../store/slices/toastSlice';
+import { addToast } from '../../store/slices/toast';
 
 const TOKENS = [
   ['Sun yellow', '#FFC300', 'Gradient start, highlights, badges. Dark text on it.'],

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { decideApplication, fetchApplications } from '../../store/slices/adminSlice';
-import { addToast } from '../../store/slices/toastSlice';
+import { decideApplication, fetchApplications } from '../../store/slices/admin';
+import { addToast } from '../../store/slices/toast';
 import { Button, Card, Pill, Icon, cx } from '../../components/ui';
-import { useAdmin } from '../AdminApp';
+import { useAdmin } from '../App';
 
 const CHECK_LABELS = { identity: 'Owner ID matches Google account', licence: 'Licence looked up on regulator register', location: 'Map pin and shop-front photo', kitchen: 'Kitchen and storage evidence', menu: 'Menu: names, allergens, serving temp, prep time', testOrder: 'Test order reviewed', vehicle: 'Vehicle documents' };
 

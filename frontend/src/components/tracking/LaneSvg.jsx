@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useReducedMotion } from '../../hooks/uiHooks';
+import { useReducedMotion } from '../../hooks';
 
 /**
  * Side-view rider lane, SVG version (doc 10.5, 22.5). Driven only by the

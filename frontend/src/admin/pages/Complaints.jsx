@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { usePolling } from '../../hooks/uiHooks';
-import { decideComplaint, fetchComplaints, fetchFines, reverseFine } from '../../store/slices/adminSlice';
-import { addToast } from '../../store/slices/toastSlice';
+import { usePolling } from '../../hooks';
+import { decideComplaint, fetchComplaints, fetchFines, reverseFine } from '../../store/slices/admin';
+import { addToast } from '../../store/slices/toast';
 import { rupees } from '@shared/domain/money';
 import { COMPLAINT_TYPES } from '@shared/domain/triage';
 import { Button, Card, Pill, cx } from '../../components/ui';
-import { useAdmin } from '../AdminApp';
+import { useAdmin } from '../App';
 
 /** Complaint review with the system's evidence (doc 10.7). Fine decisions need fresh MFA. */
 export default function Complaints() {

@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchShop } from '../../store/slices/productsSlice';
-import { selectDeliveryPoint } from '../../store/slices/profileSlice';
-import ProductCard, { ProductCardSkeleton } from '../../components/product/ProductCard';
+import { fetchShop } from '../../store/slices/products';
+import { selectDeliveryPoint } from '../../store/slices/profile';
+import ProductCard, { ProductCardSkeleton } from '../../components/product/Card';
 import { Pill, Icon, EmptyState, Button } from '../../components/ui';
 
 /** One verified shop, its delivery promise for this address, and its menu. */

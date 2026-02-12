@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import '../styles/index.css';
-import store from './store/store';
+import store from './store';
 import { setApiHost, setApiReady } from '../services/api';
-import AdminApp from './AdminApp';
+import AdminApp from './App';
 
 // Every admin request carries the admin host marker; the public host answers 404 (doc 16.3)
 setApiHost('admin');

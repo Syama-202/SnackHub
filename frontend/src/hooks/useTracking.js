@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchTracking } from '../store/slices/orderSlice';
-import { addToast } from '../store/slices/toastSlice';
-import { usePolling } from './uiHooks';
+import { fetchTracking } from '../store/slices/order';
+import { addToast } from '../store/slices/toast';
+import { usePolling } from './index';
 
 /**
  * Live tracking for one order, kept in the orders slice. Stands in for the

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AnimatePresence, motion } from 'motion/react';
-import { removeToast } from '../../store/slices/toastSlice';
+import { removeToast } from '../../store/slices/toast';
 import { cx } from './index';
 
 const TONE = {

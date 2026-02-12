@@ -1,10 +1,10 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Provider, useDispatch } from 'react-redux';
-import store from './store/store';
-import { restoreSession } from './store/slices/authSlice';
-import CustomerLayout from './components/layout/CustomerLayout';
-import { PageFallback, RequireRole } from './components/layout/RouteGuards';
+import store from './store';
+import { restoreSession } from './store/slices/auth';
+import CustomerLayout from './components/layout/Customer';
+import { PageFallback, RequireRole } from './routes/Guards';
 // The landing page is the first screen most visitors see, so it ships in the entry bundle
 import Home from './pages/customer/Home';
 
@@ -20,8 +20,8 @@ const Notifications = lazy(() => import('./pages/customer/Notifications'));
 const Login = lazy(() => import('./pages/auth/Login'));
 const DesignSystem = lazy(() => import('./pages/common/DesignSystem'));
 const NotFound = lazy(() => import('./pages/common/NotFound'));
-const SellerConsole = lazy(() => import('./pages/seller/SellerConsole'));
-const RiderConsole = lazy(() => import('./pages/rider/RiderConsole'));
+const SellerConsole = lazy(() => import('./pages/seller/Console'));
+const RiderConsole = lazy(() => import('./pages/rider/Console'));
 
 // Turns the httpOnly refresh cookie (if any) back into an access token on first
 // load, so a page refresh keeps the user signed in.

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SnackArt from '../ui/SnackArt';
 import { AssetImage } from '../ui/SnackImage';
 import { Button, Icon } from '../ui';
-import { useReducedMotion } from '../../hooks/uiHooks';
+import { useReducedMotion } from '../../hooks';
 
 /**
  * Scroll-driven showcase (master prompt part 7, doc 22.9c). The stage is CSS-sticky, so

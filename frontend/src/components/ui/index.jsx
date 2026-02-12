@@ -2,7 +2,7 @@ import { Fragment, forwardRef, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { rupees } from '@shared/domain/money';
-import { useReveal } from '../../hooks/uiHooks';
+import { useReveal } from '../../hooks';
 
 const cx = (...c) => c.filter(Boolean).join(' ');
 

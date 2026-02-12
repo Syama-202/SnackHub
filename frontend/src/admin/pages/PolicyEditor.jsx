@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchPolicy, savePolicy } from '../../store/slices/adminSlice';
-import { addToast } from '../../store/slices/toastSlice';
+import { fetchPolicy, savePolicy } from '../../store/slices/admin';
+import { addToast } from '../../store/slices/toast';
 import { computeEarning } from '@shared/domain/penalty';
 import { deliveryPromise } from '@shared/domain/promise';
 import { rupeesExact } from '@shared/domain/money';
 import { Button, Card, Pill } from '../../components/ui';
-import { useAdmin } from '../AdminApp';
+import { useAdmin } from '../App';
 
 const FIELDS = [
   ['speedKmph', 'Average rider speed', 'km/h'],

@@ -1,8 +1,8 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { Modal, CloseButton, Pill, Price, SpiceMeter, TempBadge, QtyControl, Icon } from '../ui';
 import SnackImage from '../ui/SnackImage';
-import { closeProduct } from '../../store/slices/uiSlice';
-import { updateQuantity } from '../../store/slices/cartSlice';
+import { closeProduct } from '../../store/slices/ui';
+import { updateQuantity } from '../../store/slices/cart';
 
 /** Product details in a modal (master prompt 6), opened with openProduct(product). */
 export default function ProductModal() {

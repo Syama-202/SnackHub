@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { markAllRead } from '../../store/slices/notificationSlice';
+import { markAllRead } from '../../store/slices/notification';
 import { Card, EmptyState, Icon, cx } from '../../components/ui';
 
 const Notifications = () => {

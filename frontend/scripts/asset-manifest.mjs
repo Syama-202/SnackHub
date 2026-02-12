@@ -68,6 +68,6 @@ mkdirSync(new URL('../assets/', import.meta.url), { recursive: true });
 writeFileSync(OUT, JSON.stringify({ version: 1, brand: BRAND, base: '/assets', assets }, null, 2) + '\n');
 // The app only needs to know which files are ready; the prompts never ship in the bundle
 const index = Object.fromEntries(assets.filter((a) => a.status === 'ready' && a.file).map((a) => [a.id, a.file]));
-writeFileSync(new URL('../src/assets/assetIndex.json', import.meta.url), JSON.stringify(index, null, 2) + '\n');
+writeFileSync(new URL('../src/assets/ready.json', import.meta.url), JSON.stringify(index, null, 2) + '\n');
 const count = (k) => assets.filter((a) => a.kind === k).length;
 console.log(`assets/manifest.json: ${assets.length} entries (${count('image')} images, ${count('video')} videos, ${count('model')} models); ${assets.filter((a) => a.status === 'ready').length} ready`);

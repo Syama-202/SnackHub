@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { deliveryStep, fetchActiveDelivery, fetchOffers, fetchRiderProfile, respondToOffer, sendLocation, setRiderStatus } from '../../store/slices/riderSlice';
-import { addToast } from '../../store/slices/toastSlice';
+import { deliveryStep, fetchActiveDelivery, fetchOffers, fetchRiderProfile, respondToOffer, sendLocation, setRiderStatus } from '../../store/slices/rider';
+import { addToast } from '../../store/slices/toast';
 import { rupees, rupeesExact } from '@shared/domain/money';
 import { distanceM } from '@shared/domain/geo';
-import { useNow, usePolling } from '../../hooks/uiHooks';
+import { useNow, usePolling } from '../../hooks';
 import { Button, Card, Pill, Icon, TempBadge, Modal, CloseButton, cx } from '../../components/ui';
 import LaneSvg from '../../components/tracking/LaneSvg';
 

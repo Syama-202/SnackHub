@@ -1,5 +1,5 @@
 // Dispatch module: riders, offers, the GPS trail and rider pay (doc 12.1, 12.1b, 10.7).
-import { runAll, dropAll, outbox, latLngChecks } from '../helpers/ddl.js';
+import { runAll, dropAll, outbox, latLngChecks } from '../ddl.js';
 
 export async function up(knex) {
   await runAll(knex, [

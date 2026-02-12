@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { isActive, STATE_LABEL } from '@shared/domain/orderStates';
-import { hasWebGL, prefersLite, useDocumentVisible, useReducedMotion } from '../../hooks/uiHooks';
+import { hasWebGL, prefersLite, useDocumentVisible, useReducedMotion } from '../../hooks';
 import { useTracking, useStageToasts } from '../../hooks/useTracking';
 import LaneSvg from './LaneSvg';
 import { Icon, cx } from '../ui';

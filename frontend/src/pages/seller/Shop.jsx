@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchShopProfile, updateShop } from '../../store/slices/sellerSlice';
+import { fetchShopProfile, updateShop } from '../../store/slices/seller';
 import { Button, Card, Icon, Skeleton, cx } from '../../components/ui';
 
 const SHOP_STEPS = ['draft', 'pending', 'probation', 'active'];

@@ -1,7 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
-import ConsoleLayout from '../../components/layout/ConsoleLayout';
-import RiderToday from './RiderToday';
-import RiderEarnings from './RiderEarnings';
+import ConsoleLayout from '../../components/layout/Console';
+import RiderToday from './Today';
+import RiderEarnings from './Earnings';
 
 const TABS = [
   { to: '/rider', label: 'Today', icon: 'scooter', end: true },

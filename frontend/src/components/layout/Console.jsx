@@ -3,9 +3,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import DemoBanner from './DemoBanner';
 import Toast from '../ui/Toast';
 import { Logo, Icon, cx } from '../ui';
-import { logoutUser } from '../../store/slices/authSlice';
-import { resetSeller } from '../../store/slices/sellerSlice';
-import { resetRider } from '../../store/slices/riderSlice';
+import { logoutUser } from '../../store/slices/auth';
+import { resetSeller } from '../../store/slices/seller';
+import { resetRider } from '../../store/slices/rider';
 
 /** Shared shell for the seller console and the rider app. */
 const ConsoleLayout = ({ title, tabs, children, mobileTabs = false }) => {

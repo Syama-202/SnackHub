@@ -1,8 +1,8 @@
 import { Route, Routes } from 'react-router-dom';
-import ConsoleLayout from '../../components/layout/ConsoleLayout';
-import SellerOrders from './SellerOrders';
-import SellerProducts from './SellerProducts';
-import SellerShop from './SellerShop';
+import ConsoleLayout from '../../components/layout/Console';
+import SellerOrders from './Orders';
+import SellerProducts from './Products';
+import SellerShop from './Shop';
 
 const TABS = [
   { to: '/seller', label: 'Orders', icon: 'list', end: true },

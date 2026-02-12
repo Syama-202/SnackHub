@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { usePolling } from '../../hooks/uiHooks';
-import { fetchAudit } from '../../store/slices/adminSlice';
+import { usePolling } from '../../hooks';
+import { fetchAudit } from '../../store/slices/admin';
 import { Card } from '../../components/ui';
 
 /** Append-only audit log: who, what, before, after (doc 11.4). */

@@ -4,8 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Button, Icon, SplitWords } from '../ui';
 import SnackArt from '../ui/SnackArt';
 import { AssetImage } from '../ui/SnackImage';
-import { useReducedMotion } from '../../hooks/uiHooks';
-import { setAddress } from '../../store/slices/uiSlice';
+import { useReducedMotion } from '../../hooks';
+import { setAddress } from '../../store/slices/ui';
 import { PROMISE_WORDING } from '@shared/domain/promise';
 
 /**

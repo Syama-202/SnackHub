@@ -1,5 +1,5 @@
 // Payment module: Razorpay payments, verified webhooks, refunds and the ledger (doc 10.9).
-import { runAll, dropAll, outbox } from '../helpers/ddl.js';
+import { runAll, dropAll, outbox } from '../ddl.js';
 
 export async function up(knex) {
   await runAll(knex, [

@@ -3,9 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { useNearbyProducts, useNearbySellers } from '../../hooks/useCatalog';
 import { CATEGORIES, MOODS, REGIONS } from '../../constants/catalog';
-import ProductCard, { ProductCardSkeleton } from '../../components/product/ProductCard';
+import ProductCard, { ProductCardSkeleton } from '../../components/product/Card';
 import { Pill, Icon, cx, EmptyState, Button } from '../../components/ui';
-import { useReducedMotion } from '../../hooks/uiHooks';
+import { useReducedMotion } from '../../hooks';
 
 /** Catalogue with categories, moods, regions, search and sorting (master prompt 6). */
 const ProductList = () => {

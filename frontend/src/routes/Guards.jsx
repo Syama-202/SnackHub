@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Spinner } from '../ui';
+import { Spinner } from '../components/ui';
 
 export function PageFallback() {
   return (

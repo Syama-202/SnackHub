@@ -1,6 +1,6 @@
 // Order module: orders and their history, the delivery policy versions, reviews, and
 // complaints with fines and credits (doc 12.1, 10.7, 10.9, 16.4).
-import { runAll, dropAll, outbox, latLngChecks } from '../helpers/ddl.js';
+import { runAll, dropAll, outbox, latLngChecks } from '../ddl.js';
 
 export async function up(knex) {
   await runAll(knex, [

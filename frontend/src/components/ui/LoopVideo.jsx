@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { readyAsset, imageUrl } from '../../utils/assets';
-import { prefersLite, useInView, useReducedMotion } from '../../hooks/uiHooks';
+import { prefersLite, useInView, useReducedMotion } from '../../hooks';
 
 /**
  * Short muted loop (doc 22.4, 22.8): poster first, WebM and MP4 sources, plays

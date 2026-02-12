@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SnackArt from '../ui/SnackArt';
 import { Button, SectionTitle, cx } from '../ui';
-import { useReducedMotion } from '../../hooks/uiHooks';
+import { useReducedMotion } from '../../hooks';
 
 /** Section 5, "Pick your box": a radio group, not pinned (doc 22.9c). */
 const VARIANTS = [

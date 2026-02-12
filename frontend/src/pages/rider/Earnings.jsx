@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { disputeEarning, fetchEarnings } from '../../store/slices/riderSlice';
-import { addToast } from '../../store/slices/toastSlice';
+import { disputeEarning, fetchEarnings } from '../../store/slices/rider';
+import { addToast } from '../../store/slices/toast';
 import { rupeesExact } from '@shared/domain/money';
 import { Button, Card, Pill, Skeleton } from '../../components/ui';
 

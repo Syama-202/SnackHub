@@ -6,16 +6,16 @@ import DemoBanner from './DemoBanner';
 import Toast from '../ui/Toast';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import CartDrawer from '../cart/CartDrawer';
-import CartPrompts from '../cart/CartPrompts';
-import ProductModal from '../product/ProductModal';
+import CartDrawer from '../cart/Drawer';
+import CartPrompts from '../cart/Prompts';
+import ProductModal from '../product/Modal';
 import RiderLane from '../tracking/RiderLane';
-import { PageFallback } from './RouteGuards';
-import { fetchCart, resetCart } from '../../store/slices/cartSlice';
-import { fetchAddresses, resetProfile } from '../../store/slices/profileSlice';
-import { fetchOrders, resetOrders } from '../../store/slices/orderSlice';
-import { fetchNotifications, resetNotifications } from '../../store/slices/notificationSlice';
-import { usePolling, useReducedMotion } from '../../hooks/uiHooks';
+import { PageFallback } from '../../routes/Guards';
+import { fetchCart, resetCart } from '../../store/slices/cart';
+import { fetchAddresses, resetProfile } from '../../store/slices/profile';
+import { fetchOrders, resetOrders } from '../../store/slices/order';
+import { fetchNotifications, resetNotifications } from '../../store/slices/notification';
+import { usePolling, useReducedMotion } from '../../hooks';
 
 /**
  * Customer shell. Loads the signed-in customer's cart, addresses, orders and

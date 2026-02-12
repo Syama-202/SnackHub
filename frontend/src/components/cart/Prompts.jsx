@@ -1,10 +1,10 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { Button, Modal, CloseButton, LogoMark } from '../ui';
 import GoogleG from '../ui/GoogleG';
-import { signInWithGoogle } from '../../store/slices/authSlice';
-import { setCartConflict, setSignInPrompt } from '../../store/slices/uiSlice';
-import { fetchCart, updateQuantity } from '../../store/slices/cartSlice';
-import { fetchAddresses } from '../../store/slices/profileSlice';
+import { signInWithGoogle } from '../../store/slices/auth';
+import { setCartConflict, setSignInPrompt } from '../../store/slices/ui';
+import { fetchCart, updateQuantity } from '../../store/slices/cart';
+import { fetchAddresses } from '../../store/slices/profile';
 
 /**
  * The two questions adding to the cart can raise: a guest must sign in first,

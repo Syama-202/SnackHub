@@ -5,8 +5,8 @@ import { useTracking } from '../../hooks/useTracking';
 import { Lane, laneStatus } from '../../components/tracking/RiderLane';
 import { TIMELINE, STATE_LABEL, customerCanCancel } from '@shared/domain/orderStates';
 import { rupees } from '@shared/domain/money';
-import { addToast } from '../../store/slices/toastSlice';
-import { cancelOrder, fetchOrders, fetchOtp, reviewOrder } from '../../store/slices/orderSlice';
+import { addToast } from '../../store/slices/toast';
+import { cancelOrder, fetchOrders, fetchOtp, reviewOrder } from '../../store/slices/order';
 import { Button, Card, Icon, Pill, EmptyState, Spinner, cx } from '../../components/ui';
 
 const OrderTracking = () => {

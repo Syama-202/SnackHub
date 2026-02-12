@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useCountUp, usePolling } from '../../hooks/uiHooks';
+import { useCountUp, usePolling } from '../../hooks';
 import { rupees } from '@shared/domain/money';
 import { STATE_LABEL, isActive } from '@shared/domain/orderStates';
 import { Card, Pill, Icon, Button, cx } from '../../components/ui';
-import { tokenReplaced } from '../../store/slices/authSlice';
-import { fetchAdminOrders, fetchAdminRiders, fetchAdminSellers, fetchReconciliation, fetchSla } from '../../store/slices/adminSlice';
+import { tokenReplaced } from '../../store/slices/auth';
+import { fetchAdminOrders, fetchAdminRiders, fetchAdminSellers, fetchReconciliation, fetchSla } from '../../store/slices/admin';
 
 function Metric({ label, value, format = (v) => Math.round(v), tone }) {
   const v = useCountUp(value || 0);

@@ -1,7 +1,7 @@
 // The seed rows are consistent before they reach MySQL: ids unique, references resolve,
 // everything labelled as demo data, and the built-in test cases are present (doc 23).
 import { describe, expect, it } from 'vitest';
-import { seedRows } from '../src/db/seeds/demo.seed.js';
+import { seedRows } from '../src/db/seeds/demo.js';
 
 const rows = seedRows();
 const ids = (list, key = 'id') => list.map((r) => r[key]);

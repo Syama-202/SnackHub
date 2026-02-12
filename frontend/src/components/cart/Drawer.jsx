@@ -3,8 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AnimatePresence, motion } from 'motion/react';
 import { Drawer, CloseButton, Button, QtyControl, EmptyState, TempBadge, Pill } from '../ui';
 import SnackImage from '../ui/SnackImage';
-import { closeCart } from '../../store/slices/uiSlice';
-import { updateQuantity } from '../../store/slices/cartSlice';
+import { closeCart } from '../../store/slices/ui';
+import { updateQuantity } from '../../store/slices/cart';
 import { rupees } from '@shared/domain/money';
 
 export default function CartDrawer() {

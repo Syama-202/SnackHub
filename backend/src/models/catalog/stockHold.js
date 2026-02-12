@@ -1,7 +1,7 @@
 // catalog.stock_holds: stock held for one checkout (doc 10.8). The hold and the stock
 // decrement happen in one transaction, items in product id order so two checkouts never
 // deadlock. A retry of the same checkout finds its hold already there.
-import { stockModel } from './stock.model.js';
+import { stockModel } from './stock.js';
 
 const TABLE = 'stock_holds';
 

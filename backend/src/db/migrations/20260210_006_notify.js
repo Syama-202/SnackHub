@@ -1,5 +1,5 @@
 // Notification inbox (doc 12.1b). The unique key makes a re-delivered event harmless.
-import { runAll, dropAll } from '../helpers/ddl.js';
+import { runAll, dropAll } from '../ddl.js';
 
 export async function up(knex) {
   await runAll(knex, [

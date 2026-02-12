@@ -48,10 +48,10 @@ Creates every table, then loads the demo data. Both are safe to run again.
 backend/
   src/
     config/        env.js (settings checked at start), database.js (schemas, users, pool options)
-    db/            connection.js, migrations/, seeds/, helpers/
-    models/        one file per table, by module: identity/, catalog/, ordering/, dispatch/, payment/, notify/
-    controllers/   request handlers, e.g. health.controller.js
-    routes/        URL to controller, e.g. health.routes.js; index.js mounts them all
+    db/            connection.js, ddl.js, migrations/, seeds/demo.js
+    models/        one file per table, named after it, by module: identity/user.js, catalog/product.js, ...
+    controllers/   request handlers, one file per area, e.g. health.js
+    routes/        URL to controller, one file per area, e.g. health.js; index.js mounts them all
     middleware/    request id and logging, 404, error envelope
     utils/         logger.js, AppError.js
     app.js, server.js
@@ -59,11 +59,15 @@ backend/
   tests/
 frontend/
   src/
-    pages/         customer/, seller/, rider/, auth/, common/
-    components/    ui/, layout/, cart/, product/, payment/, landing/, tracking/
-    store/         store.js, slices/ (Redux Toolkit)
+    pages/         customer/, seller/ (Console, Orders, Products, Shop), rider/ (Console, Today, Earnings), auth/, common/
+    components/    ui/ (primitives, Carousel, SnackImage), layout/ (Navbar, Footer, Customer, Console),
+                   cart/ (Drawer, Prompts), product/ (Card, Modal), payment/, tracking/,
+                   landing/ (one file per section: Hero, Regions, Bestsellers, Delivery, Moods, Stories, ...)
+    routes/        Guards.jsx (sign-in and role checks)
+    store/         index.js, apiThunk.js, slices/ (auth.js, cart.js, order.js, ...)
     services/      api.js
-    hooks/  utils/  constants/  assets/  styles/  mocks/  admin/
+    hooks/         index.js (motion, visibility, polling), useCatalog.js, useTracking.js
+    utils/  constants/  assets/ (ready.json)  styles/  mocks/  admin/ (App.jsx, store.js, pages/)
 shared/            domain/ (business rules), seed/ (demo data)
 ```
 

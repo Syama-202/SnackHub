@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AnimatePresence, motion } from 'motion/react';
-import { fetchSellerOrders, fetchShopProfile, sellerOrderAction, simulateIncomingOrder } from '../../store/slices/sellerSlice';
-import { addToast } from '../../store/slices/toastSlice';
+import { fetchSellerOrders, fetchShopProfile, sellerOrderAction, simulateIncomingOrder } from '../../store/slices/seller';
+import { addToast } from '../../store/slices/toast';
 import { rupees } from '@shared/domain/money';
-import { useNow, usePolling } from '../../hooks/uiHooks';
+import { useNow, usePolling } from '../../hooks';
 import { Button, Card, Pill, TempBadge, Skeleton, cx } from '../../components/ui';
 
 const COLUMNS = [

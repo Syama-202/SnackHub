@@ -2,8 +2,8 @@ import { memo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import SnackImage from '../ui/SnackImage';
 import { Pill, Price, QtyControl, SpiceMeter, Icon, cx } from '../ui';
-import { openProduct } from '../../store/slices/uiSlice';
-import { updateQuantity } from '../../store/slices/cartSlice';
+import { openProduct } from '../../store/slices/ui';
+import { updateQuantity } from '../../store/slices/cart';
 
 const ProductCard = ({ product: p, className, highlight }) => {
   const dispatch = useDispatch();

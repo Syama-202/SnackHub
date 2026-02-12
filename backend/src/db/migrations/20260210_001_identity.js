@@ -2,7 +2,7 @@
 // Foreign keys stay inside a module. A reference to another module's row (for example
 // sellers.user_id) is a plain id that the owning module checks, so modules can later be
 // split into services without untangling constraints.
-import { runAll, dropAll, outbox, latLngChecks } from '../helpers/ddl.js';
+import { runAll, dropAll, outbox, latLngChecks } from '../ddl.js';
 
 export async function up(knex) {
   await runAll(knex, [

@@ -36,17 +36,18 @@ React 19, Redux Toolkit and Tailwind CSS v4, laid out like the legacy `frontend/
 | Area | Path |
 | --- | --- |
 | Pages (one file per screen), by role | `src/pages/customer/`, `src/pages/seller/`, `src/pages/rider/`, `src/pages/auth/`, `src/pages/common/` |
-| UI primitives (Button, Icon, Modal, ...) and media | `src/components/ui/` (`index.jsx`, `SnackImage`, `SnackArt`, `LoopVideo`, `Toast`) |
-| Layout, cart, product, payment | `src/components/layout/`, `src/components/cart/`, `src/components/product/`, `src/components/payment/` |
-| Landing sections and live tracking | `src/components/landing/`, `src/components/tracking/` |
-| Redux store and slices | `src/store/store.js`, `src/store/slices/*Slice.js` (auth, toast, ui, products, cart, profile, orders, notifications, seller, rider, admin) |
+| UI primitives (Button, Icon, Modal, ...) and media | `src/components/ui/` (`index.jsx`, `Carousel`, `SnackImage`, `SnackArt`, `LoopVideo`, `Toast`) |
+| Layout, cart, product, payment | `src/components/layout/` (`Navbar`, `Footer`, `Customer`, `Console`, `DemoBanner`), `src/components/cart/` (`Drawer`, `Prompts`), `src/components/product/` (`Card`, `Modal`), `src/components/payment/` |
+| Route guards (sign-in and role checks) | `src/routes/Guards.jsx` |
+| Landing sections (one file each) and live tracking | `src/components/landing/` (`Hero`, `SnackStrip`, `Regions`, `ScrollStory`, `Bestsellers`, `ShopChecks`, `VariantPicker`, `Delivery`, `Moods`, `LanePreview`, `Stories`, `Offers`, `OrderNow`), `src/components/tracking/` |
+| Redux store and slices | `src/store/index.js`, `src/store/slices/` (`auth`, `toast`, `ui`, `products`, `cart`, `profile`, `order`, `notification`, `seller`, `rider`, `admin`) |
 | API client | `src/services/api.js` (`apiFetch`, in-memory access token, silent refresh) |
-| Hooks | `src/hooks/` (`uiHooks.js` for motion, visibility and polling; `useCatalog.js`; `useTracking.js`) |
-| Helpers and fixed lists | `src/utils/assets.js` (image URLs), `src/constants/catalog.js` (categories, moods, regions), `src/assets/assetIndex.json` (ready images) |
+| Hooks | `src/hooks/` (`index.js` for motion, visibility and polling; `useCatalog.js`; `useTracking.js`) |
+| Helpers and fixed lists | `src/utils/assets.js` (image URLs), `src/constants/catalog.js` (categories, moods, regions), `src/assets/ready.json` (ready images) |
 | Design tokens and utilities (22.1 to 22.3) | `src/styles/index.css` (`@theme` tokens and animations, `@utility glass`, `bg-hero`, `lift`, `shine`, `reveal`, `reveal-mask`, `split-words`, `parallax`) |
 | Business rules as pure functions | `../shared/domain/` via the `@shared` alias, also used by the API (promise 8.3, penalty 8.4, states 10.1, triage 10.7) |
 | Mock API and simulator | `src/mocks/` (demo data from `../shared/seed/seed.js`, the same data `npm run seed` loads into MySQL) |
-| Admin console (separate build and store) | `src/admin/` (`pages/`, `store/`) |
+| Admin console (separate build and store) | `src/admin/` (`App.jsx`, `store.js`, `pages/`) |
 
 All server data goes through `createAsyncThunk` thunks in the slices (shared error handling in
 `src/store/apiThunk.js`). Components read with `useSelector` and write with `dispatch`; live

@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { fetchOrder, fileComplaint } from '../../store/slices/orderSlice';
+import { fetchOrder, fileComplaint } from '../../store/slices/order';
 import { COMPLAINT_TYPES } from '@shared/domain/triage';
 import { rupees } from '@shared/domain/money';
 import { Button, Card, Icon, Pill, cx } from '../../components/ui';

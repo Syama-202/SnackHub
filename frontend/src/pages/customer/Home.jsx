@@ -1,24 +1,31 @@
 import Hero from '../../components/landing/Hero';
+import SnackStrip from '../../components/landing/SnackStrip';
+import Regions from '../../components/landing/Regions';
 import ScrollStory from '../../components/landing/ScrollStory';
-import ProductHotspots from '../../components/landing/ProductHotspots';
+import Bestsellers from '../../components/landing/Bestsellers';
+import ShopChecks from '../../components/landing/ShopChecks';
 import VariantPicker from '../../components/landing/VariantPicker';
+import Delivery from '../../components/landing/Delivery';
+import Moods from '../../components/landing/Moods';
 import LanePreview from '../../components/landing/LanePreview';
-import { RegionalDiscovery, Bestsellers, DeliveryStory, MoodTiles, Editorial, Offers, OrderNow, SnackStrip } from '../../components/landing/Sections';
+import Stories from '../../components/landing/Stories';
+import Offers from '../../components/landing/Offers';
+import OrderNow from '../../components/landing/OrderNow';
 
 /** One story in seven sections (doc 22.9c), plus the master-prompt shopping sections. */
 const Home = () => (
   <>
     <Hero />
     <SnackStrip />
-    <RegionalDiscovery />
+    <Regions />
     <ScrollStory />
     <Bestsellers />
-    <ProductHotspots />
+    <ShopChecks />
     <VariantPicker />
-    <DeliveryStory />
-    <MoodTiles />
+    <Delivery />
+    <Moods />
     <LanePreview />
-    <Editorial />
+    <Stories />
     <Offers />
     <OrderNow />
   </>

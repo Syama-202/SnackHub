@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { signInWithGoogle } from '../../store/slices/authSlice';
-import { addToast } from '../../store/slices/toastSlice';
+import { signInWithGoogle } from '../../store/slices/auth';
+import { addToast } from '../../store/slices/toast';
 import { Card, Icon, LogoMark, cx } from '../../components/ui';
 import GoogleG from '../../components/ui/GoogleG';
 

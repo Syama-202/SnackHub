@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import LaneSvg from '../tracking/LaneSvg';
 import { SectionTitle } from '../ui';
 import { distanceM, lerpPoint, clamp } from '@shared/domain/geo';
-import { useInView } from '../../hooks/uiHooks';
+import { useInView } from '../../hooks';
 
 /**
  * Section 6, "Track your order": a preview of the rider lane with a demo
