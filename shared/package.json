@@ -3,5 +3,5 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Business rules (doc 8.2-8.4, 10.1, 10.7) and demo seed data shared by web/ and api/. No dependencies."
+  "description": "Business rules (doc 8.2-8.4, 10.1, 10.7) and demo seed data shared by frontend/ and backend/. No dependencies."
 }

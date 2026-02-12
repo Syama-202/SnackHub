@@ -1,4 +1,4 @@
-// Creates infra/.env and api/.env with random local passwords if they do not exist yet.
+// Creates infra/.env and backend/.env with random local passwords if they do not exist yet.
 // Never prints a secret and never overwrites an existing file (doc 0.3: secrets live only in env files).
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +17,7 @@ function write(path, content) {
 }
 
 const infraPath = new URL('../infra/.env', import.meta.url);
-const apiPath = new URL('../api/.env', import.meta.url);
+const backendEnvPath = new URL('../backend/.env', import.meta.url);
 
 let migrator, modules;
 if (existsSync(infraPath)) {
@@ -40,8 +40,8 @@ if (existsSync(infraPath)) {
   ].join('\n'));
 }
 
-write(apiPath, [
-  '# Local only. Created by `npm run setup`. See api/.env.example for every key.',
+write(backendEnvPath, [
+  '# Local only. Created by `npm run setup`. See backend/.env.example for every key.',
   'NODE_ENV=development',
   'PORT=4000',
   'LOG_LEVEL=info',

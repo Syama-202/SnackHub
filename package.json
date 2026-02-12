@@ -2,19 +2,20 @@
   "name": "snackhub",
   "private": true,
   "version": "0.2.0",
-  "description": "SnackHub monorepo: web (React), api (Express modular monolith), shared rules, local infrastructure",
+  "description": "SnackHub monorepo: frontend (React), backend (Express modular monolith), shared rules, local infrastructure",
   "scripts": {
     "setup": "node scripts/setup-env.mjs",
-    "db:local": "npm --prefix api run db:local",
+    "db:local": "npm --prefix backend run db:local",
     "db:up": "docker compose -f infra/docker-compose.yml up -d",
     "db:down": "docker compose -f infra/docker-compose.yml down",
     "db:logs": "docker compose -f infra/docker-compose.yml logs -f --tail=50",
-    "migrate": "npm --prefix api run migrate",
-    "migrate:down": "npm --prefix api run migrate:down",
-    "seed": "npm --prefix api run seed",
-    "dev:api": "npm --prefix api run dev",
-    "dev:web": "npm --prefix web run dev",
-    "test": "npm --prefix api test",
-    "build": "npm --prefix web run build"
+    "migrate": "npm --prefix backend run migrate",
+    "migrate:down": "npm --prefix backend run migrate:down",
+    "migrate:status": "npm --prefix backend run migrate:status",
+    "seed": "npm --prefix backend run seed",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "test": "npm --prefix backend test",
+    "build": "npm --prefix frontend run build"
   }
 }
