@@ -1,91 +1,70 @@
-# SnackHub web (Phase 1: frontend on a mock API)
+# SnackHub
 
-The customer, seller and rider apps, plus the admin console as a separate build, running
-entirely in the browser against an MSW mock API shaped like the real `/api/v1` endpoints
-(doc sections 10.7, 10.9 and 11). Everything shown is demo data.
+Delivery for Indian regional snacks from verified local shops: "Estimated delivery in 25 to 30
+minutes, subject to serviceability and preparation time." Four roles (customer, seller,
+rider, admin), each with its own screens. All shops, people, prices and pictures in this
+repository are demo data.
 
-## Run
+## What is in here
 
-```bash
-npm install
-npm run dev            # http://localhost:5173  (customer, /seller, /rider, /design)
-                       # http://localhost:5173/admin.html  (admin, shares the mock data in dev)
-npm run dev:admin      # admin on its own host, http://localhost:5174 (separate mock data)
-npm run build          # dist/ (public) and dist-admin/ (admin), built separately
-```
-
-Demo admin authenticator code: `246810`. "Reset demo" in the banner restores the seed data.
-
-## Demo scripts
-
-- **Customer, simulated:** Shop, ADD (one-tap demo Google sign-in), cart, checkout with UPI
-  (`success@razorpay` or `failure@razorpay`), "confirming" until the simulated webhook,
-  then live tracking. The code unlocks at about 500 m; the rider lane stays at the bottom
-  of every page while the order is active.
-- **Seller and rider by hand:** open `/seller` and `/rider` in two tabs. Seller: "Simulate
-  an incoming order", Accept. Rider: accept the 20 second offer. Seller: Start packing,
-  Mark packed. Rider: tick the seal check, Picked up, "Simulate drive", enter the code
-  inside 150 m (three wrong tries lock it).
-- **Admin:** `/admin.html`, Google step, code. "Expire my MFA" then save the policy to see
-  the step-up. Approvals, complaint review, policy preview of the three worked penalty cases.
-
-## Stack and structure
-
-React 19, Redux Toolkit and Tailwind CSS v4, laid out like the legacy `frontend/` folder.
-
-| Area | Path |
+| Folder | What it is |
 | --- | --- |
-| Pages (one file per screen) | `src/pages/`, `src/pages/seller/`, `src/pages/rider/` |
-| Shared components | `src/components/`, `src/components/landing/`, `src/components/tracking/` |
-| Redux store and slices | `src/store/store.js`, `src/store/slices/*Slice.js` (auth, toast, ui, products, cart, profile, orders, notifications, seller, rider, admin) |
-| API client | `src/lib/api.js` (`apiFetch`, in-memory access token, silent refresh) |
-| Design tokens and utilities (22.1 to 22.3) | `src/index.css` (`@theme` tokens and animations, `@utility glass`, `bg-hero`, `lift`, `shine`, `reveal`) |
-| Business rules as pure functions | `src/domain/` (promise 8.3, penalty 8.4, states 10.1, triage 10.7) |
-| Mock API, seed, simulator | `src/mocks/` |
-| Admin console (separate build and store) | `src/admin/` |
+| `web/` | React 19 + Redux Toolkit + Tailwind CSS v4 app (customer, seller, rider) and the admin console as a separate build. Runs today on a mock API in the browser. See [web/README.md](web/README.md) |
+| `api/` | Express modular monolith on MySQL 8: Identity, Catalog, Order, Dispatch, Payment and Notify, each with its own schema and database user |
+| `shared/` | Business rules used by both the web app and the API (delivery promise, rider pay, order states, complaint triage) and the demo seed data |
+| `infra/` | Docker Compose for the full local stack (MySQL, Redis, RabbitMQ, Elasticsearch, MinIO, Mailpit), for later phases |
+| `scripts/` | Repository setup helpers |
 
-All server data goes through `createAsyncThunk` thunks in the slices (shared error handling in
-`src/store/apiThunk.js`). Components read with `useSelector` and write with `dispatch`; live
-screens refresh with the `usePolling` hook until Socket.io arrives in Phase 3.
+## First run
 
-## Decisions applied
-
-- Brand SnackHub, tokens from 22.1, Baloo 2 + Nunito Sans; promise wording
-  "Estimated delivery in 25 to 30 minutes, subject to serviceability and preparation time."
-- Redux holds all client and server state; the cart lives on the server and the cart slice
-  mirrors it with an optimistic update and rollback.
-- CSS and IntersectionObserver first, Motion for layout and page transitions, GSAP
-  ScrollTrigger only on the landing story, no Lenis. Every animation has a reduced-motion end state.
-- Hero and lane 3D lazy-load, cap DPR, pause offscreen or when the tab is hidden, and fall
-  back to a poster or the SVG lane without WebGL or with reduced motion.
-- Order payloads never contain the delivery code; it comes only from `/orders/:id/otp`.
-
-## Media (doc 6.2, 22.8, 25)
-
-`assets/manifest.json` lists every image, video and 3D model the UI needs: one catalogue
-image and one cut-out per snack slug, plus the hero, region, mood, story and video assets,
-each with its prompt, target size and status (needed, generated, processed, ready).
+Needs Node.js 20.6 or newer and MySQL 8 running on this machine (port 3306).
 
 ```bash
-npm run assets:manifest   # regenerate after the catalogue changes (keeps status and files)
-npm run assets:check      # files marked ready: present, under budget, no duplicate images
+npm run setup
 ```
 
-Put processed files under `public/assets/` (or a CDN set in `VITE_ASSET_BASE`), mark them
-`ready`, and run `assets:manifest`. `SnackImage` and `LoopVideo` pick them up and fall back to
-the illustrations until then, so there is never a broken image.
+Creates `infra/.env` and `api/.env` with random local passwords. Nothing is printed and an
+existing file is never overwritten.
 
-## Tests
+```bash
+npm run db:local
+```
 
-Testing is manual (doc 27.2). The test plan and results live in `docs/manual-tests.md` and
-`docs/test-results.md` on the developer's machine; they are ignored by git and not published.
+Asks once for your MySQL root password (shown as `*`, never stored), then creates the six
+module schemas, one user per module that can only reach its own schema, and the migrator user.
 
-## Not done yet
+```bash
+npm --prefix api install
+npm run migrate
+npm run seed
+```
 
-- The AI images, videos and compressed GLBs from doc section 25 still need to be made;
-  the manifest lists all of them.
-- Manual test results to record (keyboard path, no-WebGL, three-wrong-codes lock, tablet width).
-- Largest contentful paint is 2.7 s without the mock (target 2.5 s).
+Creates every table, then loads the demo data. Both are safe to run again.
 
-Dev only: `localStorage['snackhub.motion'] = 'force'` previews full motion on a machine
-with reduced motion turned on.
+## Everyday commands
+
+From the repository root:
+
+| Command | Does |
+| --- | --- |
+| `npm run dev:web` | Web app on http://localhost:5173 (mock API) |
+| `npm run dev:api` | API on http://localhost:4000 (`/health`, `/ready`) |
+| `npm run migrate` / `npm run migrate:down` | Apply every migration / undo all of them |
+| `npm run seed` | Reload the demo data (same result every time) |
+| `npm test` | API tests: platform, seed data, and database constraints against MySQL |
+| `npm run build` | Production build of the web app and the admin console |
+
+## Database rules worth knowing
+
+- Money is stored as integer paise; latitude and longitude as plain DECIMAL columns.
+- Stock can never go below zero, and two buyers racing for the last units get exactly one winner.
+- The same Idempotency-Key from one customer can never create two orders.
+- Each payment webhook event is processed once; the payment ledger can only be added to.
+- Foreign keys stay inside a module; references to another module's rows are plain ids.
+
+## Status
+
+- Phase 1, the web app on a mock API: done.
+- Phase 2, the backend: the database (migrations, seed, constraint tests) is done; the module
+  APIs come next.
+- 11 of 54 snacks have their own AI image so far; the rest show a drawing until theirs is made.

@@ -1,12 +1,28 @@
-node_modules
-dist
-dist-admin
+# Old code from the uploaded zip: reference only, never committed.
+# Snack-Website/.env holds real secrets (doc 3, P0-1): rotate them and keep them out of git.
+/frontend/
+/Snack-Website/
+/Food-Delivery-Microservices/
+/legacy/
+
+# Local tool settings
+/.claude/
+
+# Dependencies, builds, logs
+node_modules/
+dist/
+dist-admin/
+coverage/
+*.log
+
+# Secrets: only the example files are committed
 .env
 .env.*
 !.env.example
-*.log
-assets/raw
 
-# Test plan and results stay local, never committed
-docs/manual-tests.md
-docs/test-results.md
+# Large media originals stay in a private bucket (doc 22.8)
+assets/raw/
+
+# Markdown stays local (CLAUDE.md, docs, test notes); only README files are committed
+*.md
+!README.md

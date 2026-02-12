@@ -1,0 +1,2817 @@
+{
+  "version": 1,
+  "brand": "SnackHub brand brief (doc 25.2): sun yellow #FFC300, orange #FF7A00, red #E23744, white, greys #F3F4F6 and #1F2937. No real brands, no people, no text.",
+  "base": "/assets",
+  "assets": [
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "logo",
+      "kind": "image",
+      "usedBy": [
+        "Navbar",
+        "Footer",
+        "ConsoleLayout"
+      ],
+      "target": "SVG, recreated as vector",
+      "tool": "ChatGPT image, then vector redraw",
+      "prompt": "doc 25.3 logo prompt"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "app-icon-512",
+      "kind": "image",
+      "usedBy": [
+        "manifest.webmanifest"
+      ],
+      "target": "512 px PNG",
+      "tool": "from logo",
+      "prompt": "doc 25.3 app icon prompt"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "app-icon-192",
+      "kind": "image",
+      "usedBy": [
+        "manifest.webmanifest"
+      ],
+      "target": "192 px PNG",
+      "tool": "from logo",
+      "prompt": "doc 25.3 app icon prompt"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "app-icon-32",
+      "kind": "image",
+      "usedBy": [
+        "manifest.webmanifest"
+      ],
+      "target": "32 px PNG",
+      "tool": "from logo",
+      "prompt": "doc 25.3 app icon prompt"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-adhirasam",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "adhirasam",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Adhirasam, Tamil Nadu style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Adhirasam, Tamil Nadu style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-adhirasam",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "adhirasam",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Adhirasam"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-aloo-tikki",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "aloo-tikki",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Aloo Tikki, Delhi style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Aloo Tikki, Delhi style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-aloo-tikki",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "aloo-tikki",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Aloo Tikki"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-ariselu",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "ariselu",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Ariselu, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Ariselu, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-ariselu",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "ariselu",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Ariselu"
+    },
+    {
+      "status": "ready",
+      "file": "snacks/atukula-mixture.webp",
+      "bytes": 115174,
+      "sha256": "0486893b3dd57a14a88b15389244787938d2b35c49529227e579f9f8ccbc0f18",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "snack-atukula-mixture",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "atukula-mixture",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Atukula Mixture, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Atukula Mixture, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-atukula-mixture",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "atukula-mixture",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Atukula Mixture"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-bakarwadi",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "bakarwadi",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Bakarwadi, Maharashtra style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Bakarwadi, Maharashtra style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-bakarwadi",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "bakarwadi",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Bakarwadi"
+    },
+    {
+      "status": "ready",
+      "file": "snacks/banana-chips.webp",
+      "bytes": 85668,
+      "sha256": "d2fa2c9e6dd10d2174f68358a0041710ff2a1e0076c535f7654b96dc80d4b8ca",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "snack-banana-chips",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "banana-chips",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Banana Chips, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Banana Chips, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-banana-chips",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "banana-chips",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Banana Chips"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-batata-vada",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "batata-vada",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Batata Vada, Maharashtra style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Batata Vada, Maharashtra style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-batata-vada",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "batata-vada",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Batata Vada"
+    },
+    {
+      "status": "ready",
+      "file": "snacks/bikaneri-bhujia.webp",
+      "bytes": 84450,
+      "sha256": "abbd59c4a71e318c73a005423fb213b8912e2fbca521afc40a46d612c4db8eeb",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "snack-bikaneri-bhujia",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "bikaneri-bhujia",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Bikaneri Bhujia, Delhi style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Bikaneri Bhujia, Delhi style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-bikaneri-bhujia",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "bikaneri-bhujia",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Bikaneri Bhujia"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-bobbatlu",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "bobbatlu",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Bobbatlu, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Bobbatlu, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-bobbatlu",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "bobbatlu",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Bobbatlu"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-bonda",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "bonda",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Bonda, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Bonda, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-bonda",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "bonda",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Bonda"
+    },
+    {
+      "status": "ready",
+      "file": "snacks/boondi-laddu.webp",
+      "bytes": 59334,
+      "sha256": "ed289ea5b2e896e85ad605b49f5c3dedd96f652d9f412a8c372bfb561ba9c803",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "snack-boondi-laddu",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "boondi-laddu",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Boondi Laddu, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Boondi Laddu, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-boondi-laddu",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "boondi-laddu",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Boondi Laddu"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-chekkalu",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "chekkalu",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Chekkalu, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Chekkalu, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-chekkalu",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "chekkalu",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Chekkalu"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-chikki",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "chikki",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Chikki, Maharashtra style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Chikki, Maharashtra style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-chikki",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "chikki",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Chikki"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-dhokla",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "dhokla",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Dhokla, Gujarat style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Dhokla, Gujarat style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-dhokla",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "dhokla",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Dhokla"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-dilkush",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "dilkush",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Dilkush, Telangana style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Dilkush, Telangana style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-dilkush",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "dilkush",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Dilkush"
+    },
+    {
+      "status": "ready",
+      "file": "snacks/fafda-jalebi.webp",
+      "bytes": 103254,
+      "sha256": "69994123bf3d297f4bdef8b1d3eac9bee5cf6c66a2a236e1bf5e9705e71b61ee",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "snack-fafda-jalebi",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "fafda-jalebi",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Fafda Jalebi, Gujarat style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Fafda Jalebi, Gujarat style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-fafda-jalebi",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "fafda-jalebi",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Fafda Jalebi"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-ghewar",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "ghewar",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Ghewar, Rajasthan style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Ghewar, Rajasthan style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-ghewar",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "ghewar",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Ghewar"
+    },
+    {
+      "status": "ready",
+      "file": "snacks/gongura-pakoda.webp",
+      "bytes": 126934,
+      "sha256": "f75628a2bce73f29bcaac54bd2641dc879be21d544603546162044212213853a",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "snack-gongura-pakoda",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "gongura-pakoda",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Gongura Pakoda, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Gongura Pakoda, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-gongura-pakoda",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "gongura-pakoda",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Gongura Pakoda"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-irani-samosa",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "irani-samosa",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Irani Samosa, Telangana style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Irani Samosa, Telangana style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-irani-samosa",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "irani-samosa",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Irani Samosa"
+    },
+    {
+      "status": "ready",
+      "file": "snacks/jalebi.webp",
+      "bytes": 79406,
+      "sha256": "1d5aa4518b72800f62a0aa918d6a3a78e4ddcf3a4f8d2b718ff6ed8a892b95d6",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "snack-jalebi",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "jalebi",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Jalebi, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Jalebi, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-jalebi",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "jalebi",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Jalebi"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-jhal-muri",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "jhal-muri",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Jhal Muri, West Bengal style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Jhal Muri, West Bengal style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-jhal-muri",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "jhal-muri",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Jhal Muri"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-kachori",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "kachori",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Kachori, Delhi style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Kachori, Delhi style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-kachori",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "kachori",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Kachori"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-kaja",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "kaja",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Kaja, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Kaja, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-kaja",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "kaja",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Kaja"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-kathi-roll",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "kathi-roll",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Kathi Roll, West Bengal style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Kathi Roll, West Bengal style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-kathi-roll",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "kathi-roll",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Kathi Roll"
+    },
+    {
+      "status": "ready",
+      "file": "snacks/khakhra.webp",
+      "bytes": 60006,
+      "sha256": "43ef7ffa856e815a8e1a3548e96ea30a9a4c09522d0518f24aefce8e4ce923ae",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "snack-khakhra",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "khakhra",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Khakhra, Gujarat style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Khakhra, Gujarat style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-khakhra",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "khakhra",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Khakhra"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-khandvi",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "khandvi",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Khandvi, Gujarat style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Khandvi, Gujarat style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-khandvi",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "khandvi",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Khandvi"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-khari-biscuit",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "khari-biscuit",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Khari Biscuit, Telangana style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Khari Biscuit, Telangana style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-khari-biscuit",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "khari-biscuit",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Khari Biscuit"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-kodubale",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "kodubale",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Kodubale, Karnataka style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Kodubale, Karnataka style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-kodubale",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "kodubale",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Kodubale"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-luqmi",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "luqmi",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Luqmi, Telangana style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Luqmi, Telangana style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-luqmi",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "luqmi",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Luqmi"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-maddur-vada",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "maddur-vada",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Maddur Vada, Karnataka style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Maddur Vada, Karnataka style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-maddur-vada",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "maddur-vada",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Maddur Vada"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-mawa-kachori",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "mawa-kachori",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Mawa Kachori, Rajasthan style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Mawa Kachori, Rajasthan style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-mawa-kachori",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "mawa-kachori",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Mawa Kachori"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-medu-vada",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "medu-vada",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Medu Vada, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Medu Vada, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-medu-vada",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "medu-vada",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Medu Vada"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-mirchi-bajji",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "mirchi-bajji",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Mirchi Bajji, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Mirchi Bajji, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-mirchi-bajji",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "mirchi-bajji",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Mirchi Bajji"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-mirchi-vada",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "mirchi-vada",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Mirchi Vada, Rajasthan style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Mirchi Vada, Rajasthan style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-mirchi-vada",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "mirchi-vada",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Mirchi Vada"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-misal-pav",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "misal-pav",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Misal Pav, Maharashtra style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Misal Pav, Maharashtra style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-misal-pav",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "misal-pav",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Misal Pav"
+    },
+    {
+      "status": "ready",
+      "file": "snacks/murukku.webp",
+      "bytes": 96060,
+      "sha256": "4d30f704b60fbbac29c7ce7b824e08add99dd2f40867b408e420632a7ca8d841",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "snack-murukku",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "murukku",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Murukku, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Murukku, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-murukku",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "murukku",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Murukku"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-mysore-pak",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "mysore-pak",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Mysore Pak, Karnataka style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Mysore Pak, Karnataka style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-mysore-pak",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "mysore-pak",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Mysore Pak"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-nippattu",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "nippattu",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Nippattu, Karnataka style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Nippattu, Karnataka style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-nippattu",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "nippattu",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Nippattu"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-osmania-biscuit",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "osmania-biscuit",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Osmania Biscuit, Telangana style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Osmania Biscuit, Telangana style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-osmania-biscuit",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "osmania-biscuit",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Osmania Biscuit"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-pootharekulu",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "pootharekulu",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Pootharekulu, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Pootharekulu, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-pootharekulu",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "pootharekulu",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Pootharekulu"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-punugulu",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "punugulu",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Punugulu, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Punugulu, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-punugulu",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "punugulu",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Punugulu"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-puran-poli",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "puran-poli",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Puran Poli, Maharashtra style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Puran Poli, Maharashtra style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-puran-poli",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "puran-poli",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Puran Poli"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-pyaaz-kachori",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "pyaaz-kachori",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Pyaaz Kachori, Rajasthan style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Pyaaz Kachori, Rajasthan style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-pyaaz-kachori",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "pyaaz-kachori",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Pyaaz Kachori"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-rosogolla",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "rosogolla",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Rosogolla, West Bengal style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Rosogolla, West Bengal style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-rosogolla",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "rosogolla",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Rosogolla"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-sabudana-vada",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "sabudana-vada",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Sabudana Vada, Maharashtra style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Sabudana Vada, Maharashtra style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-sabudana-vada",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "sabudana-vada",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Sabudana Vada"
+    },
+    {
+      "status": "ready",
+      "file": "snacks/samosa.webp",
+      "bytes": 90946,
+      "sha256": "bb5d61e443919cc455dab7c936e40fd336a212bfea667474db5c6942412c4441",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "snack-samosa",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "samosa",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Samosa, Telangana style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Samosa, Telangana style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-samosa",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "samosa",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Samosa"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-sandesh",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "sandesh",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Sandesh, West Bengal style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Sandesh, West Bengal style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-sandesh",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "sandesh",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Sandesh"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-seedai",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "seedai",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Seedai, Tamil Nadu style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Seedai, Tamil Nadu style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-seedai",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "seedai",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Seedai"
+    },
+    {
+      "status": "ready",
+      "file": "snacks/singara.webp",
+      "bytes": 101168,
+      "sha256": "1284ec814650ba784547e962ac92550b96727775541955c1dc68ae5cc26cbe47",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "snack-singara",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "singara",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Singara, West Bengal style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Singara, West Bengal style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-singara",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "singara",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Singara"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-sohan-halwa",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "sohan-halwa",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Sohan Halwa, Delhi style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Sohan Halwa, Delhi style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-sohan-halwa",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "sohan-halwa",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Sohan Halwa"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-sundal",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "sundal",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Sundal, Tamil Nadu style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Sundal, Tamil Nadu style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-sundal",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "sundal",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Sundal"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-sunnundalu",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "sunnundalu",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Sunnundalu, Andhra Pradesh style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Sunnundalu, Andhra Pradesh style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-sunnundalu",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "sunnundalu",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Sunnundalu"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-thepla",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "thepla",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Thepla, Gujarat style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (sweet or dry snack, doc 6 and 25.4)",
+      "alt": "Thepla, Gujarat style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-thepla",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "thepla",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Thepla"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "snack-vada-pav",
+      "kind": "image",
+      "role": "catalogue",
+      "slug": "vada-pav",
+      "usedBy": [
+        "ProductCard",
+        "ProductModal",
+        "CartDrawer",
+        "Checkout",
+        "SellerProducts",
+        "Navbar search"
+      ],
+      "target": ">= 1200 px wide, WebP, < 800 KB; served at 400/800/1200",
+      "tool": "Google Whisk or Freepik (doc 25.6)",
+      "prompt": "Studio photo of Vada Pav, Maharashtra style, on a steel plate, 45-degree angle, soft window light, plain warm background, no text, no people. (hot fried snack, doc 6 and 25.4)",
+      "alt": "Vada Pav, Maharashtra style"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "cutout-vada-pav",
+      "kind": "image",
+      "role": "cutout",
+      "slug": "vada-pav",
+      "usedBy": [
+        "Hero pop-ups",
+        "VariantPicker"
+      ],
+      "target": "about 300 px WebP, transparent, < 40 KB",
+      "tool": "Whisk render + background remover",
+      "prompt": "doc 25.4 cut-out prompt",
+      "alt": "Vada Pav"
+    },
+    {
+      "status": "ready",
+      "file": "landing/hero-spread.webp",
+      "bytes": 254788,
+      "sha256": "339cb21f3b0fe29bb3ae50bc97cce3b19c92845a2a3b277d322e57d318f92f14",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "hero-poster",
+      "kind": "image",
+      "usedBy": [
+        "Hero"
+      ],
+      "target": "WebP, about 80 KB; first paint and WebGL/reduced-motion fallback",
+      "tool": "render of the 3D scene",
+      "prompt": "doc 22.9 poster"
+    },
+    {
+      "status": "ready",
+      "file": "landing/showcase-hot.webp",
+      "bytes": 98072,
+      "sha256": "0068feaa5331f1861d610a02fb9e9e461c900ef91e9bca8eaa61bf8e8f40932f",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "showcase-hot-still",
+      "kind": "image",
+      "usedBy": [
+        "ScrollStory (hot)"
+      ],
+      "target": "1200 px WebP, < 220 KB",
+      "tool": "Whisk",
+      "prompt": "hot snack serving scene, doc 25.4"
+    },
+    {
+      "status": "ready",
+      "file": "landing/showcase-sweet.webp",
+      "bytes": 266202,
+      "sha256": "33251f5b863f55a022ac4c6ca161fe4ecda4326d6400459914981f33b74a3823",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "showcase-sweet-still",
+      "kind": "image",
+      "usedBy": [
+        "ScrollStory (sweet)"
+      ],
+      "target": "1200 px WebP, < 220 KB",
+      "tool": "Whisk",
+      "prompt": "sweets and dry snacks spread, doc 25.4"
+    },
+    {
+      "status": "ready",
+      "file": "landing/kitchen.webp",
+      "bytes": 152792,
+      "sha256": "b9b1e90f550fff9a5cff719f48255f55a0efd030cf7e60e679666cca224ddf60",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "shops-kitchen",
+      "kind": "image",
+      "usedBy": [
+        "ProductHotspots"
+      ],
+      "target": "1200 px WebP, < 220 KB",
+      "tool": "Whisk",
+      "prompt": "clean shop kitchen frying snacks, no real brands"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "hero-loop",
+      "kind": "video",
+      "usedBy": [
+        "Hero (optional)"
+      ],
+      "target": "MP4 + WebM, 1280 px, 24 fps, no audio, < 2 MB, with poster",
+      "tool": "Google Flow (Veo)",
+      "prompt": "doc 25.5 box-opens loop, 16:9"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "hero-loop-mobile",
+      "kind": "video",
+      "usedBy": [
+        "Hero (optional)"
+      ],
+      "target": "MP4 + WebM, 720 px, 9:16, < 2 MB",
+      "tool": "Google Flow (Veo)",
+      "prompt": "doc 25.5 vertical variant"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "packet-turntable",
+      "kind": "video",
+      "usedBy": [
+        "ScrollStory"
+      ],
+      "target": "all-keyframe MP4 or 60-90 WebP frames for scroll scrubbing",
+      "tool": "Flow / Whisk Animate",
+      "prompt": "doc 25.7 hero packet turntable"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "showcase-mixture",
+      "kind": "video",
+      "usedBy": [
+        "ScrollStory (hot)"
+      ],
+      "target": "8 s, scroll-scrub, still-frame fallback",
+      "tool": "Flow",
+      "prompt": "doc 25.7 showcase 1, serving scene"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "showcase-sweet",
+      "kind": "video",
+      "usedBy": [
+        "ScrollStory (sweet)"
+      ],
+      "target": "8 s, scroll-scrub, still-frame fallback",
+      "tool": "Flow",
+      "prompt": "doc 25.7 showcase 2, traditional sweet"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "delivery-story",
+      "kind": "video",
+      "usedBy": [
+        "DeliveryStory"
+      ],
+      "target": "8 s illustrated loop, no maps, no live tracking",
+      "tool": "Flow",
+      "prompt": "doc 25.7 25-minute delivery story"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "rider-pass-by",
+      "kind": "video",
+      "usedBy": [
+        "LanePreview (decorative)"
+      ],
+      "target": "6 s, < 2 MB",
+      "tool": "Flow",
+      "prompt": "doc 25.5 rider pass-by"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "region-andhra-pradesh",
+      "kind": "image",
+      "usedBy": [
+        "RegionalDiscovery"
+      ],
+      "target": "1200x800 WebP, < 200 KB",
+      "tool": "Whisk",
+      "prompt": "Regional snack spread for andhra pradesh; food only, no stereotypes (master prompt 5)"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "region-telangana",
+      "kind": "image",
+      "usedBy": [
+        "RegionalDiscovery"
+      ],
+      "target": "1200x800 WebP, < 200 KB",
+      "tool": "Whisk",
+      "prompt": "Regional snack spread for telangana; food only, no stereotypes (master prompt 5)"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "region-tamil-nadu",
+      "kind": "image",
+      "usedBy": [
+        "RegionalDiscovery"
+      ],
+      "target": "1200x800 WebP, < 200 KB",
+      "tool": "Whisk",
+      "prompt": "Regional snack spread for tamil nadu; food only, no stereotypes (master prompt 5)"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "region-karnataka",
+      "kind": "image",
+      "usedBy": [
+        "RegionalDiscovery"
+      ],
+      "target": "1200x800 WebP, < 200 KB",
+      "tool": "Whisk",
+      "prompt": "Regional snack spread for karnataka; food only, no stereotypes (master prompt 5)"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "region-maharashtra",
+      "kind": "image",
+      "usedBy": [
+        "RegionalDiscovery"
+      ],
+      "target": "1200x800 WebP, < 200 KB",
+      "tool": "Whisk",
+      "prompt": "Regional snack spread for maharashtra; food only, no stereotypes (master prompt 5)"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "region-gujarat",
+      "kind": "image",
+      "usedBy": [
+        "RegionalDiscovery"
+      ],
+      "target": "1200x800 WebP, < 200 KB",
+      "tool": "Whisk",
+      "prompt": "Regional snack spread for gujarat; food only, no stereotypes (master prompt 5)"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "region-rajasthan",
+      "kind": "image",
+      "usedBy": [
+        "RegionalDiscovery"
+      ],
+      "target": "1200x800 WebP, < 200 KB",
+      "tool": "Whisk",
+      "prompt": "Regional snack spread for rajasthan; food only, no stereotypes (master prompt 5)"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "region-west-bengal",
+      "kind": "image",
+      "usedBy": [
+        "RegionalDiscovery"
+      ],
+      "target": "1200x800 WebP, < 200 KB",
+      "tool": "Whisk",
+      "prompt": "Regional snack spread for west bengal; food only, no stereotypes (master prompt 5)"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "region-delhi",
+      "kind": "image",
+      "usedBy": [
+        "RegionalDiscovery"
+      ],
+      "target": "1200x800 WebP, < 200 KB",
+      "tool": "Whisk",
+      "prompt": "Regional snack spread for delhi; food only, no stereotypes (master prompt 5)"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "mood-spicy",
+      "kind": "video",
+      "usedBy": [
+        "MoodTiles"
+      ],
+      "target": "3 s loop, < 600 KB, with poster",
+      "tool": "Whisk Animate",
+      "prompt": "doc 25.7 mood tile loop"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "mood-sweet",
+      "kind": "video",
+      "usedBy": [
+        "MoodTiles"
+      ],
+      "target": "3 s loop, < 600 KB, with poster",
+      "tool": "Whisk Animate",
+      "prompt": "doc 25.7 mood tile loop"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "mood-tea",
+      "kind": "video",
+      "usedBy": [
+        "MoodTiles"
+      ],
+      "target": "3 s loop, < 600 KB, with poster",
+      "tool": "Whisk Animate",
+      "prompt": "doc 25.7 mood tile loop"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "mood-movie",
+      "kind": "video",
+      "usedBy": [
+        "MoodTiles"
+      ],
+      "target": "3 s loop, < 600 KB, with poster",
+      "tool": "Whisk Animate",
+      "prompt": "doc 25.7 mood tile loop"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "mood-childhood",
+      "kind": "video",
+      "usedBy": [
+        "MoodTiles"
+      ],
+      "target": "3 s loop, < 600 KB, with poster",
+      "tool": "Whisk Animate",
+      "prompt": "doc 25.7 mood tile loop"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "AI illustration",
+      "id": "mood-new",
+      "kind": "video",
+      "usedBy": [
+        "MoodTiles"
+      ],
+      "target": "3 s loop, < 600 KB, with poster",
+      "tool": "Whisk Animate",
+      "prompt": "doc 25.7 mood tile loop"
+    },
+    {
+      "status": "ready",
+      "file": "landing/story-andhra.webp",
+      "bytes": 109496,
+      "sha256": "550ce0a4d2fed6f6cebf231f8730a44d6837ef87a23eecb8e1f5c3a09b05e088",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "story-andhra-bold-flavours",
+      "kind": "image",
+      "usedBy": [
+        "Editorial"
+      ],
+      "target": "1200x900 WebP, < 220 KB",
+      "tool": "Whisk",
+      "prompt": "editorial food photo, doc 22.7 part 11"
+    },
+    {
+      "status": "ready",
+      "file": "landing/story-murukku.webp",
+      "bytes": 158600,
+      "sha256": "de1a8462d26e71d21b1544258536db6c190dc87b969e334fe48f0310b8f1e185",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "story-art-of-murukku",
+      "kind": "image",
+      "usedBy": [
+        "Editorial"
+      ],
+      "target": "1200x900 WebP, < 220 KB",
+      "tool": "Whisk",
+      "prompt": "editorial food photo, doc 22.7 part 11"
+    },
+    {
+      "status": "ready",
+      "file": "landing/story-mixtures.webp",
+      "bytes": 174476,
+      "sha256": "6332d59c2021a9591cd5970e15ebbf0a2de8f1fd5a1bcfca62c94cd78876af36",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "story-regional-mixtures",
+      "kind": "image",
+      "usedBy": [
+        "Editorial"
+      ],
+      "target": "1200x900 WebP, < 220 KB",
+      "tool": "Whisk",
+      "prompt": "editorial food photo, doc 22.7 part 11"
+    },
+    {
+      "status": "ready",
+      "file": "landing/story-festival.webp",
+      "bytes": 84022,
+      "sha256": "c24983167933d7856527b7a064db1d5ba0daf6df06ad185df38180479101c526",
+      "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+      "id": "story-festival-snacks",
+      "kind": "image",
+      "usedBy": [
+        "Editorial"
+      ],
+      "target": "1200x900 WebP, < 220 KB",
+      "tool": "Whisk",
+      "prompt": "editorial food photo, doc 22.7 part 11"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "MODEL_CREDITS.md",
+      "id": "model-snack-box",
+      "kind": "model",
+      "usedBy": [
+        "HeroScene"
+      ],
+      "target": "GLB, meshopt, <= 1.5 MB, textures <= 1024 px",
+      "tool": "Blender or image-to-3D",
+      "prompt": "glossy SnackHub box with hinged lid"
+    },
+    {
+      "status": "needed",
+      "file": null,
+      "bytes": null,
+      "sha256": null,
+      "credit": "MODEL_CREDITS.md",
+      "id": "model-rider-scooter",
+      "kind": "model",
+      "usedBy": [
+        "LaneScene"
+      ],
+      "target": "GLB, meshopt, about 1 MB",
+      "tool": "Kenney / Quaternius (CC0) or Blender",
+      "prompt": "low-poly rider on an orange scooter"
+    }
+  ]
+}

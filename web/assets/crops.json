@@ -1,0 +1,25 @@
+{
+  "about": "Crops cut from AI images in assets/raw (not committed). npm run assets:process turns each into WebP renditions in public/assets and marks it ready in the manifest. Each crop is checked by eye: it must really show that snack (doc 25.4).",
+  "credit": "AI illustration (SnackHub image set from the earlier frontend)",
+  "crops": [
+    { "id": "snack-jalebi", "src": "legacy/snacks-spread.png", "box": [30, 28, 300, 292], "out": "snacks/jalebi.webp" },
+    { "id": "snack-murukku", "src": "legacy/snacks-spread.png", "box": [430, 0, 712, 252], "out": "snacks/murukku.webp" },
+    { "id": "snack-bikaneri-bhujia", "src": "legacy/snacks-spread.png", "box": [598, 228, 782, 412], "out": "snacks/bikaneri-bhujia.webp" },
+    { "id": "snack-atukula-mixture", "src": "legacy/snacks-spread.png", "box": [478, 408, 766, 696], "out": "snacks/atukula-mixture.webp" },
+    { "id": "snack-banana-chips", "src": "legacy/hero-banner.png", "box": [452, 22, 728, 288], "out": "snacks/banana-chips.webp" },
+    { "id": "snack-gongura-pakoda", "src": "legacy/hero-banner.png", "box": [688, 160, 1024, 540], "out": "snacks/gongura-pakoda.webp" },
+    { "id": "snack-singara", "src": "legacy/hero-banner.png", "box": [262, 282, 702, 722], "out": "snacks/singara.webp" },
+    { "id": "snack-fafda-jalebi", "src": "legacy/hero-banner.png", "box": [522, 636, 932, 1012], "out": "snacks/fafda-jalebi.webp" },
+    { "id": "snack-samosa", "src": "legacy/samosa.png", "box": [140, 120, 900, 880], "out": "snacks/samosa.webp" },
+    { "id": "snack-khakhra", "src": "legacy/category-icons.png", "box": [368, 192, 658, 482], "out": "snacks/khakhra.webp" },
+    { "id": "snack-boondi-laddu", "src": "legacy/category-icons.png", "box": [228, 590, 420, 782], "out": "snacks/boondi-laddu.webp" },
+    { "id": "hero-poster", "src": "legacy/hero-banner.png", "box": [0, 0, 1024, 1024], "out": "landing/hero-spread.webp" },
+    { "id": "showcase-hot-still", "src": "legacy/samosa.png", "box": [0, 0, 1024, 1024], "out": "landing/showcase-hot.webp" },
+    { "id": "showcase-sweet-still", "src": "legacy/snacks-spread.png", "box": [0, 0, 1024, 1024], "out": "landing/showcase-sweet.webp" },
+    { "id": "shops-kitchen", "src": "legacy/kitchen-fresh.png", "box": [0, 0, 1024, 1024], "out": "landing/kitchen.webp" },
+    { "id": "story-andhra-bold-flavours", "src": "legacy/snacks-spread.png", "box": [636, 600, 1024, 1000], "out": "landing/story-andhra.webp" },
+    { "id": "story-art-of-murukku", "src": "legacy/hero-banner.png", "box": [0, 350, 330, 820], "out": "landing/story-murukku.webp" },
+    { "id": "story-regional-mixtures", "src": "legacy/snacks-spread.png", "box": [420, 220, 800, 710], "out": "landing/story-mixtures.webp" },
+    { "id": "story-festival-snacks", "src": "legacy/snacks-spread.png", "box": [730, 10, 1024, 330], "out": "landing/story-festival.webp" }
+  ]
+}

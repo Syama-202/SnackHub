@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-admin
+.env
+.env.*
+!.env.example
+*.log
+assets/raw
+
+# Test plan and results stay local, never committed
+docs/manual-tests.md
+docs/test-results.md
