@@ -11,7 +11,15 @@ export const productModel = {
       .modify((q) => activeOnly && q.where({ active: true }))
       .orderBy('id')
       .then((rows) => rows.map(parse)),
-  listActiveForSellers: (db, sellerIds) => db(TABLE).whereIn('seller_id', sellerIds).andWhere({ active: true }).orderBy('id').then((rows) => rows.map(parse)),
+  /** Active products of these shops with the units on hand (qty, 0 when no stock row). */
+  listActiveForSellers: (db, sellerIds) =>
+    db(TABLE)
+      .leftJoin('stock', 'stock.product_id', `${TABLE}.id`)
+      .select(`${TABLE}.*`, db.raw('COALESCE(stock.qty, 0) AS qty'))
+      .whereIn(`${TABLE}.seller_id`, sellerIds)
+      .andWhere(`${TABLE}.active`, true)
+      .orderBy(`${TABLE}.id`)
+      .then((rows) => rows.map(parse)),
   create: (db, sellerId, p) => db(TABLE).insert({ ...p, seller_id: sellerId, attrs: p.attrs ? JSON.stringify(p.attrs) : null }).then(([id]) => id),
   updateForSeller: (db, id, sellerId, changes) => db(TABLE).where({ id, seller_id: sellerId }).update(changes),
   setActive: (db, id, active) => db(TABLE).where({ id }).update({ active }),

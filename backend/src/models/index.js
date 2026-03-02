@@ -4,6 +4,8 @@ export { outboxModel } from './outbox.js';
 
 export { userModel } from './identity/user.js';
 export { addressModel } from './identity/address.js';
+export { refreshTokenModel } from './identity/refreshToken.js';
+export { auditLogModel } from './identity/auditLog.js';
 
 export { sellerModel, VISIBLE_STATUSES } from './catalog/seller.js';
 export { productModel } from './catalog/product.js';

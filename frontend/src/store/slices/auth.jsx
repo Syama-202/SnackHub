@@ -1,12 +1,21 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, isAnyOf } from '@reduxjs/toolkit';
 import { apiThunk } from '../apiThunk';
 import { getApiHost, refreshAccessToken, setAccessToken } from '../../services/api';
+import { deviceId } from '../../utils/device';
 
-// Google sign-in (doc 16.1), simulated: the server verifies the ID token and
-// issues our own tokens. A new Google account is always a customer; the demo
-// seller and rider accounts are seeded, approved applications.
-export const signInWithGoogle = apiThunk('auth/google', async ({ demoRole = 'customer' }, { apiFetch }) => {
-  const data = await apiFetch('/auth/google', { method: 'POST', body: { demoRole }, retry: false });
+// Google sign-in (doc 16.1): the Google button gives an ID token, the backend checks it
+// and issues our own tokens. A new Google account is always a customer.
+export const signInWithGoogle = apiThunk('auth/google', async ({ credential }, { apiFetch }) => {
+  const data = await apiFetch('/auth/google', { method: 'POST', body: { credential, deviceId: deviceId() }, retry: false });
+  setAccessToken(data.accessToken);
+  hint.set(true);
+  return data;
+});
+
+// Demo accounts served by the in-browser mock: the seeded seller and rider (approved
+// applications), the admin console, and a demo customer while Google is not set up.
+export const signInWithDemo = apiThunk('auth/demo', async ({ demoRole = 'customer' }, { apiFetch }) => {
+  const data = await apiFetch('/auth/demo', { method: 'POST', body: { demoRole }, retry: false });
   if (data.accessToken) {
     setAccessToken(data.accessToken);
     hint.set(true);
@@ -83,11 +92,12 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(signInWithGoogle.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
       .addCase(signInWithGoogle.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.accessToken = action.payload.accessToken;
+      })
+      .addCase(signInWithDemo.fulfilled, (state, action) => {
         state.isLoading = false;
         if (action.payload.mfaPending) {
           state.mfaPending = { user: action.payload.user };
@@ -95,10 +105,6 @@ const authSlice = createSlice({
           state.user = action.payload.user;
           state.accessToken = action.payload.accessToken;
         }
-      })
-      .addCase(signInWithGoogle.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload?.message;
       })
       .addCase(verifyAdminMfa.pending, (state) => {
         state.isLoading = true;
@@ -131,6 +137,14 @@ const authSlice = createSlice({
         state.user = null;
         state.accessToken = null;
         state.mfaPending = null;
+      })
+      .addMatcher(isAnyOf(signInWithGoogle.pending, signInWithDemo.pending), (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addMatcher(isAnyOf(signInWithGoogle.rejected, signInWithDemo.rejected), (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload?.message;
       });
   },
 });

@@ -1,7 +1,7 @@
 // Test database access. Every test runs inside a transaction that is rolled back, so the
 // seeded demo data is never changed. If MySQL is not running, the database suites skip.
 import knex from 'knex';
-import { loadEnv } from '../../src/config/env.js';
+import { loadDbEnv as loadEnv } from '../../src/config/env.js';
 import { migratorDb } from '../../src/db/connection.js';
 
 export async function connect() {

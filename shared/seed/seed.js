@@ -70,7 +70,7 @@ const SNACKS = {
   'Bikaneri Bhujia': S('Bikaneri Bhujia', { temp: 'AMBIENT', cat: 'namkeen', shape: 'pile', c: ['#E2B866', '#C08A3E'], spice: 2, w: '250 g', p: 10000, tags: ['crunch', 'movie'] }),
 };
 
-const CITIES = [
+export const CITIES = [
   { id: 'guntur', name: 'Guntur', state: 'Andhra Pradesh', lat: 16.3067, lng: 80.4365 },
   { id: 'vijayawada', name: 'Vijayawada', state: 'Andhra Pradesh', lat: 16.5062, lng: 80.648 },
   { id: 'visakhapatnam', name: 'Visakhapatnam', state: 'Andhra Pradesh', lat: 17.6868, lng: 83.2185 },

@@ -1,4 +1,4 @@
-import { tempRules } from './policy';
+import { tempRules } from './policy.js';
 
 /** A cart takes the strictest class of its items (doc 8.2). */
 export function cartTempClass(items) {

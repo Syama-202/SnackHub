@@ -1,7 +1,7 @@
 // npm run migrate | migrate:down | migrate:status
 // Runs as the migrator user. "rollback" undoes every applied migration, so up then down
 // returns the schemas to empty (prompt 2.1 done check).
-import { loadEnv } from '../src/config/env.js';
+import { loadDbEnv as loadEnv } from '../src/config/env.js';
 import { migratorDb } from '../src/db/connection.js';
 
 const command = process.argv[2] ?? 'latest';

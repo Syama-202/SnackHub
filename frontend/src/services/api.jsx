@@ -34,7 +34,9 @@ export class ApiError extends Error {
   }
 }
 
-const baseHeaders = () => (apiHost ? { 'X-SnackHub-Host': apiHost } : {});
+// X-SnackHub-Client: the backend refuses cookie-only requests (refresh, logout) without it,
+// because another site cannot add a custom header to a forged request (doc 16.2)
+const baseHeaders = () => ({ 'X-SnackHub-Client': 'web', ...(apiHost ? { 'X-SnackHub-Host': apiHost } : {}) });
 
 let refreshPromise = null;
 

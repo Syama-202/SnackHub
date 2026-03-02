@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 // Business rules and seed data shared with the API (../shared)
 const shared = fileURLToPath(new URL('../shared', import.meta.url));
+// The backend in development (npm run dev:backend)
+const backend = process.env.SNACKHUB_BACKEND_URL || 'http://127.0.0.1:4000';
 
 // Public build: customer, seller and rider apps. The admin console is a
 // separate build (vite.admin.config.js) so no admin code ships here (doc 16.3).
@@ -24,7 +26,15 @@ export default defineConfig({
       },
     },
   ],
-  server: { port: 5173, strictPort: true, fs: { allow: ['..'] } },
+  server: {
+    port: 5173,
+    strictPort: true,
+    fs: { allow: ['..'] },
+    // Requests the mock passes on (Google sign-in, refresh, logout, /me and the catalog
+    // reads) go to the real backend on the same origin, so the httpOnly refresh cookie
+    // works without CORS.
+    proxy: Object.fromEntries(['auth', 'me', 'cities', 'sellers', 'products', 'search'].map((p) => [`/api/v1/${p}`, backend])),
+  },
   build: {
     outDir: 'dist',
     // No manualChunks: three.js, React Three Fiber and GSAP are only reached through

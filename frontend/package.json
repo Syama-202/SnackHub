@@ -12,7 +12,9 @@
     "preview": "vite preview",
     "assets:manifest": "node scripts/asset-manifest.mjs",
     "assets:check": "node scripts/check-assets.mjs",
-    "assets:process": "node scripts/process-images.mjs"
+    "assets:process": "node scripts/process-images.mjs",
+    "assets:icons": "node scripts/brand-icons.mjs",
+    "assets:generate": "node --env-file-if-exists=.env.local scripts/generate-images.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.0",

@@ -252,7 +252,7 @@ export function Logo({ className = '', compact = false, tone = 'dark' }) {
     <span className={cx('inline-flex items-center gap-2', className)}>
       <LogoMark className="h-9 w-9" />
       {!compact && (
-        <span className="font-sans text-[22px] font-extrabold leading-none tracking-[-0.03em]">
+        <span className="font-display text-[23px] font-extrabold leading-none tracking-[-0.035em]">
           <span className="text-gradient">Snack</span>
           <span className={tone === 'dark' ? 'text-grey-800' : 'text-white'}>Hub</span>
         </span>
@@ -261,25 +261,48 @@ export function Logo({ className = '', compact = false, tone = 'dark' }) {
   );
 }
 
+/** The brand mark (doc 25.3): a scooter carrying a glowing snack box. Same drawing as public/assets/brand/mark.svg. */
 export function LogoMark({ className }) {
-  // Unique id per instance: a gradient inside a display:none copy would not paint
-  const gid = `lm${useId().replace(/:/g, '')}`;
+  // Unique ids per instance: a gradient inside a display:none copy would not paint
+  const id = useId().replace(/:/g, '');
+  const bg = `lmb${id}`;
+  const glow = `lmg${id}`;
   return (
-    <svg viewBox="0 0 48 48" className={className} aria-hidden="true">
+    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
       <defs>
-        <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={bg} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#FFC300" />
-          <stop offset=".55" stopColor="#FF7A00" />
+          <stop offset=".52" stopColor="#FF7A00" />
           <stop offset="1" stopColor="#E23744" />
         </linearGradient>
+        <radialGradient id={glow} cx=".5" cy=".5" r=".5">
+          <stop offset="0" stopColor="#FFF6D6" stopOpacity=".85" />
+          <stop offset="1" stopColor="#FFF6D6" stopOpacity="0" />
+        </radialGradient>
       </defs>
-      <rect width="48" height="48" rx="14" fill={`url(#${gid})`} />
-      <rect x="22" y="12" width="15" height="12" rx="2.5" fill="#fff" />
-      <path d="M22 17h15" stroke="#FF7A00" strokeWidth="2" />
-      <path d="M10 31h20l4-7h4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <circle cx="14" cy="34" r="4" fill="#1F2937" stroke="#fff" strokeWidth="2" />
-      <circle cx="34" cy="34" r="4" fill="#1F2937" stroke="#fff" strokeWidth="2" />
-      <path d="M27 9c1-2 3-2 3-4" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" fill="none" opacity=".9" />
+      <rect width="64" height="64" rx="18" fill={`url(#${bg})`} />
+      <path d="M0 18C0 8 8 0 18 0h28c4 0 7.6 1.3 10.6 3.5C42 6 22 14 0 34z" fill="#fff" opacity=".12" />
+      <circle cx="21" cy="22" r="15" fill={`url(#${glow})`} />
+      <g fill="none" stroke="#fff" strokeLinecap="round">
+        <path d="M17.5 13.5c-1.8-1.9 1.8-3.4 0-5.6" strokeWidth="2.2" opacity=".95" />
+        <path d="M24.5 13.5c-1.8-1.9 1.8-3.4 0-5.6" strokeWidth="2.2" opacity=".95" />
+        <path d="M3.5 36.5h4.5M2.5 41h3.5" strokeWidth="2.4" opacity=".75" />
+      </g>
+      <rect x="11" y="16" width="20" height="15" rx="2.6" fill="#fff" />
+      <path d="M11 20.6h20" stroke="#FF7A00" strokeWidth="1.8" />
+      <path d="M18 25.8h6" stroke="#FFB000" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M10 42.5c0-6.4 4.6-10.3 10.8-10.3h9.6c1.6 0 2.9 1 3.4 2.5l1.9 5.3h7.4v2.5z" fill="#fff" />
+      <path d="M36 40h6.4l3.6-13.2 2.6 1.2-4 14.5H36z" fill="#fff" />
+      <g fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M46.6 25.5 48.2 46.5" strokeWidth="3.4" />
+        <path d="M43.6 24.6h6.8" strokeWidth="3.6" />
+      </g>
+      <g stroke="#fff" strokeWidth="3">
+        <circle cx="19.5" cy="46.5" r="6" fill="#1F2937" />
+        <circle cx="48.2" cy="46.5" r="6" fill="#1F2937" />
+      </g>
+      <circle cx="19.5" cy="46.5" r="1.8" fill="#FFC300" />
+      <circle cx="48.2" cy="46.5" r="1.8" fill="#FFC300" />
     </svg>
   );
 }

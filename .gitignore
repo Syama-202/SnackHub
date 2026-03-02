@@ -1,7 +1,7 @@
 # Old code from the uploaded zip (frontend, Snack-Website, Food-Delivery-Microservices),
-# kept in legacy/ for reference only, never committed.
-# legacy/Snack-Website/.env holds real secrets (doc 3, P0-1): rotate them and keep them out of git.
-/legacy/
+# kept in folder/ for reference only, never committed.
+# folder/Snack-Website/.env holds real secrets (doc 3, P0-1): rotate them and keep them out of git.
+/folder/
 
 # Local tool settings
 /.claude/

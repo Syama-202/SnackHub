@@ -34,7 +34,7 @@ for (const c of crops) {
   }
   const main = await cut().resize({ width: 1200, kernel: 'lanczos3' }).webp({ quality: 80, effort: 5 }).toBuffer();
   writeFileSync(base, main);
-  Object.assign(asset, { status: 'ready', file: c.out, bytes: main.length, sha256: createHash('sha256').update(main).digest('hex'), credit });
+  Object.assign(asset, { status: 'ready', file: c.out, bytes: main.length, sha256: createHash('sha256').update(main).digest('hex'), credit: c.credit ?? credit });
   done++;
 }
 

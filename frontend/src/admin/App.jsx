@@ -6,7 +6,7 @@ import Toast from '../components/ui/Toast';
 import { Button, Card, Icon, Logo, Modal, cx } from '../components/ui';
 import GoogleG from '../components/ui/GoogleG';
 import { PageFallback } from '../routes/Guards';
-import { logoutUser, restoreSession, signInWithGoogle, verifyAdminMfa } from '../store/slices/auth';
+import { logoutUser, restoreSession, signInWithDemo, verifyAdminMfa } from '../store/slices/auth';
 import { addToast } from '../store/slices/toast';
 import LiveOps from './pages/LiveOps';
 import Approvals from './pages/Approvals';
@@ -142,7 +142,7 @@ function AdminSignIn() {
             <>
               <h1 className="mt-6 text-2xl font-extrabold">Step 1 of 2: Google</h1>
               <p className="mt-1 text-sm text-grey-600">Your email must be verified and on the admin list.</p>
-              <button onClick={() => dispatch(signInWithGoogle({ demoRole: 'admin' }))} disabled={isLoading} className="mt-5 flex h-12 w-full items-center justify-center gap-3 rounded-full border border-grey-800/15 bg-white font-bold shadow-sm hover:shadow-md disabled:opacity-60">
+              <button onClick={() => dispatch(signInWithDemo({ demoRole: 'admin' }))} disabled={isLoading} className="mt-5 flex h-12 w-full items-center justify-center gap-3 rounded-full border border-grey-800/15 bg-white font-bold shadow-sm hover:shadow-md disabled:opacity-60">
                 <GoogleG /> Continue with Google <span className="text-xs text-grey-600">(demo)</span>
               </button>
               {error && <p className="mt-3 text-sm font-bold text-red-text">{error}</p>}

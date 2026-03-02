@@ -1,5 +1,5 @@
 // npm run seed: loads the demo data into MySQL as the migrator user.
-import { loadEnv } from '../src/config/env.js';
+import { loadDbEnv as loadEnv } from '../src/config/env.js';
 import { migratorDb } from '../src/db/connection.js';
 import { seed } from '../src/db/seeds/demo.js';
 

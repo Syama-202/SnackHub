@@ -1,10 +1,12 @@
-import { http, HttpResponse, delay } from 'msw';
+import { http, HttpResponse, delay, passthrough, bypass } from 'msw';
 import { getDb, saveDb, resetDb, nextId } from './db';
+import { GOOGLE_CLIENT_ID } from '../constants/auth';
 import { tick, addEvent, notify, acceptOrder, assignRider, deliver, trackState, closeOrder, policyFor } from './simulate';
 import { deliveryPromise, cartTempClass } from '@shared/domain/promise';
 import { distanceM } from '@shared/domain/geo';
 import { canTransition } from '@shared/domain/orderStates';
 import { triage, canAutoResolve } from '@shared/domain/triage';
+import { rankSearch, searchTerm } from '@shared/domain/search';
 import { computeEarning } from '@shared/domain/penalty';
 
 const API = '/api/v1';
@@ -16,13 +18,25 @@ const fail = (status, code, message, details) =>
   HttpResponse.json({ error: { code, message, requestId: rid(), ...(details ? { details } : {}) } }, { status });
 const ok = (data, status = 200) => HttpResponse.json(data, { status });
 
-// --- auth: demo tokens look like demo.<role>.<userId>[.<mfaAt>]
+// --- auth: demo tokens look like demo.<role>.<userId>[.<mfaAt>]. With Google set up, a
+// customer holds the backend's real JWT instead; the backend checked it when it was issued,
+// so this stand-in for the not-yet-built shop APIs only reads its user id and role.
+const isDemoToken = (request) => (request.headers.get('authorization') || '').startsWith('Bearer demo.');
 function who(request) {
   const h = request.headers.get('authorization') || '';
   const [, tok] = h.split(' ');
-  if (!tok?.startsWith('demo.')) return null;
-  const [, role, id, mfaAt] = tok.split('.');
-  return { role, userId: Number(id), mfaAt: mfaAt ? Number(mfaAt) : null };
+  if (!tok) return null;
+  if (tok.startsWith('demo.')) {
+    const [, role, id, mfaAt] = tok.split('.');
+    return { role, userId: Number(id), mfaAt: mfaAt ? Number(mfaAt) : null };
+  }
+  try {
+    const claims = JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (claims.iss !== 'snackhub' || claims.exp * 1000 < Date.now()) return null;
+    return { role: claims.role, userId: Number(claims.sub), mfaAt: null };
+  } catch {
+    return null;
+  }
 }
 
 /** Role comes from the token, never the body. */
@@ -80,6 +94,23 @@ const withDb = (fn) => async (ctx) => {
   const res = fn({ ...ctx, body: body ?? {}, db });
   saveDb(db);
   return res;
+};
+
+// Catalog reads come from the backend on MySQL when it runs (npm run dev:backend). When it
+// is not running (the dev proxy answers 5xx), the mock answers from the same demo data and
+// does not ask the backend again for 30 seconds.
+let backendDownUntil = 0;
+const fromBackend = (mock) => async (ctx) => {
+  if (Date.now() > backendDownUntil) {
+    try {
+      const res = await fetch(bypass(ctx.request));
+      if (res.status < 500) return res;
+    } catch {
+      /* backend not running */
+    }
+    backendDownUntil = Date.now() + 30_000;
+  }
+  return mock(ctx);
 };
 
 const visibleSeller = (s) => ['active', 'probation'].includes(s.status) && !s.paused;
@@ -171,7 +202,10 @@ export const handlers = [
   })),
 
   // ---------- identity
-  http.post(`${API}/auth/google`, withDb(({ body, request, db }) => {
+  // POST /auth/google is not mocked: it goes to the real backend, which checks the Google ID
+  // token. The demo accounts below stay in the mock: the seeded seller and rider, the admin
+  // console, and a demo customer while Google is not set up.
+  http.post(`${API}/auth/demo`, withDb(({ body, request, db }) => {
     // Google sign-in always creates a customer. Seller, rider and admin accounts are seeded (demo).
     const user = db.users.find((u) => u.role === (body.demoRole || 'customer'));
     if (!user) return fail(400, 'BAD_REQUEST', 'Unknown demo account');
@@ -186,11 +220,14 @@ export const handlers = [
   // Rotate the refresh cookie into a new access token (doc 16.1)
   http.post(`${API}/auth/refresh`, withDb(({ request }) => {
     const s = readRefreshCookie(request);
-    if (!s) return fail(401, 'NO_SESSION', 'No active session');
-    return ok(s);
+    if (s) return ok(s);
+    // no demo session here: a real Google session lives in the backend's httpOnly cookie
+    if (GOOGLE_CLIENT_ID) return passthrough();
+    return fail(401, 'NO_SESSION', 'No active session');
   })),
   http.post(`${API}/auth/logout`, ({ request }) => {
     setRefreshCookie(request, null);
+    if (GOOGLE_CLIENT_ID) return passthrough();
     return new HttpResponse(null, { status: 204 });
   }),
   http.post(`${API}/admin/auth/mfa`, withDb(({ body, request, db }) => {
@@ -204,6 +241,8 @@ export const handlers = [
     return ok({ accessToken, user, amr: ['google', 'totp'] });
   })),
   http.get(`${API}/me`, withDb(({ request, db }) => {
+    // a real Google account is read from the backend
+    if (!isDemoToken(request) && GOOGLE_CLIENT_ID) return passthrough();
     const g = guard(request);
     if (g.res) return g.res;
     return ok(db.users.find((u) => u.id === g.u.userId));
@@ -245,15 +284,15 @@ export const handlers = [
   })),
 
   // ---------- catalog
-  http.get(`${API}/cities`, withDb(({ db }) => ok(db.cities))),
-  http.get(`${API}/sellers`, withDb(({ request, db }) => {
+  http.get(`${API}/cities`, fromBackend(withDb(({ db }) => ok(db.cities)))),
+  http.get(`${API}/sellers`, fromBackend(withDb(({ request, db }) => {
     const url = new URL(request.url);
     const lat = Number(url.searchParams.get('lat'));
     const lng = Number(url.searchParams.get('lng'));
     const temp = url.searchParams.get('temp');
     return ok(serviceableSellers(db, lat, lng, temp));
-  })),
-  http.get(`${API}/sellers/:id`, withDb(({ request, params, db }) => {
+  }))),
+  http.get(`${API}/sellers/:id`, fromBackend(withDb(({ request, params, db }) => {
     const s = db.sellers.find((x) => x.id === Number(params.id));
     if (!s || !visibleSeller(s)) return fail(404, 'NOT_FOUND', 'Shop not found');
     const url = new URL(request.url);
@@ -261,8 +300,8 @@ export const handlers = [
     const lng = Number(url.searchParams.get('lng'));
     const products = db.products.filter((p) => p.sellerId === s.id && p.active);
     return ok({ ...sellerPublic(s), promise: lat ? { HOT: promiseFor(db, s, { lat, lng }, 'HOT'), AMBIENT: promiseFor(db, s, { lat, lng }, 'AMBIENT') } : null, products });
-  })),
-  http.get(`${API}/products`, withDb(({ request, db }) => {
+  }))),
+  http.get(`${API}/products`, fromBackend(withDb(({ request, db }) => {
     const url = new URL(request.url);
     const lat = Number(url.searchParams.get('lat'));
     const lng = Number(url.searchParams.get('lng'));
@@ -276,27 +315,17 @@ export const handlers = [
       })
       .filter((p) => p.serviceable);
     return ok(list);
-  })),
-  // Search: Elasticsearch in the real stack, MySQL FULLTEXT as fallback. Here: fuzzy-ish match.
-  http.get(`${API}/search`, withDb(({ request, db }) => {
+  }))),
+  // Search: Elasticsearch in the real stack; the same ranking as the API on MySQL (shared/domain/search)
+  http.get(`${API}/search`, fromBackend(withDb(({ request, db }) => {
     const url = new URL(request.url);
     const q = (url.searchParams.get('q') || '').trim().toLowerCase();
-    const syn = { chakli: 'murukku', jilebi: 'jalebi', mithai: 'sweet', murku: 'murukku', samsa: 'samosa', bajji: 'bajji', laddoo: 'laddu' };
-    const term = syn[q] || q;
     const lat = Number(url.searchParams.get('lat'));
     const lng = Number(url.searchParams.get('lng'));
     const near = new Set(serviceableSellers(db, lat, lng).map((s) => s.id));
-    const score = (p) => {
-      const t = p.title.toLowerCase();
-      if (t.startsWith(term)) return 3;
-      if (t.includes(term)) return 2;
-      if (p.category.includes(term) || p.region.toLowerCase().includes(term) || p.tags.some((x) => x.includes(term))) return 1;
-      if (term.length > 3 && lev(t.split(' ')[0], term) <= 2) return 1;
-      return 0;
-    };
-    const res = db.products.filter((p) => near.has(p.sellerId) && p.active).map((p) => ({ p, s: score(p) })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 8).map((x) => ({ id: x.p.id, slug: x.p.slug, title: x.p.title, sellerId: x.p.sellerId, shopName: db.sellers.find((s) => s.id === x.p.sellerId).shopName, pricePaise: x.p.pricePaise, art: x.p.art, servingTemp: x.p.servingTemp }));
+    const res = rankSearch(db.products.filter((p) => near.has(p.sellerId) && p.active), searchTerm(q)).map((p) => ({ id: p.id, slug: p.slug, title: p.title, sellerId: p.sellerId, shopName: db.sellers.find((s) => s.id === p.sellerId).shopName, pricePaise: p.pricePaise, art: p.art, servingTemp: p.servingTemp }));
     return ok({ q, results: res, provider: 'mock-fulltext' });
-  })),
+  }))),
 
   // ---------- cart (Redis hash cart:{userId}, one seller only)
   http.get(`${API}/cart`, withDb(({ request, db }) => {
@@ -937,10 +966,3 @@ export const handlers = [
   })),
 ];
 
-function lev(a, b) {
-  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
-  for (let j = 1; j <= b.length; j++) dp[0][j] = j;
-  for (let i = 1; i <= a.length; i++)
-    for (let j = 1; j <= b.length; j++) dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-  return dp[a.length][b.length];
-}

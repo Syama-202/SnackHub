@@ -13,10 +13,11 @@ const VALID = {
   DB_MIGRATOR_USER: 'sh_migrator',
   DB_MIGRATOR_PASSWORD: 'not-a-real-secret',
   DB_MODULE_PASSWORD: 'not-a-real-secret',
+  JWT_SECRET: 'test-only-secret-that-is-at-least-32-characters',
 };
 
 const fakeDb = (ok = true) => ({ raw: async () => (ok ? [[{ 1: 1 }]] : Promise.reject(new Error('down'))) });
-const appWith = (dbs = { catalog: fakeDb() }) => createApp({ env: loadEnv(VALID), logger: pino({ level: 'silent' }), dbs });
+const appWith = (dbs = { catalog: fakeDb() }) => createApp({ env: loadEnv(VALID), logger: pino({ level: 'silent' }), dbs, verifyGoogle: async () => { throw new Error('not used'); } });
 
 describe('env check', () => {
   it('fails at boot naming the bad keys, never their values', () => {

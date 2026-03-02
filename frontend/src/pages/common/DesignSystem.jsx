@@ -62,8 +62,8 @@ export default function DesignSystem() {
 
       <h2 className="mt-12 text-2xl font-extrabold">Typography</h2>
       <Card className="mt-4 space-y-2 p-6">
-        <p className="font-display text-5xl font-extrabold">Fraunces for headings</p>
-        <p className="text-lg">Plus Jakarta Sans for text and the wordmark. Clean and readable at small sizes on cheap phones.</p>
+        <p className="font-display text-5xl font-extrabold">Outfit for headings and the wordmark</p>
+        <p className="text-lg">Inter for text, prices and forms. Clean and readable at small sizes on cheap phones.</p>
       </Card>
 
       <h2 className="mt-12 text-2xl font-extrabold">Buttons and pills</h2>
