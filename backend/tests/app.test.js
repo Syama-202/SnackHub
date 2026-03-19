@@ -14,6 +14,7 @@ const VALID = {
   DB_MIGRATOR_PASSWORD: 'not-a-real-secret',
   DB_MODULE_PASSWORD: 'not-a-real-secret',
   JWT_SECRET: 'test-only-secret-that-is-at-least-32-characters',
+      MFA_KEY: 'dGVzdC1vbmx5LW1mYS1rZXktMzItYnl0ZXMtbG9uZyE',
 };
 
 const fakeDb = (ok = true) => ({ raw: async () => (ok ? [[{ 1: 1 }]] : Promise.reject(new Error('down'))) });

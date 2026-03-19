@@ -12,7 +12,7 @@ const COLS = [
 export default function Footer() {
   return (
     <footer className="mt-24 bg-grey-900 text-[#FFF3E0]">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-[1.3fr_repeat(3,1fr)]">
+      <div className="page grid gap-10 py-14 md:grid-cols-[1.3fr_repeat(3,1fr)]">
         <div>
           <Logo tone="light" />
           <p className="mt-4 max-w-xs text-[#FFF3E0]/80">India's regional flavours from verified local shops near you.</p>
@@ -39,7 +39,7 @@ export default function Footer() {
         ))}
       </div>
       <div className="border-t border-white/10">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-[#FFF3E0]/60 md:flex-row">
+        <div className="page flex flex-col items-center justify-between gap-3 py-6 text-sm text-[#FFF3E0]/60 md:flex-row">
           <p className="font-display text-xl font-bold text-[#FFF3E0]">Made for cravings. Inspired by India.</p>
           <p>
             hello@snackhub.example · Guntur, Andhra Pradesh (placeholder) · <span className="underline-offset-2">Privacy</span> · <span>Terms</span>

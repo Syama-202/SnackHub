@@ -24,6 +24,7 @@ const env = migrator
       DB_PORT: String(dbEnv.DB_PORT),
       CORS_ORIGINS: 'http://localhost:5175',
       JWT_SECRET: 'test-only-secret-that-is-at-least-32-characters',
+      MFA_KEY: 'dGVzdC1vbmx5LW1mYS1rZXktMzItYnl0ZXMtbG9uZyE',
       GOOGLE_CLIENT_ID: 'test-client.apps.googleusercontent.com',
       COOKIE_SECURE: 'false',
     })
@@ -67,7 +68,7 @@ describe.skipIf(!migrator)('Google sign-in', () => {
     expect(res.status).toBe(200);
     expect(res.body.user).toMatchObject({ email: p.email, role: 'customer' });
     const claims = verifyAccessToken(env, res.body.accessToken);
-    expect(claims).toEqual({ userId: res.body.user.id, role: 'customer' });
+    expect(claims).toEqual({ userId: res.body.user.id, role: 'customer', mfaAt: null });
     const cookie = cookieFrom(res);
     expect(cookie).toMatch(/HttpOnly/i);
     expect(cookie).toMatch(/SameSite=Strict/i);

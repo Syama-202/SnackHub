@@ -46,7 +46,7 @@ const Login = () => {
   return (
     <div className="mx-auto grid min-h-[70vh] max-w-lg place-items-center px-4 py-10">
       <Card glass className="w-full p-6 sm:p-8">
-        <LogoMark className="h-12 w-12" />
+        <LogoMark className="h-24 w-24 shadow-[0_14px_34px_-12px_rgba(232,106,0,0.7)]" />
         <h1 className="mt-4 text-3xl font-extrabold">Sign in to SnackHub</h1>
         {current && current.role !== as && <p className="mt-2 rounded-xl bg-sun/25 p-3 text-sm">You are signed in as a {current.role}. This page needs a {as} account.</p>}
         <fieldset className="mt-5">

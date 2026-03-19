@@ -44,7 +44,9 @@ let refreshPromise = null;
 export async function refreshAccessToken() {
   await apiReady;
   if (!refreshPromise) {
-    refreshPromise = fetch(`${API_URL}/auth/refresh`, { method: 'POST', credentials: 'include', headers: baseHeaders() })
+    // the admin console has its own session cookie and refresh route (doc 16.3)
+    const path = apiHost === 'admin' ? '/admin/auth/refresh' : '/auth/refresh';
+    refreshPromise = fetch(`${API_URL}${path}`, { method: 'POST', credentials: 'include', headers: baseHeaders() })
       .then(async (res) => {
         const data = await res.json().catch(() => null);
         if (!res.ok) throw new ApiError(res.status, data?.error);

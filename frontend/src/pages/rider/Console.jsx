@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import ConsoleLayout from '../../components/layout/Console';
 import RiderToday from './Today';
 import RiderEarnings from './Earnings';
@@ -14,6 +14,8 @@ const RiderConsole = () => (
     <Routes>
       <Route index element={<RiderToday />} />
       <Route path="earnings" element={<RiderEarnings />} />
+      {/* an unknown address inside the console goes back to its first screen */}
+      <Route path="*" element={<Navigate to="/rider" replace />} />
     </Routes>
   </ConsoleLayout>
 );

@@ -5,6 +5,8 @@ import { healthRoutes } from './health.js';
 import { authRoutes } from './auth.js';
 import { meRoutes } from './me.js';
 import { catalogRoutes } from './catalog.js';
+import { applicationsRoutes } from './applications.js';
+import { adminAuthRoutes } from './adminAuth.js';
 
 export function routes(deps) {
   const router = Router();
@@ -13,6 +15,8 @@ export function routes(deps) {
   api.use(authRoutes(deps));
   api.use(meRoutes(deps));
   api.use(catalogRoutes(deps));
+  api.use(applicationsRoutes(deps));
+  api.use(adminAuthRoutes(deps));
   router.use('/api/v1', api);
   return router;
 }

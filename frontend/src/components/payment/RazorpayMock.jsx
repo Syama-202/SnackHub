@@ -30,7 +30,7 @@ export default function RazorpayMock({ open, payment, method, onSuccess, onFailu
               <p className="text-xs opacity-80">SnackHub · test mode</p>
               <p className="text-2xl font-extrabold">{rupees(payment.amountPaise)}</p>
             </div>
-            <span className="rounded bg-sun px-2 py-0.5 text-[11px] font-extrabold uppercase text-grey-800">Simulated</span>
+            <span className="rounded bg-sun px-2 py-0.5 text-[0.6875rem] font-extrabold uppercase text-grey-800">Simulated</span>
           </div>
           <div className="flex border-b border-grey-800/10" role="tablist">
             {[['upi', 'UPI'], ['card', 'Card']].map(([id, l]) => (

@@ -15,7 +15,8 @@
     "migrate:status": "node --env-file=.env scripts/migrate.js status",
     "seed": "node --env-file=.env scripts/seed.js",
     "test": "vitest run",
-    "db:local": "node scripts/local-db-init.js"
+    "db:local": "node scripts/local-db-init.js",
+    "create-admin": "node --env-file=.env scripts/create-admin.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",
@@ -26,8 +27,10 @@
     "jsonwebtoken": "^9.0.2",
     "knex": "^3.1.0",
     "mysql2": "^3.11.0",
+    "otplib": "^12.0.1",
     "pino": "^9.4.0",
     "pino-http": "^10.3.0",
+    "qrcode": "^1.5.4",
     "zod": "^3.25.0"
   },
   "devDependencies": {

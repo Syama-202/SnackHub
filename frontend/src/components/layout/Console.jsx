@@ -1,6 +1,7 @@
 import { NavLink, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import DemoBanner from './DemoBanner';
+import Backdrop from '../ui/Backdrop';
 import Toast from '../ui/Toast';
 import { Logo, Icon, cx } from '../ui';
 import { logoutUser } from '../../store/slices/auth';
@@ -17,18 +18,19 @@ const ConsoleLayout = ({ title, tabs, children, mobileTabs = false }) => {
     dispatch(resetRider());
   };
   return (
-    <div className="min-h-dvh bg-console">
+    <div className="min-h-dvh">
+      <Backdrop />
       <DemoBanner />
-      <header className="sticky top-0 z-40 border-b border-grey-800/10 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4">
+      <header className="sticky top-0 z-40 px-3 pt-3">
+        <div className="page glass glass-strong flex h-16 items-center gap-3">
           <Link to="/" aria-label="SnackHub home"><Logo compact /></Link>
           <div className="min-w-0">
-            <p className="font-display text-lg font-extrabold leading-none">{title}</p>
+            <p className="font-display text-xl font-extrabold leading-none">{title}</p>
             <p className="truncate text-xs text-grey-600">{user?.name}</p>
           </div>
           <nav className="ml-4 hidden gap-1 md:flex" aria-label={title}>
             {tabs.map((t) => (
-              <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-bold transition', isActive ? 'bg-grey-800 text-white' : 'text-grey-800 hover:bg-grey-800/5')}>
+              <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-bold transition', isActive ? 'chip-on' : 'text-grey-800 hover:bg-white/70')}>
                 <Icon name={t.icon} className="h-4 w-4" /> {t.label}
               </NavLink>
             ))}
@@ -38,10 +40,10 @@ const ConsoleLayout = ({ title, tabs, children, mobileTabs = false }) => {
           </button>
         </div>
       </header>
-      <main id="main" className={cx('mx-auto max-w-7xl px-4 py-6', mobileTabs && 'pb-28 md:pb-6')}>{children}</main>
-      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 grid border-t border-grey-800/10 bg-white md:hidden" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }} aria-label={`${title} sections`}>
+      <main id="main" className={cx('page py-6', mobileTabs && 'pb-28 md:pb-6')}>{children}</main>
+      <nav className="glass glass-strong safe-bottom fixed inset-x-2 bottom-2 z-40 grid md:hidden" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }} aria-label={`${title} sections`}>
         {tabs.map((t) => (
-          <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold', isActive ? 'text-orange-text' : 'text-grey-600')}>
+          <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('flex flex-col items-center gap-0.5 py-2 text-[0.6875rem] font-bold', isActive ? 'text-orange-text' : 'text-grey-600')}>
             <Icon name={t.icon} className="h-6 w-6" /> {t.label}
           </NavLink>
         ))}

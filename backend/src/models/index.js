@@ -6,11 +6,15 @@ export { userModel } from './identity/user.js';
 export { addressModel } from './identity/address.js';
 export { refreshTokenModel } from './identity/refreshToken.js';
 export { auditLogModel } from './identity/auditLog.js';
+export { adminMfaModel } from './identity/adminMfa.js';
+export { adminRecoveryCodeModel } from './identity/adminRecoveryCode.js';
+export { adminEnrolmentModel } from './identity/adminEnrolment.js';
 
 export { sellerModel, VISIBLE_STATUSES } from './catalog/seller.js';
 export { productModel } from './catalog/product.js';
 export { stockModel } from './catalog/stock.js';
 export { stockHoldModel } from './catalog/stockHold.js';
+export { sellerApplicationModel } from './catalog/sellerApplication.js';
 
 export { deliveryPolicyModel } from './ordering/deliveryPolicy.js';
 export { orderModel } from './ordering/order.js';
@@ -24,6 +28,7 @@ export { riderModel } from './dispatch/rider.js';
 export { assignmentModel } from './dispatch/assignment.js';
 export { riderTrailModel } from './dispatch/riderTrail.js';
 export { riderEarningModel } from './dispatch/riderEarning.js';
+export { riderApplicationModel } from './dispatch/riderApplication.js';
 
 export { paymentModel } from './payment/payment.js';
 export { webhookEventModel } from './payment/webhookEvent.js';

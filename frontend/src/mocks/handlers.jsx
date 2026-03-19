@@ -33,7 +33,7 @@ function who(request) {
   try {
     const claims = JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
     if (claims.iss !== 'snackhub' || claims.exp * 1000 < Date.now()) return null;
-    return { role: claims.role, userId: Number(claims.sub), mfaAt: null };
+    return { role: claims.role, userId: Number(claims.sub), mfaAt: claims.mfa_at ? claims.mfa_at * 1000 : null };
   } catch {
     return null;
   }
@@ -114,7 +114,7 @@ const fromBackend = (mock) => async (ctx) => {
 };
 
 const visibleSeller = (s) => ['active', 'probation'].includes(s.status) && !s.paused;
-const sellerPublic = (s) => ({ id: s.id, shopName: s.shopName, city: s.city, region: s.region, lat: s.lat, lng: s.lng, rating: s.rating, verified: s.verified, isNew: s.isNew, busyExtraMin: s.busyExtraMin, qualityScore: s.qualityScore, licenceValid: true });
+const sellerPublic = (s) => ({ id: s.id, shopName: s.shopName, kind: s.kind || 'shop', city: s.city, region: s.region, lat: s.lat, lng: s.lng, rating: s.rating, verified: s.verified, isNew: s.isNew, busyExtraMin: s.busyExtraMin, qualityScore: s.qualityScore, licenceValid: true });
 
 function promiseFor(db, seller, point, temp) {
   const km = distanceM(seller, point) / 1000;
@@ -230,7 +230,10 @@ export const handlers = [
     if (GOOGLE_CLIENT_ID) return passthrough();
     return new HttpResponse(null, { status: 204 });
   }),
+  // Admin sign-in with a real Google account runs on the backend (Google, then TOTP); only the
+  // demo admin's half-session (demo.mfa_pending.*) is answered here, with the demo code.
   http.post(`${API}/admin/auth/mfa`, withDb(({ body, request, db }) => {
+    if (body.halfToken && !String(body.halfToken).startsWith('demo.')) return passthrough();
     if (request.headers.get('x-snackhub-host') !== 'admin') return fail(404, 'NOT_FOUND', 'Not found');
     const { code } = body;
     const user = db.users.find((u) => u.role === 'admin');
@@ -240,6 +243,28 @@ export const handlers = [
     setRefreshCookie(request, { accessToken, user });
     return ok({ accessToken, user, amr: ['google', 'totp'] });
   })),
+  http.post(`${API}/admin/auth/refresh`, withDb(({ request }) => {
+    const s = readRefreshCookie(request);
+    if (s) return ok(s);
+    // a real admin session lives in the backend's admin cookie
+    if (GOOGLE_CLIENT_ID) return passthrough();
+    return fail(401, 'NO_SESSION', 'No active session');
+  })),
+  http.post(`${API}/admin/auth/step-up`, withDb(({ body, request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    if (request.headers.get('x-snackhub-host') !== 'admin') return fail(404, 'NOT_FOUND', 'Not found');
+    if (who(request)?.role !== 'admin') return fail(403, 'FORBIDDEN', 'Admins only');
+    if (body.code !== '246810') return fail(401, 'MFA_INVALID', 'That code is not right. 5 wrong codes lock the account for 15 minutes.');
+    const user = db.users.find((u) => u.role === 'admin');
+    const accessToken = `demo.admin.${user.id}.${Date.now()}`;
+    setRefreshCookie(request, { accessToken, user });
+    return ok({ accessToken });
+  })),
+  http.post(`${API}/admin/auth/logout-all`, ({ request }) => {
+    setRefreshCookie(request, null);
+    if (!isDemoToken(request)) return passthrough();
+    return new HttpResponse(null, { status: 204 });
+  }),
   http.get(`${API}/me`, withDb(({ request, db }) => {
     // a real Google account is read from the backend
     if (!isDemoToken(request) && GOOGLE_CLIENT_ID) return passthrough();
@@ -311,7 +336,7 @@ export const handlers = [
       .map((p) => {
         const s = near.get(p.sellerId);
         const pr = s.promise[p.servingTemp];
-        return { ...p, shopName: s.shopName, serviceable: Boolean(pr?.serviceable), window: pr?.window, distanceKm: s.distanceKm };
+        return { ...p, shopName: s.shopName, shopKind: s.kind, serviceable: Boolean(pr?.serviceable), window: pr?.window, distanceKm: s.distanceKm };
       })
       .filter((p) => p.serviceable);
     return ok(list);
@@ -850,12 +875,15 @@ export const handlers = [
     if (g.res) return g.res;
     return ok(db.sellers);
   })),
+  // Applications live in MySQL for a real admin session (backend); the demo admin sees the mock's
   http.get(`${API}/admin/applications`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request);
     if (g.res) return g.res;
     return ok(db.applications);
   })),
   http.post(`${API}/admin/applications/:id/:action`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     // Ticking a checklist item is routine; approving or rejecting needs fresh MFA
     const g = adminGuard(request, { stepUp: params.action !== 'check' });
     if (g.res) return g.res;
@@ -875,7 +903,10 @@ export const handlers = [
     } else if (params.action === 'reject') {
       if (!b.reason) return fail(422, 'REASON_REQUIRED', 'A written reason is required');
       a.status = 'REJECTED';
-    } else if (params.action === 'needs-info') a.status = 'NEEDS_INFO';
+    } else if (params.action === 'needs-info') {
+      if (!b.reason) return fail(422, 'REASON_REQUIRED', 'A written reason is required');
+      a.status = 'NEEDS_INFO';
+    }
     else if (params.action === 'check') a.checks[b.check] = Boolean(b.value);
     a.decisionReason = b.reason || a.decisionReason;
     audit(db, g.u, `application.${params.action}`, { status: before }, { status: a.status, reason: b.reason });

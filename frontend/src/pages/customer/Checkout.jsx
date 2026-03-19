@@ -97,7 +97,7 @@ const Checkout = () => {
 
   const lines = cart.items.length ? cart.items : [];
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-6">
+    <div className="page page-narrow pt-6">
       <h1 className="text-4xl font-extrabold">Checkout</h1>
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-6">

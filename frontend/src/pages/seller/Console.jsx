@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import ConsoleLayout from '../../components/layout/Console';
 import SellerOrders from './Orders';
 import SellerProducts from './Products';
@@ -17,6 +17,8 @@ const SellerConsole = () => (
       <Route index element={<SellerOrders />} />
       <Route path="products" element={<SellerProducts />} />
       <Route path="shop" element={<SellerShop />} />
+      {/* an unknown address inside the console goes back to its first screen */}
+      <Route path="*" element={<Navigate to="/seller" replace />} />
     </Routes>
   </ConsoleLayout>
 );

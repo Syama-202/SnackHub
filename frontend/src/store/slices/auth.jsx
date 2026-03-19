@@ -23,9 +23,16 @@ export const signInWithDemo = apiThunk('auth/demo', async ({ demoRole = 'custome
   return data;
 });
 
-// Admin second factor (doc 16.3): turns the mfa_pending half-session into a token with mfa_at
-export const verifyAdminMfa = apiThunk('auth/verifyMfa', async ({ code }, { apiFetch }) => {
-  const data = await apiFetch('/admin/auth/mfa', { method: 'POST', body: { code }, retry: false });
+// Admin console, step 1 (doc 16.3): Google for an account on the admin list gives only a
+// half-session (mfa_pending), kept in memory for the code step
+export const signInAdminWithGoogle = apiThunk('auth/adminGoogle', async ({ credential }, { apiFetch }) =>
+  apiFetch('/admin/auth/google', { method: 'POST', body: { credential, deviceId: deviceId() }, retry: false }),
+);
+
+// Step 2: the half-session and a TOTP or recovery code give a token with mfa_at
+export const verifyAdminMfa = apiThunk('auth/verifyMfa', async ({ code }, { apiFetch, getState }) => {
+  const halfToken = getState().auth.mfaPending?.halfToken;
+  const data = await apiFetch('/admin/auth/mfa', { method: 'POST', body: { halfToken, code }, retry: false });
   setAccessToken(data.accessToken);
   hint.set(true);
   return data;
@@ -63,8 +70,16 @@ export const restoreSession = apiThunk('auth/restoreSession', async () => {
   }
 });
 
+// A sensitive admin action needs a code from the last 5 minutes: a fresh code renews it
+export const adminStepUp = apiThunk('auth/adminStepUp', async ({ code }, { apiFetch }) => {
+  const data = await apiFetch('/admin/auth/step-up', { method: 'POST', body: { code }, retry: false });
+  setAccessToken(data.accessToken);
+  return data;
+});
+
+// The admin console only offers "sign out everywhere" (doc 16.3)
 export const logoutUser = apiThunk('auth/logout', async (_, { apiFetch }) => {
-  await apiFetch('/auth/logout', { method: 'POST', retry: false }).catch(() => {});
+  await apiFetch(getApiHost() === 'admin' ? '/admin/auth/logout-all' : '/auth/logout', { method: 'POST', retry: false }).catch(() => {});
   setAccessToken(null);
   hint.set(false);
   return null;
@@ -84,6 +99,11 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    // back to the Google step (the half-session expired, or another account)
+    mfaCancelled: (state) => {
+      state.mfaPending = null;
+      state.error = null;
+    },
     // Demo helper for the admin step-up screen: pretend the factor was checked long ago
     tokenReplaced: (state, action) => {
       state.accessToken = action.payload;
@@ -100,11 +120,18 @@ const authSlice = createSlice({
       .addCase(signInWithDemo.fulfilled, (state, action) => {
         state.isLoading = false;
         if (action.payload.mfaPending) {
-          state.mfaPending = { user: action.payload.user };
+          state.mfaPending = { user: action.payload.user, halfToken: action.payload.halfToken, demo: true };
         } else {
           state.user = action.payload.user;
           state.accessToken = action.payload.accessToken;
         }
+      })
+      .addCase(signInAdminWithGoogle.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.mfaPending = { user: action.payload.user, halfToken: action.payload.halfToken, demo: false };
+      })
+      .addCase(adminStepUp.fulfilled, (state, action) => {
+        state.accessToken = action.payload.accessToken;
       })
       .addCase(verifyAdminMfa.pending, (state) => {
         state.isLoading = true;
@@ -138,18 +165,18 @@ const authSlice = createSlice({
         state.accessToken = null;
         state.mfaPending = null;
       })
-      .addMatcher(isAnyOf(signInWithGoogle.pending, signInWithDemo.pending), (state) => {
+      .addMatcher(isAnyOf(signInWithGoogle.pending, signInWithDemo.pending, signInAdminWithGoogle.pending), (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addMatcher(isAnyOf(signInWithGoogle.rejected, signInWithDemo.rejected), (state, action) => {
+      .addMatcher(isAnyOf(signInWithGoogle.rejected, signInWithDemo.rejected, signInAdminWithGoogle.rejected), (state, action) => {
         state.isLoading = false;
         state.error = action.payload?.message;
       });
   },
 });
 
-export const { clearError, tokenReplaced } = authSlice.actions;
+export const { clearError, tokenReplaced, mfaCancelled } = authSlice.actions;
 export const selectUser = (state) => state.auth.user;
 export const selectRole = (state) => state.auth.user?.role;
 export default authSlice.reducer;

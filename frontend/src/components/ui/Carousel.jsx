@@ -13,7 +13,7 @@ export default function Carousel({ children, label }) {
         role="region"
         aria-label={label}
         tabIndex={0}
-        className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-4 pb-4 focus-visible:outline-none"
+        className="no-scrollbar bleed flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-4 focus-visible:outline-none"
         onPointerDown={(e) => {
           if (e.pointerType !== 'mouse') return;
           drag.current = { x: e.clientX, left: ref.current.scrollLeft, moved: false };

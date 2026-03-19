@@ -1,6 +1,7 @@
 // Builds assets/manifest.json: every image, video and 3D model the UI needs (doc 22.7, 22.8, 25).
-// Run: npm run assets:manifest. Existing status, file and checksum fields are kept, so the
-// manifest can be regenerated after the catalogue changes without losing progress.
+// Run: npm run assets:manifest. Existing status, file and checksum fields (and the prompt of an
+// image already made) are kept, so the manifest can be regenerated after the catalogue changes
+// without losing progress.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { buildSeed } from '../../shared/seed/seed.js';
 
@@ -23,6 +24,8 @@ const add = (a) => {
     credit: 'AI illustration',
     ...a,
     ...(old ? { status: old.status, file: old.file, bytes: old.bytes, sha256: old.sha256, credit: old.credit } : {}),
+    // an image already made keeps the prompt and tool it was made with
+    ...(old && old.status !== 'needed' ? { prompt: old.prompt, tool: old.tool } : {}),
   });
 };
 

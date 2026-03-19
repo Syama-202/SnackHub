@@ -37,12 +37,12 @@ export default function LanePreview() {
   }, [inView]);
 
   return (
-    <section ref={ref} className="mx-auto max-w-7xl px-4 py-24">
+    <section ref={ref} className="page py-24">
       <SectionTitle eyebrow="Track your order" title="A rider you can actually see." sub="During an order, the rider lane sits at the bottom of every page and moves only when the rider's real location moves." />
       <div className="mt-10 overflow-hidden rounded-[28px] bg-grey-900 shadow-2xl">
         <div className="flex items-center justify-between px-5 pt-4 text-sm text-white">
           <span className="font-bold">{state.stage === 'ARRIVED' ? 'Your rider has reached' : `Rider is ${state.etaMin} min away · ${(state.distanceM / 1000).toFixed(1)} km`}</span>
-          <span className="rounded-full bg-sun px-2 py-0.5 text-[11px] font-extrabold uppercase text-grey-800">Demo feed</span>
+          <span className="rounded-full bg-sun px-2 py-0.5 text-[0.6875rem] font-extrabold uppercase text-grey-800">Demo feed</span>
         </div>
         <LaneSvg stage={state.stage} progress={state.progress} height={150} />
       </div>

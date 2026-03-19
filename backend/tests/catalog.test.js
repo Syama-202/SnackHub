@@ -16,7 +16,8 @@ afterAll(async () => {
 });
 
 const env = migrator
-  ? loadEnv({ ...dbEnv, DB_PORT: String(dbEnv.DB_PORT), CORS_ORIGINS: 'http://localhost:5173', JWT_SECRET: 'test-only-secret-that-is-at-least-32-characters', GOOGLE_CLIENT_ID: '' })
+  ? loadEnv({ ...dbEnv, DB_PORT: String(dbEnv.DB_PORT), CORS_ORIGINS: 'http://localhost:5173', JWT_SECRET: 'test-only-secret-that-is-at-least-32-characters',
+      MFA_KEY: 'dGVzdC1vbmx5LW1mYS1rZXktMzItYnl0ZXMtbG9uZyE', GOOGLE_CLIENT_ID: '' })
   : null;
 const app = migrator ? createApp({ env, logger: pino({ level: 'silent' }), dbs, verifyGoogle: async () => { throw new Error('unused'); } }) : null;
 
@@ -39,6 +40,14 @@ describe.skipIf(!migrator)('catalog API', () => {
     expect(first.promise.AMBIENT.window[1]).toBeLessThanOrEqual(30);
     expect(first).not.toHaveProperty('licenceNo');
     expect(first).not.toHaveProperty('user_id');
+  });
+
+  it('says whether a seller is a shop, a street stall or a home kitchen', async () => {
+    const shops = (await request(app).get(`/api/v1/sellers?${BRODIPET}`).expect(200)).body;
+    expect(shops.find((s) => s.id === 1)).toMatchObject({ shopName: 'Brodipet Mirchi Corner', kind: 'stall' });
+    expect(shops.map((s) => s.kind)).toEqual(expect.arrayContaining(['shop', 'stall', 'home']));
+    const products = (await request(app).get(`/api/v1/products?${BRODIPET}`).expect(200)).body;
+    expect(products.find((p) => p.sellerId === 1).shopKind).toBe('stall');
   });
 
   it('returns nothing where no shop delivers', async () => {

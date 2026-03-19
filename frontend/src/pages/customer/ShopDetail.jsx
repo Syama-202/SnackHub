@@ -32,7 +32,7 @@ const ShopDetail = () => {
   const products = (shop?.products || []).map((x) => ({ ...x, shopName: shop.shopName, window: (x.servingTemp === 'HOT' ? hot : amb)?.window }));
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pt-6">
+    <div className="page pt-6">
       <Link to="/shop" className="inline-flex h-11 items-center gap-1 text-sm font-bold text-grey-600 hover:text-grey-800"><Icon name="arrowLeft" className="h-4 w-4" /> All shops</Link>
       <section className="relative mt-2 overflow-hidden rounded-[28px] bg-hero p-6 text-grey-800 sm:p-10">
         <div className="absolute -right-10 -top-10 h-56 w-56 rounded-full bg-white/20 blur-2xl" aria-hidden="true" />
@@ -57,7 +57,7 @@ const ShopDetail = () => {
         )}
       </section>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5">
         {!shop && Array.from({ length: 4 }, (_, i) => <ProductCardSkeleton key={i} />)}
         {products.map((x) => (
           <div id={`p-${x.id}`} key={x.id}>

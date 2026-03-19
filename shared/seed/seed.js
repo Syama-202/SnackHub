@@ -11,9 +11,11 @@
  *  - One Guntur rider offline -> matching skips offline riders
  */
 
+import { MORE_SNACKS, MORE_CITIES, MORE_SHOPS, LOCAL_SHOPS } from './regional.js';
+
 // art: shape + two colours for the illustrative SnackArt component
 const S = (title, o) => ({ title, ...o });
-const SNACKS = {
+const BASE_SNACKS = {
   'Mirchi Bajji': S('Mirchi Bajji', { temp: 'HOT', cat: 'fried', shape: 'bajji', c: ['#E8A23A', '#3F7D20'], spice: 3, w: '4 pcs', p: 6000, tags: ['spicy', 'tea'] }),
   Punugulu: S('Punugulu', { temp: 'HOT', cat: 'fried', shape: 'ball', c: ['#D98A2B', '#F4C26B'], spice: 2, w: '12 pcs', p: 5000, tags: ['spicy', 'tea', 'childhood'] }),
   Ariselu: S('Ariselu', { temp: 'AMBIENT', cat: 'sweet', shape: 'disc', c: ['#8A4B1F', '#C98B4A'], spice: 0, w: '250 g', p: 18000, tags: ['sweet', 'festive'] }),
@@ -70,7 +72,7 @@ const SNACKS = {
   'Bikaneri Bhujia': S('Bikaneri Bhujia', { temp: 'AMBIENT', cat: 'namkeen', shape: 'pile', c: ['#E2B866', '#C08A3E'], spice: 2, w: '250 g', p: 10000, tags: ['crunch', 'movie'] }),
 };
 
-export const CITIES = [
+const BASE_CITIES = [
   { id: 'guntur', name: 'Guntur', state: 'Andhra Pradesh', lat: 16.3067, lng: 80.4365 },
   { id: 'vijayawada', name: 'Vijayawada', state: 'Andhra Pradesh', lat: 16.5062, lng: 80.648 },
   { id: 'visakhapatnam', name: 'Visakhapatnam', state: 'Andhra Pradesh', lat: 17.6868, lng: 83.2185 },
@@ -85,20 +87,26 @@ export const CITIES = [
   { id: 'pune', name: 'Pune', state: 'Maharashtra', lat: 18.5204, lng: 73.8567 },
 ];
 
-// [neighbourhood, signature, offset lat, offset lng, product names]
+// The original cities first, so every id they have stays the same; regional.js adds the
+// Telugu states, Tamil Nadu, Karnataka, Kerala and Maharashtra cities after them.
+export const CITIES = [...BASE_CITIES, ...MORE_CITIES];
+const SNACKS = { ...BASE_SNACKS, ...MORE_SNACKS };
+
+// [neighbourhood, signature, offset lat, offset lng, product names, kind]
+// kind: 'shop' (the default), 'stall' (a street cart, bandi or kadai) or 'home' (a home kitchen)
 const SHOPS = {
   guntur: [
-    ['Brodipet', 'Mirchi Corner', 0.004, -0.003, ['Mirchi Bajji', 'Punugulu', 'Bonda', 'Chekkalu', 'Atukula Mixture']],
+    ['Brodipet', 'Mirchi Corner', 0.004, -0.003, ['Mirchi Bajji', 'Punugulu', 'Bonda', 'Chekkalu', 'Atukula Mixture'], 'stall'],
     ['Arundelpet', 'Ariselu House', -0.006, 0.004, ['Ariselu', 'Boondi Laddu', 'Chekkalu', 'Kaja', 'Banana Chips']],
-    ['Lakshmipuram', 'Punugulu Point', 0.008, 0.007, ['Punugulu', 'Mirchi Bajji', 'Medu Vada', 'Sunnundalu', 'Murukku']],
-    ['Kothapet', 'Laddu Bandi', -0.003, -0.009, ['Boondi Laddu', 'Pootharekulu', 'Bobbatlu', 'Jalebi', 'Murukku']],
+    ['Lakshmipuram', 'Punugulu Point', 0.008, 0.007, ['Punugulu', 'Mirchi Bajji', 'Medu Vada', 'Sunnundalu', 'Murukku'], 'stall'],
+    ['Kothapet', 'Laddu Bandi', -0.003, -0.009, ['Boondi Laddu', 'Pootharekulu', 'Bobbatlu', 'Jalebi', 'Murukku'], 'stall'],
   ],
   vijayawada: [
     ['Benz Circle', 'Gongura Kitchen', 0.005, 0.002, ['Gongura Pakoda', 'Mirchi Bajji', 'Punugulu', 'Kaja', 'Atukula Mixture']],
     ['Governorpet', 'Pootharekulu Mane', -0.004, -0.005, ['Pootharekulu', 'Bobbatlu', 'Kaja', 'Ariselu', 'Chekkalu']],
   ],
   visakhapatnam: [
-    ['Dwaraka Nagar', 'Bonda Bazaar', 0.004, 0.003, ['Mirchi Bajji', 'Bonda', 'Punugulu', 'Atukula Mixture', 'Banana Chips']],
+    ['Dwaraka Nagar', 'Bonda Bazaar', 0.004, 0.003, ['Mirchi Bajji', 'Bonda', 'Punugulu', 'Atukula Mixture', 'Banana Chips'], 'stall'],
     ['MVP Colony', 'Sunnundalu Store', -0.005, 0.004, ['Sunnundalu', 'Atukula Mixture', 'Boondi Laddu', 'Kaja', 'Pootharekulu']],
   ],
   hyderabad: [
@@ -110,15 +118,15 @@ const SHOPS = {
     ['Malleswaram', 'Mysore Pak Mane', -0.005, -0.003, ['Mysore Pak', 'Kodubale', 'Nippattu', 'Murukku', 'Banana Chips']],
   ],
   chennai: [
-    ['Mylapore', 'Vada Kadai', 0.004, -0.003, ['Medu Vada', 'Sundal', 'Murukku', 'Adhirasam', 'Seedai']],
+    ['Mylapore', 'Vada Kadai', 0.004, -0.003, ['Medu Vada', 'Sundal', 'Murukku', 'Adhirasam', 'Seedai'], 'stall'],
     ['T Nagar', 'Murukku Shop', -0.004, 0.005, ['Murukku', 'Adhirasam', 'Seedai', 'Banana Chips', 'Mysore Pak']],
   ],
   mumbai: [
-    ['Dadar', 'Vada Pav Stall', 0.003, 0.003, ['Vada Pav', 'Batata Vada', 'Misal Pav', 'Chikki', 'Khari Biscuit']],
+    ['Dadar', 'Vada Pav Stall', 0.003, 0.003, ['Vada Pav', 'Batata Vada', 'Misal Pav', 'Chikki', 'Khari Biscuit'], 'stall'],
     ['Girgaon', 'Chikki Wala', -0.005, -0.004, ['Chikki', 'Khari Biscuit', 'Bakarwadi', 'Batata Vada', 'Puran Poli']],
   ],
   delhi: [
-    ['Chandni Chowk', 'Tikki Gali', 0.004, -0.004, ['Aloo Tikki', 'Kachori', 'Samosa', 'Jalebi', 'Sohan Halwa']],
+    ['Chandni Chowk', 'Tikki Gali', 0.004, -0.004, ['Aloo Tikki', 'Kachori', 'Samosa', 'Jalebi', 'Sohan Halwa'], 'stall'],
     ['Karol Bagh', 'Halwa Haveli', -0.005, 0.004, ['Sohan Halwa', 'Samosa', 'Kachori', 'Bikaneri Bhujia', 'Jalebi']],
   ],
   kolkata: [
@@ -166,75 +174,80 @@ export function buildSeed() {
   const products = [];
   let pid = 1;
   let sid = 1;
-  for (const city of CITIES) {
-    SHOPS[city.id].forEach(([hood, sig, dLat, dLng, names], idx) => {
-      const id = sid++;
-      let status = 'active';
-      if (city.id === 'jaipur' && idx === 1) status = 'suspended';
-      if (city.id === 'pune' && idx === 1) status = 'pending';
-      if (city.id === 'hyderabad' && idx === 1) status = 'probation';
-      const seller = {
-        id,
-        userId: 1000 + id,
-        shopName: `${hood} ${sig}`,
-        cityId: city.id,
-        city: city.name,
+  // original: a shop from seed.js, which carries the built-in test cases by city and index
+  const addShop = (city, [hood, sig, dLat, dLng, names, kind = 'shop'], idx, original) => {
+    const id = sid++;
+    let status = 'active';
+    if (original && city.id === 'jaipur' && idx === 1) status = 'suspended';
+    if (original && city.id === 'pune' && idx === 1) status = 'pending';
+    if (original && city.id === 'hyderabad' && idx === 1) status = 'probation';
+    const seller = {
+      id,
+      userId: 1000 + id,
+      shopName: `${hood} ${sig}`,
+      kind,
+      cityId: city.id,
+      city: city.name,
+      region: city.state,
+      lat: +(city.lat + dLat).toFixed(6),
+      lng: +(city.lng + dLng).toFixed(6),
+      radiusKm: 5,
+      busyExtraMin: original && city.id === 'guntur' && idx === 2 ? 6 : 0,
+      paused: false,
+      status,
+      licenceNo: `FAKE-FSSAI-${String(10000000 + id * 7919).slice(0, 8)}`,
+      licenceExpiresOn: original && idx === 0 && city.id === 'vijayawada' ? '2026-11-15' : '2027-08-31',
+      qualityScore: status === 'probation' ? 78 : Math.round(80 + rand() * 18),
+      rating: +(4 + rand() * 0.9).toFixed(1),
+      acceptanceRate: +(0.88 + rand() * 0.11).toFixed(2),
+      openHours: '08:00-22:00',
+      verified: ['active', 'probation'].includes(status),
+      isNew: status === 'probation',
+    };
+    sellers.push(seller);
+    names.forEach((name, j) => {
+      const d = SNACKS[name];
+      const slug = slugify(name);
+      const price = Math.round((d.p * (0.9 + rand() * 0.25)) / 500) * 500;
+      const discounted = rand() < 0.35;
+      let stock = 8 + Math.floor(rand() * 30);
+      if (original && city.id === 'guntur' && idx === 0 && name === 'Mirchi Bajji') stock = 3;
+      if (original && city.id === 'guntur' && idx === 1 && j === 4) stock = 0;
+      if (rand() < 0.08) stock = 1 + Math.floor(rand() * 3);
+      products.push({
+        id: pid++,
+        sellerId: id,
+        slug,
+        title: name,
+        category: d.cat,
         region: city.state,
-        lat: +(city.lat + dLat).toFixed(6),
-        lng: +(city.lng + dLng).toFixed(6),
-        radiusKm: 5,
-        busyExtraMin: city.id === 'guntur' && idx === 2 ? 6 : 0,
-        paused: false,
-        status,
-        licenceNo: `FAKE-FSSAI-${String(10000000 + id * 7919).slice(0, 8)}`,
-        licenceExpiresOn: idx === 0 && city.id === 'vijayawada' ? '2026-11-15' : '2027-08-31',
-        qualityScore: status === 'probation' ? 78 : Math.round(80 + rand() * 18),
-        rating: +(4 + rand() * 0.9).toFixed(1),
-        acceptanceRate: +(0.88 + rand() * 0.11).toFixed(2),
-        openHours: '08:00-22:00',
-        verified: ['active', 'probation'].includes(status),
-        isNew: status === 'probation',
-      };
-      sellers.push(seller);
-      names.forEach((name, j) => {
-        const d = SNACKS[name];
-        const slug = slugify(name);
-        const price = Math.round((d.p * (0.9 + rand() * 0.25)) / 500) * 500;
-        const discounted = rand() < 0.35;
-        let stock = 8 + Math.floor(rand() * 30);
-        if (city.id === 'guntur' && idx === 0 && name === 'Mirchi Bajji') stock = 3;
-        if (city.id === 'guntur' && idx === 1 && j === 4) stock = 0;
-        if (rand() < 0.08) stock = 1 + Math.floor(rand() * 3);
-        products.push({
-          id: pid++,
-          sellerId: id,
-          slug,
-          title: name,
-          category: d.cat,
-          region: city.state,
-          city: city.name,
-          servingTemp: d.temp,
-          prepMinutes: d.temp === 'HOT' ? 10 : 4,
-          pricePaise: price,
-          mrpPaise: discounted ? Math.round((price * 1.18) / 500) * 500 : null,
-          weight: d.w,
-          spice: d.spice,
-          rating: +(3.9 + rand() * 1).toFixed(1),
-          ratingCount: 40 + Math.floor(rand() * 900),
-          stock,
-          active: true,
-          bestseller: rand() < 0.22,
-          trending: rand() < 0.15,
-          tags: d.tags,
-          collections: UI_COLLECTIONS(d),
-          art: { shape: d.shape, colors: d.c },
-          imageAlt: `${name}, ${city.state} style (AI illustration placeholder)`,
-          description: describe(name, d, city),
-          attrs: { allergens: allergensFor(d), vegetarian: true },
-        });
+        city: city.name,
+        servingTemp: d.temp,
+        prepMinutes: d.temp === 'HOT' ? 10 : 4,
+        pricePaise: price,
+        mrpPaise: discounted ? Math.round((price * 1.18) / 500) * 500 : null,
+        weight: d.w,
+        spice: d.spice,
+        rating: +(3.9 + rand() * 1).toFixed(1),
+        ratingCount: 40 + Math.floor(rand() * 900),
+        stock,
+        active: true,
+        bestseller: rand() < 0.22,
+        trending: rand() < 0.15,
+        tags: d.tags,
+        collections: UI_COLLECTIONS(d),
+        art: { shape: d.shape, colors: d.c },
+        imageAlt: `${name}, ${city.state} style (AI illustration placeholder)`,
+        description: describe(name, d, city),
+        attrs: { allergens: allergensFor(d), vegetarian: true },
       });
     });
-  }
+  };
+  for (const city of BASE_CITIES) SHOPS[city.id].forEach((shop, idx) => addShop(city, shop, idx, true));
+  // then the regional shops: new cities, and new shops in the original ones, after every original id
+  for (const city of CITIES) (MORE_SHOPS[city.id] || []).forEach((shop, idx) => addShop(city, shop, idx, false));
+  // last, the street stalls and home kitchens known for one snack, again after every earlier id
+  for (const city of CITIES) (LOCAL_SHOPS[city.id] || []).forEach((shop, idx) => addShop(city, shop, idx, false));
 
   const riders = [];
   let rid = 1;

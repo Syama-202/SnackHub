@@ -38,24 +38,24 @@ const Navbar = () => {
   }, []);
   return (
     <header className={cx('sticky top-0 z-50 transition-all duration-300', compact ? 'py-1.5' : 'py-3')}>
-      <div className="mx-auto max-w-7xl px-3 sm:px-4">
+      <div className="page">
         <div className={cx('glass glass-strong flex items-center gap-2 px-2.5 transition-all sm:gap-3 sm:px-4', compact ? 'h-14' : 'h-16')}>
           <Link to="/" className="shrink-0 rounded-xl" aria-label="SnackHub home">
             <span className="hidden sm:block"><Logo /></span>
             <span className="sm:hidden"><Logo compact /></span>
           </Link>
           <LocationSelector />
-          <div className="hidden min-w-0 flex-1 md:block">
+          <div className="hidden min-w-0 flex-1 lg:block">
             <SearchBox />
           </div>
           <nav className="hidden items-center gap-1 xl:flex" aria-label="Main">
             {LINKS.map((l) => (
-              <NavLink key={l.label} to={l.to} className="rounded-full px-3 py-2 text-sm font-bold text-grey-800 transition hover:bg-grey-800/5">
+              <NavLink key={l.label} to={l.to} className="rounded-full px-3.5 py-2 text-[0.9375rem] font-bold text-grey-800 transition hover:bg-white hover:shadow-sm">
                 {l.label}
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1 md:ml-0">
+          <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1 lg:ml-0">
             <Bell />
             <CartButton />
             <AccountMenu />
@@ -64,7 +64,7 @@ const Navbar = () => {
             </button>
           </div>
         </div>
-        <div className="mt-2 md:hidden">
+        <div className="mt-2 lg:hidden">
           <SearchBox />
         </div>
         {menu && (
@@ -94,8 +94,8 @@ function LocationSelector() {
       <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="listbox" className="flex h-11 min-w-0 items-center gap-1.5 rounded-xl px-2 text-left transition hover:bg-grey-800/5">
         <Icon name="pin" className="h-5 w-5 shrink-0 text-orange-text" />
         <span className="min-w-0">
-          <span className="block text-[11px] font-extrabold uppercase leading-none tracking-wide text-orange-text">Deliver to</span>
-          <span className="block max-w-[110px] truncate text-sm font-bold leading-tight sm:max-w-[170px]">{point.label}</span>
+          <span className="block text-[0.6875rem] font-extrabold uppercase leading-none tracking-wide text-orange-text">Deliver to</span>
+          <span className="block max-w-[6.875rem] truncate text-sm font-bold leading-tight sm:max-w-[10.625rem]">{point.label}</span>
         </span>
         <Icon name="chevronDown" className="h-4 w-4 shrink-0" />
       </button>
@@ -189,7 +189,7 @@ function SearchBox() {
         aria-controls="search-results"
         aria-autocomplete="list"
         placeholder="Search murukku, sweets, chips, mixtures..."
-        className="h-11 w-full rounded-full border border-grey-800/10 bg-white/90 pl-11 pr-4 text-[15px] placeholder:text-grey-600 focus:border-orange focus:outline-none focus:ring-4 focus:ring-orange/15"
+        className="h-11 w-full rounded-full border border-grey-800/10 bg-white/90 pl-11 pr-4 text-[0.9375rem] placeholder:text-grey-600 focus:border-orange focus:outline-none focus:ring-4 focus:ring-orange/15"
       />
       {open && term.length >= 2 && search.q === term && (
         <ul id="search-results" role="listbox" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-grey-800/10 bg-white shadow-2xl">
@@ -220,7 +220,7 @@ function CartButton() {
     <button onClick={() => dispatch(openCart())} className="relative grid h-11 w-11 place-items-center rounded-full bg-primary text-grey-800 shadow-md transition hover:scale-105" aria-label={`Cart, ${count} items`}>
       <Icon name="cart" />
       {count > 0 && (
-        <span key={bump} className="absolute -right-1 -top-1 grid h-5 min-w-5 animate-bump place-items-center rounded-full bg-red-strong px-1 text-[11px] font-extrabold text-white ring-2 ring-white">
+        <span key={bump} className="absolute -right-1 -top-1 grid h-5 min-w-5 animate-bump place-items-center rounded-full bg-red-strong px-1 text-[0.6875rem] font-extrabold text-white ring-2 ring-white">
           {count}
         </span>
       )}

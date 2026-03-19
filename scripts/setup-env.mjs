@@ -50,6 +50,8 @@ const LATER_KEYS = () => [
   // paste the Web client ID from Google Cloud (see README, "Google sign-in")
   ['GOOGLE_CLIENT_ID', ''],
   ['COOKIE_SECURE', 'false'],
+  // encrypts the admin TOTP secrets (doc 16.3): 32 random bytes
+  ['MFA_KEY', randomBytes(32).toString('base64url')],
 ];
 
 const created = write(backendEnvPath, [
@@ -57,7 +59,7 @@ const created = write(backendEnvPath, [
   'NODE_ENV=development',
   'PORT=4000',
   'LOG_LEVEL=info',
-  'CORS_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:5175',
+  'CORS_ORIGINS=http://localhost:5180,http://localhost:5181',
   'DB_HOST=127.0.0.1',
   'DB_PORT=3307',
   'DB_MIGRATOR_USER=sh_migrator',

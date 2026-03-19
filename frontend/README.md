@@ -8,9 +8,9 @@ entirely in the browser against an MSW mock API shaped like the real `/api/v1` e
 
 ```bash
 npm install
-npm run dev            # http://localhost:5173  (customer, /seller, /rider, /design)
-                       # http://localhost:5173/admin.html  (admin, shares the mock data in dev)
-npm run dev:admin      # admin on its own host, http://localhost:5174 (separate mock data)
+npm run dev            # http://localhost:5180  (customer, /seller, /rider, /design)
+                       # http://localhost:5180/admin.html  (admin, shares the mock data in dev)
+npm run dev:admin      # admin on its own host, http://localhost:5181 (separate mock data)
 npm run build          # dist/ (public) and dist-admin/ (admin), built separately
 ```
 
@@ -55,7 +55,7 @@ screens refresh with the `usePolling` hook until Socket.io arrives in Phase 3.
 
 ## Decisions applied
 
-- Brand SnackHub, tokens from 22.1, Outfit for headings and the wordmark and Inter for text; promise wording
+- Brand SnackHub, tokens from 22.1, Bricolage Grotesque for headings and the wordmark and Manrope for text; promise wording
   "Estimated delivery in 25 to 30 minutes, subject to serviceability and preparation time."
 - Redux holds all client and server state; the cart lives on the server and the cart slice
   mirrors it with an optimistic update and rollback.
@@ -77,18 +77,19 @@ each with its prompt, target size and status (needed, generated, processed, read
 npm run assets:manifest   # regenerate after the catalogue changes (keeps status and files)
 npm run assets:process    # cut, resize and mark ready every image listed in assets/crops.json
 npm run assets:check      # files marked ready: present, under budget, no duplicate images
-npm run assets:icons      # favicon, full logo and app icons from public/assets/brand/mark.svg
+npm run assets:icons      # round logo, favicon and app icons from assets/brand/logo-source.png
 ```
 
 Generated images go in `assets/raw/` (not committed). Each entry in `assets/crops.json` names
 the asset id, the source file and the box to cut; `assets:process` writes 400, 800 and 1200 px
 WebP files to `public/assets/` and marks the asset ready. `SnackImage`, `AssetImage` and
 `LoopVideo` pick them up and fall back to the drawings until then, so there is never a broken
-image. Today 19 of 54 snacks and the landing scenes have AI images; the rest still need one.
+image. Today 27 of 201 snacks and the landing scenes have AI images; the rest still need one.
 
 `npm run assets:generate` makes the missing snack photos with FLUX.1-schnell on Hugging Face
 from the looks in `assets/looks.json` (put a free read token in `.env.local` as `HF_TOKEN`).
-The free GPU time covers about 10 images a day; run it again the next day to continue.
+The free GPU time covers about 10 images a day; run it again the next day to continue. A
+scheduled task runs it twice a day until every snack has its photo.
 
 ## Tests
 
@@ -97,7 +98,7 @@ Testing is manual (doc 27.2). The test plan and results live in `docs/manual-tes
 
 ## Not done yet
 
-- AI images for the other 35 snacks, the cut-outs, the videos and the rider GLB from doc
+- AI images for the other 174 snacks, the cut-outs, the videos and the rider GLB from doc
   section 25 still need to be made; the manifest lists all of them with their prompts.
 - Manual test results to record (keyboard path, no-WebGL, three-wrong-codes lock, tablet width).
 - Largest contentful paint is 2.7 s without the mock (target 2.5 s).

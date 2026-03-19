@@ -27,13 +27,14 @@ export default defineConfig({
     },
   ],
   server: {
-    port: 5173,
+    // 5180, not Vite's usual 5173, so SnackHub never collides with other local projects
+    port: 5180,
     strictPort: true,
     fs: { allow: ['..'] },
-    // Requests the mock passes on (Google sign-in, refresh, logout, /me and the catalog
-    // reads) go to the real backend on the same origin, so the httpOnly refresh cookie
-    // works without CORS.
-    proxy: Object.fromEntries(['auth', 'me', 'cities', 'sellers', 'products', 'search'].map((p) => [`/api/v1/${p}`, backend])),
+    // Requests the mock passes on (Google sign-in, refresh, logout, /me, the catalog reads
+    // and a real admin's sign-in and approvals) go to the real backend on the same origin,
+    // so the httpOnly refresh cookies work without CORS.
+    proxy: Object.fromEntries(['auth', 'me', 'cities', 'sellers', 'products', 'search', 'admin'].map((p) => [`/api/v1/${p}`, backend])),
   },
   build: {
     outDir: 'dist',

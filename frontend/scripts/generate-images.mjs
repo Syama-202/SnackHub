@@ -43,7 +43,7 @@ async function generate(prompt, seed) {
   const event = /event: (\w+)/.exec(stream)?.[1];
   const data = /data: (.*)/.exec(stream)?.[1];
   // the Space reports a used-up GPU quota as an error with no message
-  if (event !== 'complete') throw new Error(data && data !== 'null' ? `model said ${event}: ${data}` : 'free GPU quota used up (add HF_TOKEN)');
+  if (event !== 'complete') throw new Error(data && data !== 'null' ? `model said ${event}: ${data}` : TOKEN ? 'free GPU quota used up for now; it refills within a day, run again later' : 'free GPU quota used up (add HF_TOKEN for a bigger daily allowance)');
   const [file] = JSON.parse(data);
   const img = await fetch(file.url, { headers: auth });
   if (!img.ok) throw new Error(`download failed: HTTP ${img.status}`);

@@ -17,7 +17,7 @@ const OrderTracking = () => {
   const o = t.order;
   const terminal = ['DELIVERED', 'CANCELLED', 'REJECTED'].includes(o.status);
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-6">
+    <div className="page page-narrow pt-6">
       <Link to="/orders" className="inline-flex h-11 items-center gap-1 text-sm font-bold text-grey-600 hover:text-grey-800"><Icon name="arrowLeft" className="h-4 w-4" /> Your orders</Link>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -39,7 +39,7 @@ const OrderTracking = () => {
       <div className="mt-6 overflow-hidden rounded-[28px] bg-grey-900 shadow-2xl">
         <div className="flex items-center justify-between px-5 pt-4 text-white">
           <p className="font-bold" aria-live="polite">{laneStatus(t)}</p>
-          {t.simulated && <span className="rounded-full bg-sun px-2 py-0.5 text-[11px] font-extrabold uppercase text-grey-800">Simulated feed</span>}
+          {t.simulated && <span className="rounded-full bg-sun px-2 py-0.5 text-[0.6875rem] font-extrabold uppercase text-grey-800">Simulated feed</span>}
         </div>
         {!['CANCELLED', 'REJECTED', 'PENDING_PAYMENT'].includes(o.status) && <Lane track={t} height={170} />}
       </div>
@@ -129,7 +129,7 @@ function Timeline({ order }) {
         const done = reached.has(s);
         return (
           <li key={s} className="relative flex gap-3 pb-4 last:pb-0">
-            {i < steps.length - 1 && <span className={cx('absolute left-[11px] top-6 h-full w-0.5', done ? 'bg-orange' : 'bg-grey-800/10')} aria-hidden="true" />}
+            {i < steps.length - 1 && <span className={cx('absolute left-[0.6875rem] top-6 h-full w-0.5', done ? 'bg-orange' : 'bg-grey-800/10')} aria-hidden="true" />}
             <span className={cx('relative z-10 grid h-6 w-6 shrink-0 place-items-center rounded-full', done ? (s === 'CANCELLED' || s === 'REJECTED' ? 'bg-red-strong text-white' : 'bg-orange text-grey-800') : 'bg-grey-50 ring-2 ring-grey-800/10')}>
               {done && <Icon name="check" className="h-3.5 w-3.5" />}
             </span>

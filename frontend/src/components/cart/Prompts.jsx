@@ -51,7 +51,7 @@ export default function CartPrompts() {
       <Modal open={Boolean(prompt)} onClose={() => dispatch(setSignInPrompt(null))} title="Sign in to add snacks">
         <div className="relative p-6 sm:p-8">
           <CloseButton onClick={() => dispatch(setSignInPrompt(null))} className="absolute right-3 top-3" />
-          <LogoMark className="h-12 w-12" />
+          <LogoMark className="h-20 w-20" />
           <h2 className="mt-4 text-2xl font-extrabold">Sign in to start your cart</h2>
           <p className="mt-1 text-grey-600">Your cart is saved to your account, so it follows you across devices.</p>
           {GOOGLE_CLIENT_ID ? (

@@ -12,7 +12,7 @@ export default function Stories() {
     { id: 'story-festival-snacks', tag: 'Festivals', title: 'Snacks that bring families together', body: 'Ariselu at Sankranti, ghewar at Teej, laddus at every celebration in between.', art: { shape: 'disc', colors: ['#8A4B1F', '#C98B4A'] } },
   ];
   return (
-    <section ref={ref} className="mx-auto max-w-7xl px-4 py-24">
+    <section ref={ref} className="page py-24">
       <SectionTitle eyebrow="Regional stories" title="Every Region Has a Flavour. Every Snack Has a Story." />
       <div className="mt-12 grid gap-6 md:grid-cols-2">
         {stories.map((s, i) => (

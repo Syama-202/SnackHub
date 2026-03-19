@@ -29,7 +29,7 @@ export default function ShopChecks() {
   const ref = useReveal();
   const spot = SPOTS.find((s) => s.id === active);
   return (
-    <section id="checked" ref={ref} className="mx-auto max-w-7xl scroll-mt-24 px-4 py-24">
+    <section id="checked" ref={ref} className="page scroll-mt-24 py-24">
       <SectionTitle eyebrow="Every shop is checked" title="We screen shops. We keep watching them." sub="We cannot taste every batch, so we check who cooks, where, and how it is going. Tap a numbered point." />
       <div className="mt-10 grid items-center gap-10 md:grid-cols-[1.1fr_1fr]">
         <div className="relative mx-auto aspect-square w-full max-w-lg">

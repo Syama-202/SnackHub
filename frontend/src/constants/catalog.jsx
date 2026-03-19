@@ -11,6 +11,12 @@ export const CATEGORIES = [
   { id: 'festive', label: 'Festive Treats' },
 ];
 
+// What kind of seller a shop is (catalog.sellers.kind): the badge on cards and the filter
+export const SELLER_KINDS = {
+  stall: { label: 'Street stall', product: 'Street food', filter: 'Street stalls', tone: 'red' },
+  home: { label: 'Home kitchen', product: 'Home-made', filter: 'Home kitchens', tone: 'green' },
+};
+
 // Mood tiles (master prompt part 10). Photos differ from the region cards, so the landing page
 // never shows the same picture twice in one screen.
 export const MOODS = [
@@ -29,6 +35,7 @@ export const REGIONS = [
   { id: 'Telangana', photo: 'snack-samosa', blurb: 'Irani cafe classics and crunchy savouries.', snacks: 'Irani samosa, Osmania biscuit, luqmi', accent: '#FF7A00', art: { shape: 'samosa', colors: ['#D8A04A', '#F1CF85'] } },
   { id: 'Tamil Nadu', photo: 'snack-murukku', blurb: 'Rice-flour crunch and temple-town sweets.', snacks: 'Murukku, seedai, adhirasam', accent: '#E86A00', art: { shape: 'spiral', colors: ['#D9A44E', '#B37A2E'] } },
   { id: 'Karnataka', blurb: 'Ghee, roasted gram and Mysore pride.', snacks: 'Mysore pak, nippattu, kodubale', accent: '#FFC300', art: { shape: 'square', colors: ['#F0B43C', '#C47A1E'] } },
+  { id: 'Kerala', blurb: 'Coconut-oil crunch and jaggery-sweet tea-time bites.', snacks: 'Banana chips, unniyappam, pazham pori', accent: '#E86A00', art: { shape: 'chips', colors: ['#F3D35A', '#D9A21E'] } },
   { id: 'Maharashtra', blurb: 'Street-side heat and sesame sweetness.', snacks: 'Vada pav, bakarwadi, chikki', accent: '#C4222F', art: { shape: 'bun', colors: ['#E7B76A', '#3F7D20'] } },
   { id: 'Gujarat', photo: 'snack-fafda-jalebi', blurb: 'Light, steamed and gently sweet-sour.', snacks: 'Dhokla, khakhra, fafda jalebi', accent: '#FFC300', art: { shape: 'square', colors: ['#F3D35A', '#3F7D20'] } },
   { id: 'Rajasthan', photo: 'snack-bikaneri-bhujia', blurb: 'Desert-hardy namkeen and festive ghewar.', snacks: 'Pyaaz kachori, bhujia, ghewar', accent: '#E86A00', art: { shape: 'ball', colors: ['#C6862F', '#A8572A'] } },

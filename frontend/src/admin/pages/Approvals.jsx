@@ -51,11 +51,11 @@ export default function Approvals() {
               </ul>
               {open && (
                 <>
-                  <label className="mt-4 block text-sm font-bold" htmlFor={`r-${a.id}`}>Reason (required to reject)</label>
+                  <label className="mt-4 block text-sm font-bold" htmlFor={`r-${a.id}`}>Reason (required to reject or ask for more)</label>
                   <input id={`r-${a.id}`} value={reason[a.id] || ''} onChange={(e) => setReason({ ...reason, [a.id]: e.target.value })} className="mt-1 h-11 w-full rounded-xl border border-grey-800/15 px-3" placeholder="e.g. licence number not found on register" />
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <Button size="sm" disabled={!allPass} onClick={() => act(a, 'approve', {})}>Approve on probation</Button>
-                    <Button size="sm" variant="ghost" onClick={() => act(a, 'needs-info', {})}>Ask for more info</Button>
+                    <Button size="sm" disabled={!allPass} onClick={() => act(a, 'approve', {})}>{a.kind === 'SELLER' ? 'Approve on probation' : 'Approve rider'}</Button>
+                    <Button size="sm" variant="ghost" disabled={!reason[a.id]} onClick={() => act(a, 'needs-info', { reason: reason[a.id] })}>Ask for more info</Button>
                     <Button size="sm" variant="outline" disabled={!reason[a.id]} onClick={() => act(a, 'reject', { reason: reason[a.id] })}>Reject</Button>
                   </div>
                   {!allPass && <p className="mt-2 text-xs text-grey-600">Approve unlocks when every check passes.</p>}

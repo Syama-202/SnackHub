@@ -29,6 +29,16 @@ const server = database.extend({
   REFRESH_TOKEN_DAYS: z.coerce.number().int().min(1).max(90).default(30),
   // Secure cookies need HTTPS; local http://localhost development turns it off
   COOKIE_SECURE: bool.optional(),
+  // Admin console (doc 16.3, 15.0). Host names (host:port) that may reach /api/v1/admin; every
+  // other host gets 404. Outside production the dev header X-SnackHub-Host: admin also counts,
+  // because the local console shares the public dev server.
+  ADMIN_HOSTS: csv.default(''),
+  // where enrolment links point, e.g. http://localhost:5180/admin.html
+  ADMIN_CONSOLE_URL: z.string().url().default('http://localhost:5180/admin.html'),
+  ADMIN_ACCESS_MINUTES: z.coerce.number().int().min(1).max(15).default(10),
+  ADMIN_SESSION_HOURS: z.coerce.number().int().min(1).max(8).default(8),
+  // AES-256-GCM key for the admin TOTP secrets: 32 random bytes, base64url (43 characters)
+  MFA_KEY: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
 });
 
 function parse(schema, source) {

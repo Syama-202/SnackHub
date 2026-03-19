@@ -5,6 +5,15 @@ import { computeEarning } from '@shared/domain/penalty';
 const KEY = 'snackhub.mockdb.v1';
 let mem = null;
 
+// A fingerprint of the demo seed: when the catalogue changes (new snacks, shops or cities), a
+// browser that kept the old mock data rebuilds it, so new products can go in the cart.
+const seedShape = () => {
+  const s = buildSeed();
+  return `${s.cities.length}.${s.sellers.length}.${s.products.length}.${s.riders.length}`;
+};
+let shape = null;
+const currentShape = () => (shape ??= seedShape());
+
 const minutesAgo = (m) => Date.now() - m * 60000;
 
 function fresh() {
@@ -96,13 +105,17 @@ export function getDb() {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      mem = JSON.parse(raw);
-      return mem;
+      const stored = JSON.parse(raw);
+      if (stored.seedShape === currentShape()) {
+        mem = stored;
+        return mem;
+      }
+      return resetDb();
     }
   } catch {
     /* storage blocked: fall back to memory */
   }
-  if (!mem) mem = fresh();
+  if (!mem) mem = { ...fresh(), seedShape: currentShape() };
   return mem;
 }
 
@@ -128,7 +141,7 @@ export function saveDb(db) {
 }
 
 export function resetDb() {
-  mem = { ...fresh(), gen: String(Date.now()) };
+  mem = { ...fresh(), gen: String(Date.now()), seedShape: currentShape() };
   try {
     localStorage.setItem(GEN_KEY, mem.gen);
   } catch {

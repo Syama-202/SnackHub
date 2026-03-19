@@ -24,7 +24,19 @@ export const sellerModel = {
       .havingRaw('distance_m <= LEAST(radius_km * 1000, ?)', [maxKm * 1000])
       .orderBy('distance_m');
   },
+  /** A new shop from an application: hidden from customers until an admin approves it. */
+  create: (db, userId, s) =>
+    db(TABLE)
+      .insert({ user_id: userId, shop_name: s.shopName, kind: s.kind ?? 'shop', city: s.city, region: s.region ?? null, lat: s.lat, lng: s.lng, radius_km: s.radiusKm, open_hours: s.openHours, licence_no: s.licenceNo, licence_expires_on: s.licenceExpiresOn, status: 'pending' })
+      .then(([id]) => id),
+  /** A rejected shop applying again with corrected details. */
+  reopen: (db, id, s) =>
+    db(TABLE)
+      .where({ id, status: 'rejected' })
+      .update({ shop_name: s.shopName, kind: s.kind ?? 'shop', city: s.city, region: s.region ?? null, lat: s.lat, lng: s.lng, radius_km: s.radiusKm, open_hours: s.openHours, licence_no: s.licenceNo, licence_expires_on: s.licenceExpiresOn, status: 'pending' })
+      .then((n) => n === 1),
   setStatus: (db, id, status) => db(TABLE).where({ id }).update({ status }),
+  markVerified: (db, id, status) => db(TABLE).where({ id }).update({ status, verified_at: new Date() }),
   setPaused: (db, id, paused) => db(TABLE).where({ id }).update({ paused }),
   setBusyExtra: (db, id, minutes) => db(TABLE).where({ id }).update({ busy_extra_min: minutes }),
 };

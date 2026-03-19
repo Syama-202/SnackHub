@@ -1,6 +1,7 @@
 import Hero from '../../components/landing/Hero';
 import SnackStrip from '../../components/landing/SnackStrip';
 import Regions from '../../components/landing/Regions';
+import Streets from '../../components/landing/Streets';
 import ScrollStory from '../../components/landing/ScrollStory';
 import Bestsellers from '../../components/landing/Bestsellers';
 import ShopChecks from '../../components/landing/ShopChecks';
@@ -18,6 +19,7 @@ const Home = () => (
     <Hero />
     <SnackStrip />
     <Regions />
+    <Streets />
     <ScrollStory />
     <Bestsellers />
     <ShopChecks />

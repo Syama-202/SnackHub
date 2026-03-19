@@ -10,7 +10,7 @@ export default function Offers() {
     { title: 'Festive collections', body: 'Ariselu, laddu and ghewar for the season.', badge: 'Festive' },
   ];
   return (
-    <section id="offers" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12">
+    <section id="offers" className="page scroll-mt-24 py-12">
       <div className="relative overflow-hidden rounded-[32px] bg-primary p-8 sm:p-12">
         <div className="absolute -right-16 -top-16 h-72 w-72 rounded-full bg-white/25 blur-2xl" aria-hidden="true" />
         <div className="relative grid gap-8 lg:grid-cols-[1fr_1.4fr]">

@@ -80,24 +80,24 @@ export default function Hero() {
   return (
     <section ref={root} className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-        <div className="absolute -left-40 top-0 h-[560px] w-[560px] rounded-full bg-sun/30 blur-3xl" />
-        <div className="absolute -right-32 top-32 h-[520px] w-[520px] rounded-full bg-orange/20 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-[300px] w-[600px] rounded-full bg-red/10 blur-3xl" />
+        <div className="absolute -left-40 top-0 h-[35rem] w-[35rem] rounded-full bg-sun/30 blur-3xl" />
+        <div className="absolute -right-32 top-32 h-[32.5rem] w-[32.5rem] rounded-full bg-orange/20 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-[18.75rem] w-[37.5rem] rounded-full bg-red/10 blur-3xl" />
       </div>
       <div data-bits className="pointer-events-none absolute inset-0 -z-0" aria-hidden="true">
         {BITS.map((b, i) => (
-          <Bit key={i} kind={b.kind} className="absolute animate-drift opacity-80 drop-shadow" style={{ left: `${b.x}%`, top: `${b.y}%`, width: b.s, '--r': `${b.r}deg`, animationDelay: `${b.d}s` }} />
+          <Bit key={i} kind={b.kind} className="absolute animate-drift opacity-80 drop-shadow" style={{ left: `${b.x}%`, top: `${b.y}%`, width: `${b.s / 16}rem`, '--r': `${b.r}deg`, animationDelay: `${b.d}s` }} />
         ))}
       </div>
-      <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-16 pt-8 lg:min-h-[calc(100dvh-110px)] lg:grid-cols-[1fr_1.05fr]">
+      <div className="page grid items-center gap-10 pb-16 pt-8 lg:min-h-[calc(100dvh-7rem)] lg:grid-cols-[1.1fr_0.9fr] xl:grid-cols-[1fr_1.05fr]">
         <div data-copy className="relative z-10 order-2 lg:order-1">
           <HeroCopy />
         </div>
-        <div className="relative order-1 mx-auto aspect-square w-[min(100%,560px)] lg:order-2">
+        <div className="relative order-1 mx-auto aspect-square w-[min(100%,35rem)] md:w-[min(100%,27rem)] lg:order-2 lg:w-[min(100%,35rem)] 2xl:w-[min(100%,40rem)]">
           <div className="absolute inset-[6%] rounded-full bg-gradient-to-br from-sun/60 via-orange/40 to-red/30 blur-2xl" aria-hidden="true" />
           <div data-plate className="absolute inset-[10%] will-change-transform">
             <div className="h-full w-full animate-pop overflow-hidden rounded-full shadow-[0_40px_90px_rgba(122,42,0,0.35)] ring-[10px] ring-white/90">
-              <AssetImage id="hero-poster" alt="A spread of Indian snacks: samosa, murukku, jalebi, banana chips and pakoda (AI illustration)" priority sizes="(min-width: 1024px) 560px, 90vw" imgClassName="block h-full w-full object-cover motion-safe:animate-spin-slow" fallback={<PlateFallback />} />
+              <AssetImage id="hero-poster" alt="A spread of Indian snacks: samosa, murukku, jalebi, banana chips and pakoda (AI illustration)" priority sizes="(min-width: 1024px) 45vw, 90vw" imgClassName="block h-full w-full object-cover motion-safe:animate-spin-slow" fallback={<PlateFallback />} />
             </div>
           </div>
           {DISCS.map(([id, x, y, s, r, drift], i) => (
@@ -111,10 +111,10 @@ export default function Hero() {
             <span className="relative grid h-9 w-9 place-items-center rounded-full bg-primary"><Icon name="scooter" className="h-5 w-5 text-grey-800" /></span>
             <span className="leading-tight">
               <span className="block whitespace-nowrap font-display text-lg font-extrabold text-grey-800 sm:text-xl">25 to 30 min</span>
-              <span className="block text-[11px] font-semibold text-grey-600">estimated delivery*</span>
+              <span className="block text-[0.6875rem] font-semibold text-grey-600">estimated delivery*</span>
             </span>
           </div>
-          <span className="absolute right-0 top-0 rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-grey-600">AI illustrations, not actual products</span>
+          <span className="absolute right-0 top-0 rounded-full bg-white/80 px-2 py-0.5 text-[0.6875rem] font-semibold text-grey-600">AI illustrations, not actual products</span>
         </div>
       </div>
     </section>
@@ -139,16 +139,16 @@ function HeroCopy() {
         <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sun opacity-75" /><span className="relative h-2 w-2 rounded-full bg-sun" /></span>
         Fresh from verified shops near you
       </p>
-      <h1 className="mt-5 text-[clamp(2.8rem,6.4vw,5.2rem)] font-extrabold leading-[0.95] text-grey-800">
+      <h1 className="mt-5 text-[clamp(2.8rem,8.6vw,4.6rem)] lg:text-[clamp(3.6rem,6.4vw,5.2rem)] font-extrabold leading-[0.95] text-grey-800">
         <SplitWords text="Your Hometown Cravings." className="block" />
-        <SplitWords text="Delivered." className="block text-gradient pb-1" delay={280} />
+        <SplitWords text="Delivered." className="block text-shine pb-1" delay={280} />
       </h1>
       <p className="mt-5 max-w-md animate-rise text-lg text-grey-600 [animation-delay:450ms]">Discover India's regional snacks, delivered fresh to your doorstep. Hot snacks fried to order, sweets packed fresh.</p>
       <form onSubmit={go} className="mt-7 flex animate-rise [animation-delay:600ms] flex-col gap-2 rounded-[28px] bg-white p-2 shadow-[0_16px_40px_rgba(226,55,68,0.14)] ring-1 ring-grey-800/5 sm:flex-row sm:rounded-full">
         <label htmlFor="hero-loc" className="sr-only">Enter your delivery location</label>
         <div className="relative flex-1">
           <Icon name="pin" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-orange-text" />
-          <input id="hero-loc" value={place} onChange={(e) => setPlace(e.target.value)} placeholder="Enter your delivery location" className="h-12 w-full rounded-full bg-transparent pl-11 pr-4 text-[15px] focus:outline-none" />
+          <input id="hero-loc" value={place} onChange={(e) => setPlace(e.target.value)} placeholder="Enter your delivery location" className="h-12 w-full rounded-full bg-transparent pl-11 pr-4 text-[0.9375rem] focus:outline-none" />
         </div>
         <Button size="lg" type="submit">Show snacks near me</Button>
       </form>
@@ -157,7 +157,7 @@ function HeroCopy() {
         <Button variant="dark" onClick={() => navigate('/shop')}>Explore snacks <Icon name="arrowRight" className="h-4 w-4" /></Button>
         <Button variant="ghost" onClick={() => document.getElementById('regions')?.scrollIntoView({ behavior: 'smooth' })}>Discover regional flavours</Button>
       </div>
-      <p className="mt-5 text-[12px] leading-snug text-grey-600">*{PROMISE_WORDING}</p>
+      <p className="mt-5 text-[0.75rem] leading-snug text-grey-600">*{PROMISE_WORDING}</p>
     </div>
   );
 }

@@ -17,10 +17,32 @@
   --color-grey-900: #111827;
   --color-cream: #FFFBF5;
   --color-console: #F7F7F8;
+  /* Light tints of the brand colours, for gradient washes only (never text) */
+  --color-sun-soft: #FFF1C2;
+  --color-peach: #FFE2C7;
+  --color-blush: #FFE0E2;
 
-  /* Fonts: Outfit (clean geometric sans) for headings and the wordmark, Inter for text and numbers */
-  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Fonts: Bricolage Grotesque (bold, characterful grotesk) for headings and the wordmark,
+     Manrope for text, prices and forms */
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+
+  /* Type scale, one step larger than Tailwind's default so every screen reads bigger */
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.625rem;
+  --text-3xl: 2rem;
+  --text-4xl: 2.5rem;
+  --text-5xl: 3.25rem;
+
+  /* Device breakpoints, on top of Tailwind's sm 640, md 768, lg 1024, xl 1280 and 2xl 1536:
+     xs large phones (480), 3xl full HD monitors (1920), 4xl 2K and 4K screens (2560) */
+  --breakpoint-xs: 30rem;
+  --breakpoint-3xl: 120rem;
+  --breakpoint-4xl: 160rem;
 
   --radius-glass: 20px;
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -47,6 +69,7 @@
   --animate-drift: drift 9s ease-in-out infinite;
   --animate-ride: ride 6s var(--ease-out-soft) infinite;
   --animate-kenburns: kenburns 18s ease-in-out infinite alternate;
+  --animate-text-shine: text-shine 6s linear infinite;
 
   @keyframes pop-in {
     0% { opacity: 0; transform: scale(0.3) rotate(-18deg); }
@@ -101,6 +124,26 @@
     from { transform: scale(1.04) translate(0, 0); }
     to { transform: scale(1.14) translate(-2%, -2%); }
   }
+  @keyframes text-shine {
+    to { background-position: 200% 50%; }
+  }
+  /* the background colour blobs wander slowly */
+  @keyframes blob-a {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-8vw, 6vh) scale(1.12); }
+  }
+  @keyframes blob-b {
+    0%, 100% { transform: translate(0, 0) scale(1.05); }
+    50% { transform: translate(7vw, -5vh) scale(0.92); }
+  }
+  /* scrolling down warms the page from sun and orange to orange and red */
+  @keyframes warm-out {
+    to { opacity: 0.35; }
+  }
+  @keyframes rose-in {
+    from { opacity: 0.25; }
+    to { opacity: 1; }
+  }
   @keyframes parallax {
     from { transform: translateY(var(--px-from, -6%)) scale(1.12); }
     to { transform: translateY(var(--px-to, 6%)) scale(1.12); }
@@ -125,6 +168,44 @@
   background: rgba(255, 255, 255, 0.82);
 }
 
+/* Frosted surface for cards and panels: the glass look without backdrop blur, so a grid of
+   fifty cards stays fast on cheap phones (the blur is kept for at most three layers, 22.2) */
+@utility surface {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.74));
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 22px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 14px 34px -16px rgba(226, 55, 68, 0.28),
+    0 2px 8px rgba(31, 41, 55, 0.05);
+}
+/* Hover: lifts and picks up a warm glow */
+@utility glow {
+  transition: transform 0.3s var(--ease-out-soft), box-shadow 0.3s var(--ease-out-soft);
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 24px 48px -18px rgba(255, 122, 0, 0.45),
+      0 0 0 1px rgba(255, 195, 0, 0.45);
+  }
+}
+/* A selected chip or tab: the sun-to-orange gradient with dark text (22.1) */
+@utility chip-on {
+  background-image: linear-gradient(135deg, #FFC300, #FF7A00);
+  color: #1F2937;
+  box-shadow: 0 8px 20px -8px rgba(255, 122, 0, 0.6);
+}
+@utility chip-off {
+  background: rgba(255, 255, 255, 0.72);
+  color: #1F2937;
+  box-shadow: inset 0 0 0 1px rgba(31, 41, 55, 0.08);
+  &:hover {
+    background: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255, 122, 0, 0.55);
+  }
+}
+
 /* Gradients, 22.1 */
 @utility bg-hero {
   background-image: linear-gradient(135deg, #FFC300, #FF7A00 55%, #E23744);
@@ -142,13 +223,60 @@
   background-clip: text;
   color: transparent;
 }
+/* The same colours, slowly sweeping across the letters */
+@utility text-shine {
+  background-image: linear-gradient(90deg, #E86A00, #C4222F, #E86A00, #C4222F);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: var(--animate-text-shine);
+}
 @utility bg-page {
-  background:
-    radial-gradient(60rem 40rem at 110% -10%, rgba(255, 195, 0, 0.22), transparent 60%),
-    radial-gradient(50rem 36rem at -10% 20%, rgba(255, 122, 0, 0.14), transparent 60%),
-    radial-gradient(40rem 30rem at 50% 110%, rgba(226, 55, 68, 0.10), transparent 60%),
-    var(--color-cream);
-  background-attachment: fixed;
+  background: linear-gradient(165deg, #FFF8E6 0%, #FFF1E2 45%, #FFEDEA 100%);
+}
+
+/* Page backdrop (Backdrop.jsx): big soft blobs of the brand colours behind every screen, so
+   the glass has colour to frost. The warm set fades and the rose set grows as you scroll. */
+@utility backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(165deg, #FFF8E6 0%, #FFF1E2 45%, #FFEDEA 100%);
+  & .set {
+    position: absolute;
+    inset: 0;
+  }
+  & .blob {
+    position: absolute;
+    border-radius: 9999px;
+    will-change: transform;
+  }
+  & .grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.35;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  }
+  @supports (animation-timeline: scroll()) {
+    & .warm {
+      animation: warm-out linear both;
+      animation-timeline: scroll(root);
+    }
+    & .rose {
+      animation: rose-in linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+
+/* The snack strip slides on with reduced motion too, at half speed and with a pause button
+   (the owner asked for it to move); var(--marquee-dur) is set by SnackStrip */
+@utility marquee-always {
+  animation: marquee var(--marquee-dur, 40s) linear infinite;
 }
 
 /* Hover lift, 22.3 */
@@ -254,11 +382,75 @@
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
+/* The page column. Its width and side gutter grow with the device (see the media queries
+   below), so wide monitors are filled instead of showing a narrow strip in the middle. */
+@utility page {
+  width: 100%;
+  margin-inline: auto;
+  max-width: var(--page-max);
+  padding-inline: var(--page-gutter);
+}
+@utility page-narrow {
+  max-width: var(--page-max-narrow);
+}
+/* A sideways scroller that runs out into the page gutter and fades at both edges, instead of
+   stopping with a hard cut where the column ends */
+@utility bleed {
+  margin-inline: calc(var(--page-gutter) * -1);
+  padding-inline: var(--page-gutter);
+  scroll-padding-inline: var(--page-gutter);
+  mask-image: linear-gradient(to right, transparent, #000 var(--page-gutter), #000 calc(100% - var(--page-gutter)), transparent);
+}
+
 /* ===== Base ===== */
 @layer base {
   :root {
     --lane-h: 0px;
     color-scheme: light;
+    --page-max: 80rem;
+    --page-max-narrow: 72rem;
+    --page-gutter: 1rem;
+  }
+
+  /* Size per device. Every size in the app is in rem, so raising the root font size on big
+     screens scales text, spacing and images together; media queries in rem always use the
+     browser default (16 px), so the breakpoints themselves do not move. */
+  /* Large phones, 480 px and up */
+  @media (min-width: 30rem) {
+    :root { --page-gutter: 1.25rem; }
+  }
+  /* Tablets, 768 px and up */
+  @media (min-width: 48rem) {
+    :root { --page-gutter: 2rem; }
+  }
+  /* Laptops, 1024 px and up */
+  @media (min-width: 64rem) {
+    :root { --page-gutter: 2.5rem; }
+  }
+  /* Desktops, 1440 px and up */
+  @media (min-width: 90rem) {
+    html { font-size: 17px; }
+    :root { --page-max: 86rem; --page-max-narrow: 76rem; --page-gutter: 3rem; }
+  }
+  /* Full HD monitors, 1920 px and up */
+  @media (min-width: 120rem) {
+    html { font-size: 18px; }
+    :root { --page-max: 96rem; --page-max-narrow: 80rem; --page-gutter: 3.5rem; }
+  }
+  /* 2K screens, 2560 px and up */
+  @media (min-width: 160rem) {
+    html { font-size: 21px; }
+    :root { --page-max: 104rem; --page-max-narrow: 84rem; }
+  }
+  /* 4K screens at 100 % scaling, 3200 px and up */
+  @media (min-width: 200rem) {
+    html { font-size: 26px; }
+    :root { --page-max: 116rem; --page-max-narrow: 92rem; }
+  }
+  /* Small phones, 360 px and narrower: a little smaller so headings do not crowd */
+  @media (max-width: 22.5rem) {
+    html { font-size: 15px; }
+    :root { --page-gutter: 0.875rem; }
   }
   html {
     scroll-behavior: smooth;
@@ -267,10 +459,12 @@
   body {
     @apply bg-page min-h-dvh font-sans text-grey-800 antialiased;
     padding-bottom: var(--lane-h);
+    font-feature-settings: "ss01", "cv11";
   }
   h1, h2, h3, h4 {
-    @apply font-display tracking-[-0.025em];
+    @apply font-display tracking-[-0.03em];
     text-wrap: balance;
+    font-variation-settings: "opsz" 72;
   }
   :focus-visible {
     @apply rounded-lg outline-3 outline-offset-2 outline-orange-deep;
@@ -290,6 +484,15 @@
     animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  .marquee-always {
+    animation-duration: var(--marquee-dur, 80s) !important;
+    animation-iteration-count: infinite !important;
+  }
+  .backdrop .warm,
+  .backdrop .rose,
+  .backdrop .blob {
+    animation: none !important;
   }
   .reveal {
     opacity: 1;

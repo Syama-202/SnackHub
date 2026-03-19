@@ -1,18 +1,22 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { NavLink, Route, Routes } from 'react-router-dom';
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import DemoBanner from '../components/layout/DemoBanner';
+import Backdrop from '../components/ui/Backdrop';
 import Toast from '../components/ui/Toast';
 import { Button, Card, Icon, Logo, Modal, cx } from '../components/ui';
 import GoogleG from '../components/ui/GoogleG';
+import GoogleButton from '../components/ui/GoogleButton';
 import { PageFallback } from '../routes/Guards';
-import { logoutUser, restoreSession, signInWithDemo, verifyAdminMfa } from '../store/slices/auth';
+import { GOOGLE_CLIENT_ID } from '../constants/auth';
+import { adminStepUp, logoutUser, mfaCancelled, restoreSession, signInAdminWithGoogle, signInWithDemo, verifyAdminMfa } from '../store/slices/auth';
 import { addToast } from '../store/slices/toast';
 import LiveOps from './pages/LiveOps';
 import Approvals from './pages/Approvals';
 import Complaints from './pages/Complaints';
 import PolicyEditor from './pages/PolicyEditor';
 import AuditLog from './pages/AuditLog';
+import Enrol from './pages/Enrol';
 
 const AdminCtx = createContext(null);
 export const useAdmin = () => useContext(AdminCtx);
@@ -28,6 +32,7 @@ const TABS = [
 const AdminApp = () => {
   const dispatch = useDispatch();
   const { user, accessToken, isInitializing } = useSelector((state) => state.auth);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     dispatch(restoreSession());
@@ -65,20 +70,23 @@ const AdminApp = () => {
     setStepUp(null);
   };
 
+  // the one-time enrolment link works before the admin can sign in
+  if (pathname === '/enrol') return <Enrol />;
   if (isInitializing) return <PageFallback />;
   if (!accessToken || user?.role !== 'admin') return <AdminSignIn />;
 
   return (
     <AdminCtx.Provider value={{ run }}>
-      <div className="min-h-dvh bg-console">
+      <div className="min-h-dvh">
+        <Backdrop />
         <DemoBanner tone="dark" />
         <div className="flex">
-          <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-grey-800/10 bg-white p-4 lg:flex">
+          <aside className="glass glass-strong sticky top-3 m-3 hidden h-[calc(100dvh-1.5rem)] w-64 shrink-0 flex-col p-4 lg:flex">
             <Logo />
             <p className="mt-1 text-xs font-extrabold uppercase tracking-wider text-red-text">Admin · private host</p>
             <nav className="mt-6 grid gap-1" aria-label="Admin">
               {TABS.map((t) => (
-                <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold', isActive ? 'bg-grey-800 text-white' : 'text-grey-800 hover:bg-grey-50')}>
+                <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition', isActive ? 'chip-on' : 'text-grey-800 hover:bg-white/70')}>
                   <Icon name={t.icon} className="h-4 w-4" /> {t.label}
                 </NavLink>
               ))}
@@ -90,12 +98,12 @@ const AdminApp = () => {
             </div>
           </aside>
           <div className="min-w-0 flex-1">
-            <nav className="no-scrollbar flex gap-1 overflow-x-auto border-b border-grey-800/10 bg-white p-2 lg:hidden" aria-label="Admin">
+            <nav className="glass glass-strong no-scrollbar m-2 flex gap-1 overflow-x-auto p-2 lg:hidden" aria-label="Admin">
               {TABS.map((t) => (
-                <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('h-10 shrink-0 rounded-full px-4 text-sm font-bold leading-10', isActive ? 'bg-grey-800 text-white' : 'text-grey-800')}>{t.label}</NavLink>
+                <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('h-10 shrink-0 rounded-full px-4 text-sm font-bold leading-10', isActive ? 'chip-on' : 'text-grey-800')}>{t.label}</NavLink>
               ))}
             </nav>
-            <main className="mx-auto max-w-7xl p-4 lg:p-8">
+            <main className="page py-4 lg:py-8">
               <Routes>
                 <Route index element={<LiveOps />} />
                 <Route path="approvals" element={<Approvals />} />
@@ -112,6 +120,7 @@ const AdminApp = () => {
             <p className="text-sm text-grey-600">This action needs a second-factor check from the last 5 minutes.</p>
             <MfaForm
               heading="Authenticator code"
+              stepUp
               onDone={() => {
                 const s = stepUp;
                 setStepUp(null);
@@ -127,12 +136,18 @@ const AdminApp = () => {
   );
 };
 
-/** Google sign-in returns a half-session (mfa_pending); no admin API accepts it. */
+/**
+ * Step 1 is Google: an account on the admin list gets a half-session (mfa_pending) that no
+ * admin API accepts. Step 2 is the authenticator code (doc 16.3). Without a Google client
+ * ID, or by choice, the demo admin runs entirely in the browser mock.
+ */
 function AdminSignIn() {
   const dispatch = useDispatch();
   const { mfaPending, error, isLoading } = useSelector((state) => state.auth);
+  const demo = () => dispatch(signInWithDemo({ demoRole: 'admin' }));
   return (
-    <div className="min-h-dvh bg-console">
+    <div className="min-h-dvh">
+      <Backdrop />
       <DemoBanner tone="dark" />
       <div className="mx-auto grid min-h-[80vh] max-w-md place-items-center px-4">
         <Card className="w-full p-8">
@@ -141,49 +156,102 @@ function AdminSignIn() {
           {!mfaPending ? (
             <>
               <h1 className="mt-6 text-2xl font-extrabold">Step 1 of 2: Google</h1>
-              <p className="mt-1 text-sm text-grey-600">Your email must be verified and on the admin list.</p>
-              <button onClick={() => dispatch(signInWithDemo({ demoRole: 'admin' }))} disabled={isLoading} className="mt-5 flex h-12 w-full items-center justify-center gap-3 rounded-full border border-grey-800/15 bg-white font-bold shadow-sm hover:shadow-md disabled:opacity-60">
-                <GoogleG /> Continue with Google <span className="text-xs text-grey-600">(demo)</span>
-              </button>
-              {error && <p className="mt-3 text-sm font-bold text-red-text">{error}</p>}
+              <p className="mt-1 text-sm text-grey-600">Your Google email must be verified and on the admin list.</p>
+              <div className="mt-5">
+                {GOOGLE_CLIENT_ID ? (
+                  <GoogleButton disabled={isLoading} onCredential={(credential) => dispatch(signInAdminWithGoogle({ credential }))} />
+                ) : (
+                  <button onClick={demo} disabled={isLoading} className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-grey-800/15 bg-white font-bold shadow-sm hover:shadow-md disabled:opacity-60">
+                    <GoogleG /> Continue with Google <span className="text-xs text-grey-600">(demo)</span>
+                  </button>
+                )}
+              </div>
+              {GOOGLE_CLIENT_ID && (
+                <button onClick={demo} disabled={isLoading} className="mt-3 w-full text-center text-sm font-bold text-orange-text hover:underline">
+                  Use the demo admin instead
+                </button>
+              )}
+              {error && <p className="mt-3 text-sm font-bold text-red-text" role="alert">{error}</p>}
             </>
           ) : (
-            <MfaForm heading="Step 2 of 2: authenticator code" />
+            <>
+              <MfaForm heading="Step 2 of 2: authenticator code" demo={mfaPending.demo} />
+              <button onClick={() => dispatch(mfaCancelled())} className="mt-3 text-sm font-bold text-grey-600 hover:underline">
+                ← Use another Google account
+              </button>
+            </>
           )}
-          <p className="mt-6 text-xs text-grey-600">Admin accounts come only from a seed list; there is no admin sign-up. Every login and MFA failure is written to the audit log.</p>
+          <p className="mt-6 text-xs text-grey-600">There is no admin sign-up: the server owner creates admin accounts. Every login and wrong code is written to the audit log; five wrong codes lock the account for 15 minutes.</p>
         </Card>
       </div>
     </div>
   );
 }
 
-function MfaForm({ heading, onDone }) {
+/** The 6-digit TOTP code, or one of the ten single-use recovery codes (xxxx-xxxx). */
+function MfaForm({ heading, onDone, stepUp = false, demo }) {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.auth.isLoading);
+  const tokenIsDemo = useSelector((state) => String(state.auth.accessToken || '').startsWith('demo.'));
+  const isDemo = demo ?? tokenIsDemo;
+  const [recovery, setRecovery] = useState(false);
   const [code, setCode] = useState('');
   const [err, setErr] = useState(null);
+  const [busy, setBusy] = useState(false);
   const input = useRef(null);
+  const ready = recovery ? /^[a-z2-9]{4}-[a-z2-9]{4}$/i.test(code) : code.length === 6;
   const submit = async (e) => {
     e.preventDefault();
     setErr(null);
+    setBusy(true);
     try {
-      await dispatch(verifyAdminMfa({ code })).unwrap();
+      await dispatch(stepUp ? adminStepUp({ code }) : verifyAdminMfa({ code })).unwrap();
       onDone?.();
     } catch (e2) {
+      if (e2.code === 'MFA_SESSION_EXPIRED') dispatch(mfaCancelled());
       setErr(e2.message);
       setCode('');
       input.current?.focus();
+    } finally {
+      setBusy(false);
     }
+  };
+  const onChange = (v) => setCode(recovery ? v.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 9) : v.replace(/\D/g, '').slice(0, 6));
+  const toggle = () => {
+    setRecovery(!recovery);
+    setCode('');
+    setErr(null);
   };
   return (
     <form onSubmit={submit} className="mt-6">
       <h2 className="text-2xl font-extrabold">{heading}</h2>
-      <p className="mt-1 text-sm text-grey-600">Enter the 6-digit code from your authenticator app. Demo code: <b className="font-mono">246810</b></p>
-      <label htmlFor="totp" className="sr-only">Authenticator code</label>
-      <input ref={input} id="totp" autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} className="mt-4 h-14 w-full rounded-2xl border-2 border-grey-800/15 text-center font-mono text-2xl tracking-[0.4em] focus:border-orange focus:outline-none" />
+      <p className="mt-1 text-sm text-grey-600">
+        {recovery ? 'Enter one of your recovery codes. Each works once, and the other admins are told it was used.' : 'Enter the 6-digit code from your authenticator app.'}
+        {isDemo && !recovery && (
+          <>
+            {' '}Demo code: <b className="font-mono">246810</b>
+          </>
+        )}
+      </p>
+      <label htmlFor="totp" className="sr-only">{recovery ? 'Recovery code' : 'Authenticator code'}</label>
+      <input
+        ref={input}
+        id="totp"
+        autoFocus
+        inputMode={recovery ? 'text' : 'numeric'}
+        autoComplete="one-time-code"
+        value={code}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={recovery ? 'xxxx-xxxx' : undefined}
+        className="mt-4 h-14 w-full rounded-2xl border-2 border-grey-800/15 text-center font-mono text-2xl tracking-[0.4em] focus:border-orange focus:outline-none"
+      />
       {err && <p className="mt-2 text-sm font-bold text-red-text" role="alert">{err}</p>}
-      <Button type="submit" className="mt-4 w-full" disabled={code.length !== 6} loading={isLoading}>Verify</Button>
-      <p className="mt-3 text-xs text-grey-600">Passkey (WebAuthn) is the primary factor in the real console; TOTP is the fallback. 10 single-use recovery codes are stored hashed.</p>
+      <Button type="submit" className="mt-4 w-full" disabled={!ready} loading={busy || isLoading}>Verify</Button>
+      {!isDemo && (
+        <button type="button" onClick={toggle} className="mt-3 text-sm font-bold text-orange-text hover:underline">
+          {recovery ? 'Use the authenticator app' : 'Lost your phone? Use a recovery code'}
+        </button>
+      )}
     </form>
   );
 }

@@ -9,12 +9,12 @@ import { useReveal } from '../../hooks';
 export default function Regions() {
   const ref = useReveal();
   return (
-    <section id="regions" ref={ref} className="mx-auto max-w-7xl scroll-mt-24 px-4 py-24">
+    <section id="regions" ref={ref} className="page scroll-mt-24 py-24">
       <SectionTitle eyebrow="Regional collections" title="India, One Snack at a Time." sub="Little bites. Big regional stories." />
       <div className="mt-10">
         <Carousel label="Regional collections">
           {REGIONS.map((r, i) => (
-            <Link key={r.id} to={`/shop?region=${encodeURIComponent(r.id)}`} className="reveal group lift relative flex w-[78%] shrink-0 snap-start flex-col overflow-hidden rounded-[26px] bg-white shadow-[0_10px_30px_rgba(31,41,55,0.08)] sm:w-[44%] lg:w-[30%]" style={{ transitionDelay: `${i * 60}ms` }} draggable={false}>
+            <Link key={r.id} to={`/shop?region=${encodeURIComponent(r.id)}`} className="reveal group lift relative flex w-[78%] shrink-0 snap-start flex-col overflow-hidden rounded-[26px] bg-white shadow-[0_10px_30px_rgba(31,41,55,0.08)] sm:w-[44%] lg:w-[30%] 2xl:w-[23.5%]" style={{ transitionDelay: `${i * 60}ms` }} draggable={false}>
               <div className="relative h-56 overflow-hidden" style={{ background: `linear-gradient(135deg, ${r.accent}22, ${r.accent}55)` }}>
                 <AssetImage
                   id={r.photo}

@@ -12,5 +12,7 @@ export const userModel = {
   /** Links Google to an account that has none yet; false if it already has one. */
   linkGoogle: (db, id, sub) => db(TABLE).where({ id }).whereNull('google_sub').update({ google_sub: sub }).then((n) => n === 1),
   setRole: (db, id, role) => db(TABLE).where({ id }).update({ role }),
+  /** Changes the role only from the expected one, so a decision never touches an admin; false otherwise. */
+  grantRole: (db, id, from, to) => db(TABLE).where({ id, role: from, status: 'active' }).update({ role: to }).then((n) => n === 1),
   setStatus: (db, id, status) => db(TABLE).where({ id }).update({ status }),
 };

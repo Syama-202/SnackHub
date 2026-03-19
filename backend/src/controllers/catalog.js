@@ -51,6 +51,8 @@ function sellerView(row, products) {
   return {
     id: row.id,
     shopName: row.shop_name,
+    // shop, stall (a street cart or kadai) or home (a home kitchen)
+    kind: row.kind ?? 'shop',
     city: row.city,
     region: row.region,
     lat: Number(row.lat),
@@ -115,7 +117,7 @@ export function catalogController({ dbs }) {
       s.products
         .map((p) => {
           const pr = s.promise[p.servingTemp];
-          return { ...p, shopName: s.shopName, serviceable: Boolean(pr?.serviceable), window: pr?.window, distanceKm: s.distanceKm };
+          return { ...p, shopName: s.shopName, shopKind: s.kind, serviceable: Boolean(pr?.serviceable), window: pr?.window, distanceKm: s.distanceKm };
         })
         .filter((p) => p.serviceable),
     );

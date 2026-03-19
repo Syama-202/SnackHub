@@ -68,19 +68,19 @@ export default function RiderLane() {
   if (!show) return null;
   return (
     <div className="safe-bottom fixed inset-x-0 bottom-0 z-40 bg-grey-900 shadow-lane">
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 pt-2 text-white">
+      <div className="page flex items-center gap-3 pt-2 text-white">
         <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sun opacity-75" />
           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-sun" />
         </span>
         <p className="min-w-0 flex-1 truncate text-sm font-bold" aria-live="polite">{laneStatus(track)}</p>
         {track.order.otpRevealed && track.stage !== 'DELIVERED' && <span className="hidden items-center gap-1 rounded-full bg-sun px-2 py-0.5 text-xs font-extrabold text-grey-800 sm:inline-flex"><Icon name="unlock" className="h-3.5 w-3.5" /> Code ready</span>}
-        {track.simulated && <span className="hidden rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold sm:inline">Simulated feed</span>}
+        {track.simulated && <span className="hidden rounded-full bg-white/10 px-2 py-0.5 text-[0.6875rem] font-bold sm:inline">Simulated feed</span>}
         <Link to={`/orders/${id}`} className={cx('inline-flex h-9 items-center gap-1 rounded-full bg-primary px-3 text-sm font-extrabold text-grey-800')}>
           Track <Icon name="arrowRight" className="h-4 w-4" />
         </Link>
       </div>
-      <div className="mx-auto max-w-7xl overflow-hidden">
+      <div className="mx-auto max-w-(--page-max) overflow-hidden">
         {/* One canvas per page: the landing hero already has one, so use the SVG lane there */}
         <Lane track={track} height={76} forceSvg={pathname === '/'} />
       </div>

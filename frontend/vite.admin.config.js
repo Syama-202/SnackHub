@@ -9,6 +9,9 @@ const shared = fileURLToPath(new URL('../shared', import.meta.url));
 // Admin console: its own build and its own host (doc 16.3, 15.0).
 export default defineConfig({
   resolve: { alias: { '@shared': shared } },
+  // Its own dependency cache, so running it beside the customer app (5180) does not
+  // invalidate that server's optimised deps ("Outdated Optimize Dep" 504s)
+  cacheDir: 'node_modules/.vite-admin',
   plugins: [
     react(),
     tailwindcss(),
@@ -22,6 +25,6 @@ export default defineConfig({
       },
     },
   ],
-  server: { port: 5174, strictPort: true, fs: { allow: ['..'] } },
+  server: { port: 5181, strictPort: true, fs: { allow: ['..'] } },
   build: { outDir: 'dist-admin', rollupOptions: { input: 'admin.html' } },
 });

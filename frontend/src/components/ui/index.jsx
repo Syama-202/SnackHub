@@ -1,4 +1,4 @@
-import { Fragment, forwardRef, useEffect, useId, useRef } from 'react';
+import { Fragment, forwardRef, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { rupees } from '@shared/domain/money';
@@ -11,11 +11,11 @@ const BTN = {
   primary: 'bg-primary text-grey-800 shadow-cta hover:shadow-lg shine',
   danger: 'bg-danger text-white shine',
   dark: 'bg-grey-800 text-white hover:bg-grey-900',
-  ghost: 'bg-white/70 text-grey-800 border border-grey-800/10 hover:bg-white',
+  ghost: 'bg-white/70 text-grey-800 border border-white/80 shadow-sm backdrop-blur hover:bg-white',
   quiet: 'text-grey-800 hover:bg-grey-800/5',
-  outline: 'border-2 border-orange text-orange-text bg-white hover:bg-orange/5',
+  outline: 'border-2 border-orange text-orange-text bg-white/80 hover:bg-orange/10',
 };
-const SIZE = { sm: 'h-9 px-3.5 text-sm', md: 'h-11 px-5 text-[15px]', lg: 'h-13 px-7 text-base' };
+const SIZE = { sm: 'h-9 px-4 text-sm', md: 'h-12 px-6 text-base', lg: 'h-14 px-8 text-lg' };
 
 export const Button = forwardRef(function Button({ variant = 'primary', size = 'md', className, loading, children, ...rest }, ref) {
   return (
@@ -42,7 +42,7 @@ export function Spinner({ className = 'h-5 w-5' }) {
 
 export function Card({ className, glass, children, as: As = 'div', ...rest }) {
   return (
-    <As className={cx(glass ? 'glass' : 'rounded-[20px] border border-grey-800/[0.06] bg-white shadow-card', className)} {...rest}>
+    <As className={cx(glass ? 'glass' : 'surface', className)} {...rest}>
       {children}
     </As>
   );
@@ -74,7 +74,7 @@ export const Input = forwardRef(function Input({ label, hint, error, className, 
         id={fid}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${fid}-err` : hint ? `${fid}-hint` : undefined}
-        className={cx('h-11 w-full rounded-xl border bg-white px-3.5 text-[15px] text-grey-800 placeholder:text-grey-400 transition focus:border-orange focus:outline-none focus:ring-4 focus:ring-orange/15', error ? 'border-red' : 'border-grey-800/15')}
+        className={cx('h-11 w-full rounded-xl border bg-white px-3.5 text-[0.9375rem] text-grey-800 placeholder:text-grey-400 transition focus:border-orange focus:outline-none focus:ring-4 focus:ring-orange/15', error ? 'border-red' : 'border-grey-800/15')}
         {...rest}
       />
       {error ? <span id={`${fid}-err`} className="mt-1 block text-sm font-semibold text-red-text">{error}</span> : hint ? <span id={`${fid}-hint`} className="mt-1 block text-sm text-grey-600">{hint}</span> : null}
@@ -232,7 +232,7 @@ export function QtyControl({ qty, onChange, max = 99, disabled, size = 'md', lab
       <button
         onClick={() => onChange(1)}
         disabled={disabled}
-        className={cx(h, 'min-w-[84px] rounded-xl border-2 border-orange bg-white px-4 text-sm font-extrabold tracking-wide text-orange-text transition hover:bg-orange hover:text-grey-800 active:scale-95 disabled:border-grey-400 disabled:text-grey-400 disabled:hover:bg-white')}
+        className={cx(h, 'shine min-w-[88px] rounded-xl bg-primary px-4 text-sm font-extrabold tracking-wide text-grey-900 shadow-cta transition hover:shadow-lg active:scale-95 disabled:bg-none disabled:bg-grey-50 disabled:text-grey-400 disabled:shadow-none')}
         aria-label={disabled ? `Sold out, ${label}` : `Add ${label}`}
       >
         {disabled ? 'SOLD OUT' : 'ADD'}
@@ -247,12 +247,17 @@ export function QtyControl({ qty, onChange, max = 99, disabled, size = 'md', lab
   );
 }
 
+/**
+ * The round SnackHub logo with the text wordmark beside it. The artwork has its own lettering,
+ * but it cannot be read below about 48 px, so small places (navbar, footer, console headers)
+ * keep the text; compact shows the circle alone.
+ */
 export function Logo({ className = '', compact = false, tone = 'dark' }) {
   return (
     <span className={cx('inline-flex items-center gap-2', className)}>
-      <LogoMark className="h-9 w-9" />
+      <LogoMark className="h-11 w-11 shadow-[0_6px_18px_-6px_rgba(232,106,0,0.6)]" />
       {!compact && (
-        <span className="font-display text-[23px] font-extrabold leading-none tracking-[-0.035em]">
+        <span className="font-display text-[1.4375rem] font-extrabold leading-none tracking-[-0.035em]">
           <span className="text-gradient">Snack</span>
           <span className={tone === 'dark' ? 'text-grey-800' : 'text-white'}>Hub</span>
         </span>
@@ -261,50 +266,9 @@ export function Logo({ className = '', compact = false, tone = 'dark' }) {
   );
 }
 
-/** The brand mark (doc 25.3): a scooter carrying a glowing snack box. Same drawing as public/assets/brand/mark.svg. */
+/** The round brand logo (public/assets/brand/logo-round.webp). Decorative: the wordmark or a label names it. */
 export function LogoMark({ className }) {
-  // Unique ids per instance: a gradient inside a display:none copy would not paint
-  const id = useId().replace(/:/g, '');
-  const bg = `lmb${id}`;
-  const glow = `lmg${id}`;
-  return (
-    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
-      <defs>
-        <linearGradient id={bg} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FFC300" />
-          <stop offset=".52" stopColor="#FF7A00" />
-          <stop offset="1" stopColor="#E23744" />
-        </linearGradient>
-        <radialGradient id={glow} cx=".5" cy=".5" r=".5">
-          <stop offset="0" stopColor="#FFF6D6" stopOpacity=".85" />
-          <stop offset="1" stopColor="#FFF6D6" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <rect width="64" height="64" rx="18" fill={`url(#${bg})`} />
-      <path d="M0 18C0 8 8 0 18 0h28c4 0 7.6 1.3 10.6 3.5C42 6 22 14 0 34z" fill="#fff" opacity=".12" />
-      <circle cx="21" cy="22" r="15" fill={`url(#${glow})`} />
-      <g fill="none" stroke="#fff" strokeLinecap="round">
-        <path d="M17.5 13.5c-1.8-1.9 1.8-3.4 0-5.6" strokeWidth="2.2" opacity=".95" />
-        <path d="M24.5 13.5c-1.8-1.9 1.8-3.4 0-5.6" strokeWidth="2.2" opacity=".95" />
-        <path d="M3.5 36.5h4.5M2.5 41h3.5" strokeWidth="2.4" opacity=".75" />
-      </g>
-      <rect x="11" y="16" width="20" height="15" rx="2.6" fill="#fff" />
-      <path d="M11 20.6h20" stroke="#FF7A00" strokeWidth="1.8" />
-      <path d="M18 25.8h6" stroke="#FFB000" strokeWidth="2.6" strokeLinecap="round" />
-      <path d="M10 42.5c0-6.4 4.6-10.3 10.8-10.3h9.6c1.6 0 2.9 1 3.4 2.5l1.9 5.3h7.4v2.5z" fill="#fff" />
-      <path d="M36 40h6.4l3.6-13.2 2.6 1.2-4 14.5H36z" fill="#fff" />
-      <g fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M46.6 25.5 48.2 46.5" strokeWidth="3.4" />
-        <path d="M43.6 24.6h6.8" strokeWidth="3.6" />
-      </g>
-      <g stroke="#fff" strokeWidth="3">
-        <circle cx="19.5" cy="46.5" r="6" fill="#1F2937" />
-        <circle cx="48.2" cy="46.5" r="6" fill="#1F2937" />
-      </g>
-      <circle cx="19.5" cy="46.5" r="1.8" fill="#FFC300" />
-      <circle cx="48.2" cy="46.5" r="1.8" fill="#FFC300" />
-    </svg>
-  );
+  return <img src="/assets/brand/logo-round.webp" alt="" width="512" height="512" decoding="async" className={cx('shrink-0 rounded-full object-contain', className)} />;
 }
 
 export function EmptyState({ title, body, action, art }) {
@@ -368,6 +332,8 @@ const ICONS = {
   clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
   heart: <path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z" />,
   check: <path d="m5 12 5 5 9-10" />,
+  play: <path d="M7 5v14l11-7z" />,
+  pause: <><path d="M8 5v14" /><path d="M16 5v14" /></>,
   shield: <><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z" /><path d="m9 12 2 2 4-4" /></>,
   bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
   box: <><path d="M3 7 12 3l9 4-9 4z" /><path d="M3 7v10l9 4 9-4V7" /><path d="M12 11v10" /></>,

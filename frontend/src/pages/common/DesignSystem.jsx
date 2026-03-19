@@ -29,7 +29,7 @@ export default function DesignSystem() {
   const [progress, setProgress] = useState(0.45);
   const dispatch = useDispatch();
   return (
-    <div className="mx-auto max-w-7xl px-4 pt-6">
+    <div className="page pt-6">
       <SectionTitle eyebrow="SnackHub design system" title="Tokens, glass, motion and components" sub="Doc sections 22.1 to 22.3. Every colour in the app comes from these tokens." />
 
       <h2 className="mt-12 text-2xl font-extrabold">Colour tokens</h2>
@@ -62,8 +62,8 @@ export default function DesignSystem() {
 
       <h2 className="mt-12 text-2xl font-extrabold">Typography</h2>
       <Card className="mt-4 space-y-2 p-6">
-        <p className="font-display text-5xl font-extrabold">Outfit for headings and the wordmark</p>
-        <p className="text-lg">Inter for text, prices and forms. Clean and readable at small sizes on cheap phones.</p>
+        <p className="font-display text-5xl font-extrabold">Bricolage Grotesque for headings and the wordmark</p>
+        <p className="text-lg">Manrope for text, prices and forms. Clean and readable at small sizes on cheap phones.</p>
       </Card>
 
       <h2 className="mt-12 text-2xl font-extrabold">Buttons and pills</h2>

@@ -28,6 +28,14 @@
     {"id": "snack-bakarwadi", "src": "flux/bakarwadi.webp", "box": [0, 0, 1024, 1024], "out": "snacks/bakarwadi.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"},
     {"id": "snack-batata-vada", "src": "flux/batata-vada.webp", "box": [0, 0, 1024, 1024], "out": "snacks/batata-vada.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"},
     {"id": "snack-chikki", "src": "flux/chikki.webp", "box": [0, 0, 1024, 1024], "out": "snacks/chikki.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"},
-    {"id": "snack-dhokla", "src": "flux/dhokla.webp", "box": [0, 0, 1024, 1024], "out": "snacks/dhokla.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"}
+    {"id": "snack-dhokla", "src": "flux/dhokla.webp", "box": [0, 0, 1024, 1024], "out": "snacks/dhokla.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"},
+    {"id": "snack-achappam", "src": "flux/achappam.webp", "box": [0, 0, 1024, 1024], "out": "snacks/achappam.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"},
+    {"id": "snack-alu-vadi", "src": "flux/alu-vadi.webp", "box": [0, 0, 1024, 1024], "out": "snacks/alu-vadi.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"},
+    {"id": "snack-amba-barfi", "src": "flux/amba-barfi.webp", "box": [0, 0, 1024, 1024], "out": "snacks/amba-barfi.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"},
+    {"id": "snack-ambode", "src": "flux/ambode.webp", "box": [0, 0, 1024, 1024], "out": "snacks/ambode.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"},
+    {"id": "snack-anarsa", "src": "flux/anarsa.webp", "box": [0, 0, 1024, 1024], "out": "snacks/anarsa.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"},
+    {"id": "snack-aratikaya-bajji", "src": "flux/aratikaya-bajji.webp", "box": [0, 0, 1024, 1024], "out": "snacks/aratikaya-bajji.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"},
+    {"id": "snack-ari-unda", "src": "flux/ari-unda.webp", "box": [0, 0, 1024, 1024], "out": "snacks/ari-unda.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"},
+    {"id": "snack-atho", "src": "flux/atho.webp", "box": [0, 0, 1024, 1024], "out": "snacks/atho.webp", "credit": "AI image (FLUX.1-schnell on Hugging Face)"}
   ]
 }

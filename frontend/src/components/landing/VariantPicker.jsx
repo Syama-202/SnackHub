@@ -18,7 +18,7 @@ export default function VariantPicker() {
   const cur = VARIANTS.find((x) => x.id === v);
   return (
     <section className="bg-gradient-to-b from-transparent via-sun/10 to-transparent py-24">
-      <div className="mx-auto max-w-7xl px-4">
+      <div className="page">
         <SectionTitle eyebrow="Pick your box" title="Hot, sweet or crunchy?" align="center" />
         <div className="mt-12 grid items-center gap-10 md:grid-cols-2">
           <div className="relative mx-auto grid aspect-square w-full max-w-md place-items-center" aria-hidden="true">

@@ -13,6 +13,7 @@
     "migrate:down": "npm --prefix backend run migrate:down",
     "migrate:status": "npm --prefix backend run migrate:status",
     "seed": "npm --prefix backend run seed",
+    "create-admin": "npm --prefix backend run create-admin --",
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "test": "npm --prefix backend test",

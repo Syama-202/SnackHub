@@ -11,7 +11,7 @@ export default function Delivery() {
   ];
   return (
     <section id="delivery" ref={ref} className="scroll-mt-24 bg-sun py-24">
-      <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 lg:grid-cols-[1fr_1.1fr]">
+      <div className="page grid items-center gap-12 lg:grid-cols-[1fr_1.1fr]">
         <div>
           <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-grey-800">How delivery works</p>
           <h2 className="mt-2 text-[clamp(2.2rem,5vw,3.8rem)] font-extrabold leading-[1.02] text-grey-800">Craving Now? We're Already on Our Way.</h2>

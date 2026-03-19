@@ -72,7 +72,7 @@ const SellerOrders = () => {
         {COLUMNS.map((c) => {
           const list = orders.filter((o) => c.match.includes(o.status));
           return (
-            <section key={c.id} className="rounded-[22px] bg-grey-50 p-3" aria-labelledby={`col-${c.id}`}>
+            <section key={c.id} className="rounded-[22px] border border-white/70 bg-white/45 p-3 shadow-sm" aria-labelledby={`col-${c.id}`}>
               <h2 id={`col-${c.id}`} className="flex items-center justify-between px-1 pb-2 font-display text-lg font-extrabold">
                 {c.title} <span className="grid h-7 min-w-7 place-items-center rounded-full bg-white px-2 text-sm">{list.length}</span>
               </h2>
