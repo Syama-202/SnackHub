@@ -34,7 +34,11 @@ export default defineConfig({
     // Requests the mock passes on (Google sign-in, refresh, logout, /me, the catalog reads
     // and a real admin's sign-in and approvals) go to the real backend on the same origin,
     // so the httpOnly refresh cookies work without CORS.
-    proxy: Object.fromEntries(['auth', 'me', 'cities', 'sellers', 'products', 'search', 'admin'].map((p) => [`/api/v1/${p}`, backend])),
+    // real API routes; the seller and rider console mocks answer demo sessions only and pass
+    // real accounts through to these
+    proxy: Object.fromEntries(
+      ['auth', 'me', 'cities', 'sellers', 'products', 'search', 'admin', 'files', 'seller', 'rider'].map((p) => [`/api/v1/${p}`, backend]),
+    ),
   },
   build: {
     outDir: 'dist',

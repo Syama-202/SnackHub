@@ -37,8 +37,44 @@ const server = database.extend({
   ADMIN_CONSOLE_URL: z.string().url().default('http://localhost:5180/admin.html'),
   ADMIN_ACCESS_MINUTES: z.coerce.number().int().min(1).max(15).default(10),
   ADMIN_SESSION_HOURS: z.coerce.number().int().min(1).max(8).default(8),
-  // AES-256-GCM key for the admin TOTP secrets: 32 random bytes, base64url (43 characters)
+  // 32 random bytes, base64url (43 characters). Encrypts TOTP secrets; HKDF derives separate
+  // keys from it for document numbers, one-time codes and signed file links (utils/keys.js).
   MFA_KEY: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+
+  // Sign-up and sign-in for every role. Links in emails point at APP_URL.
+  APP_URL: z.string().url().default('http://localhost:5180'),
+  // roles that must enrol an authenticator app; admin and reviewer are always included
+  MFA_REQUIRED_ROLES: csv.pipe(z.array(z.enum(['customer', 'seller', 'rider', 'reviewer', 'admin']))).default('admin,reviewer,seller'),
+  // the terms and privacy version a new account accepts
+  TERMS_VERSION: z.string().regex(/^[\w.-]{1,20}$/).default('2026-03'),
+  // check new passwords against Have I Been Pwned (only a 5-character hash prefix is sent)
+  PASSWORD_BREACH_CHECK: bool.default('false'),
+
+  // Email with nodemailer: smtp (your provider), file (each message saved as an .eml file in
+  // MAIL_DIR, development only) or off. Unset: smtp when SMTP_HOST is set, otherwise file in
+  // development and off elsewhere, where the outbox keeps the messages until it is set.
+  MAIL_TRANSPORT: z.enum(['smtp', 'file', 'off']).optional(),
+  MAIL_DIR: z.string().min(1).default('storage/mail'),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(1025),
+  SMTP_SECURE: bool.default('false'),
+  SMTP_USER: z.string().default(''),
+  SMTP_PASS: z.string().default(''),
+  MAIL_FROM: z.string().min(3).default('SnackHub (demo) <no-reply@snackhub.test>'),
+  // Text messages: '' (off), dev-mail (development only: each text is saved with the emails)
+  // or twilio. Unset means dev-mail in development and off everywhere else.
+  SMS_PROVIDER: z.enum(['', 'dev-mail', 'twilio']).optional(),
+  TWILIO_ACCOUNT_SID: z.string().default(''),
+  TWILIO_AUTH_TOKEN: z.string().default(''),
+  TWILIO_FROM: z.string().default(''),
+
+  // Private document storage, outside every public folder; relative paths are from backend/
+  STORAGE_DIR: z.string().min(1).default('storage/private'),
+  // ClamAV daemon for upload scanning; empty stores uploads as not scanned
+  CLAMAV_HOST: z.string().default(''),
+  CLAMAV_PORT: z.coerce.number().int().positive().default(3310),
+  // the outbox relay and the daily document-expiry job run inside the API process
+  RUN_JOBS: bool.optional(),
 });
 
 function parse(schema, source) {
@@ -56,5 +92,20 @@ export const loadDbEnv = (source = process.env) => Object.freeze(parse(database,
 /** Every setting the server needs. */
 export function loadEnv(source = process.env) {
   const env = parse(server, source);
-  return Object.freeze({ ...env, COOKIE_SECURE: env.COOKIE_SECURE ?? env.NODE_ENV === 'production' });
+  if (env.SMS_PROVIDER === 'dev-mail' && env.NODE_ENV === 'production') throw new Error('Invalid settings: SMS_PROVIDER=dev-mail is for development only.');
+  // saved emails hold sign-in links, so production never writes them to disk
+  if (env.MAIL_TRANSPORT === 'file' && env.NODE_ENV === 'production') throw new Error('Invalid settings: MAIL_TRANSPORT=file is for development only.');
+  if (env.MAIL_TRANSPORT === 'smtp' && !env.SMTP_HOST) throw new Error('Invalid or missing settings: SMTP_HOST. See backend/.env.example.');
+  if (env.SMS_PROVIDER === 'twilio' && !(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_FROM)) {
+    throw new Error('Invalid or missing settings: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM. See backend/.env.example.');
+  }
+  const dev = env.NODE_ENV === 'development';
+  return Object.freeze({
+    ...env,
+    COOKIE_SECURE: env.COOKIE_SECURE ?? env.NODE_ENV === 'production',
+    RUN_JOBS: env.RUN_JOBS ?? env.NODE_ENV !== 'test',
+    SMTP_HOST: env.SMTP_HOST ?? '',
+    MAIL_TRANSPORT: env.MAIL_TRANSPORT ?? (env.SMTP_HOST ? 'smtp' : dev ? 'file' : 'off'),
+    SMS_PROVIDER: env.SMS_PROVIDER ?? (dev ? 'dev-mail' : ''),
+  });
 }

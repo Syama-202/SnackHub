@@ -19,22 +19,29 @@ export const sellerModel = {
       .from(TABLE)
       .whereIn('status', VISIBLE_STATUSES)
       .andWhere('paused', false)
+      // a shop whose required licence has expired drops out until the renewal is approved
+      .andWhere((q) => q.whereNull('docs_valid_until').orWhere('docs_valid_until', '>=', new Date().toISOString().slice(0, 10)))
       .whereBetween('lat', [lat - dLat, lat + dLat])
       .whereBetween('lng', [lng - dLng, lng + dLng])
       .havingRaw('distance_m <= LEAST(radius_km * 1000, ?)', [maxKm * 1000])
       .orderBy('distance_m');
   },
-  /** A new shop from an application: hidden from customers until an admin approves it. */
-  create: (db, userId, s) =>
-    db(TABLE)
-      .insert({ user_id: userId, shop_name: s.shopName, kind: s.kind ?? 'shop', city: s.city, region: s.region ?? null, lat: s.lat, lng: s.lng, radius_km: s.radiusKm, open_hours: s.openHours, licence_no: s.licenceNo, licence_expires_on: s.licenceExpiresOn, status: 'pending' })
-      .then(([id]) => id),
-  /** A rejected shop applying again with corrected details. */
-  reopen: (db, id, s) =>
-    db(TABLE)
-      .where({ id, status: 'rejected' })
-      .update({ shop_name: s.shopName, kind: s.kind ?? 'shop', city: s.city, region: s.region ?? null, lat: s.lat, lng: s.lng, radius_km: s.radiusKm, open_hours: s.openHours, licence_no: s.licenceNo, licence_expires_on: s.licenceExpiresOn, status: 'pending' })
-      .then((n) => n === 1),
+  /**
+   * The public shop row from a submitted application's business details: hidden from
+   * customers (pending) until a reviewer approves it. A resubmission updates the same row.
+   * licence_no keeps only the last four digits of the FSSAI number, for display.
+   */
+  upsertFromBusiness: async (db, userId, b, { region = null, licenceLast4 = null, licenceExpiresOn = null } = {}) => {
+    const row = { shop_name: b.shopName, kind: b.kind ?? 'shop', city: b.city, region, lat: b.lat, lng: b.lng, radius_km: b.radiusKm, open_hours: b.openHours, licence_no: licenceLast4 ? `••••${licenceLast4}` : null, licence_expires_on: licenceExpiresOn };
+    const existing = await db(TABLE).where({ user_id: userId }).first('id', 'status');
+    if (existing) {
+      await db(TABLE).where({ id: existing.id }).update({ ...row, status: ['active', 'probation', 'warned'].includes(existing.status) ? existing.status : 'pending' });
+      return existing.id;
+    }
+    const [id] = await db(TABLE).insert({ user_id: userId, ...row, status: 'pending' });
+    return id;
+  },
+  setDocsValidUntil: (db, id, date) => db(TABLE).where({ id }).update({ docs_valid_until: date }),
   setStatus: (db, id, status) => db(TABLE).where({ id }).update({ status }),
   markVerified: (db, id, status) => db(TABLE).where({ id }).update({ status, verified_at: new Date() }),
   setPaused: (db, id, paused) => db(TABLE).where({ id }).update({ paused }),

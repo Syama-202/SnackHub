@@ -1,5 +1,5 @@
-// Admin second factor helpers (doc 16.3): TOTP (RFC 6238) with otplib, secrets encrypted at
-// rest with AES-256-GCM, and single-use recovery codes stored as SHA-256 hashes.
+// Second factor helpers for every role (doc 16.3): TOTP (RFC 6238) with otplib, secrets
+// encrypted at rest with AES-256-GCM, and single-use recovery codes stored as SHA-256 hashes.
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
 import otplib from 'otplib';
 
@@ -25,7 +25,8 @@ export function decryptSecret(env, stored) {
 }
 
 export const newTotpSecret = () => authenticator.generateSecret(20);
-export const otpauthUrl = (email, secret) => authenticator.keyuri(email, 'SnackHub admin', secret);
+/** The otpauth:// link an authenticator app reads from the QR code; issuer names the account in the app. */
+export const otpauthUrl = (email, secret, issuer = 'SnackHub') => authenticator.keyuri(email, issuer, secret);
 
 /** The 30 second time step a code belongs to, or null if it is not valid now. */
 export function totpStep(secret, code, now = Date.now()) {

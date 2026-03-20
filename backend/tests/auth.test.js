@@ -68,7 +68,7 @@ describe.skipIf(!migrator)('Google sign-in', () => {
     expect(res.status).toBe(200);
     expect(res.body.user).toMatchObject({ email: p.email, role: 'customer' });
     const claims = verifyAccessToken(env, res.body.accessToken);
-    expect(claims).toEqual({ userId: res.body.user.id, role: 'customer', mfaAt: null });
+    expect(claims).toEqual({ userId: res.body.user.id, role: 'customer', mfaAt: null, amr: ['google'] });
     const cookie = cookieFrom(res);
     expect(cookie).toMatch(/HttpOnly/i);
     expect(cookie).toMatch(/SameSite=Strict/i);
@@ -106,28 +106,31 @@ describe.skipIf(!migrator)('Google sign-in', () => {
     expect(ok.body.user.role).toBe('customer');
   });
 
-  it('links an existing account by verified email and keeps its role', async () => {
+  it('links an existing account by verified email; Google signs in to the customer portal only', async () => {
     const seller = await trx('users').where({ email: 'seller1@example.test' }).first();
     const res = await signIn({ sub: `seller-sub-${Date.now()}`, email: 'seller1@example.test' });
     expect(res.status).toBe(200);
-    expect(res.body.user).toMatchObject({ id: seller.id, role: 'seller' });
+    // the seller keeps the seller role, and gets a customer token, never a seller one
+    expect(res.body.user).toMatchObject({ id: seller.id, role: 'customer' });
+    expect(res.body.user.roles).toEqual(expect.arrayContaining(['seller', 'customer']));
+    expect(verifyAccessToken(env, res.body.accessToken).role).toBe('customer');
     // a second Google account cannot take over the same email
     const takeover = await signIn({ sub: `other-sub-${Date.now()}`, email: 'seller1@example.test' });
     expect(takeover.body.error.code).toBe('ACCOUNT_LINKED_ELSEWHERE');
   });
 
-  it('gives an admin no token here: admins sign in on the admin console with a second factor', async () => {
+  it('gives staff no token here: they sign in on the admin console with a second factor', async () => {
     const res = await signIn({ sub: `admin-sub-${Date.now()}`, email: 'admin@example.test' });
     expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe('ADMIN_CONSOLE_ONLY');
+    expect(res.body.error.code).toBe('STAFF_ACCOUNT');
     expect(cookieFrom(res)).toBeUndefined();
   });
 
-  it('refuses a blocked account', async () => {
+  it('refuses a suspended account', async () => {
     const p = person();
     const first = await signIn(p);
-    await trx('users').where({ id: first.body.user.id }).update({ status: 'blocked' });
-    expect((await signIn(p)).body.error.code).toBe('ACCOUNT_BLOCKED');
+    await trx('users').where({ id: first.body.user.id }).update({ status: 'suspended', status_reason: 'Test (demo)' });
+    expect((await signIn(p)).body.error.code).toBe('ACCOUNT_SUSPENDED');
   });
 
   it('answers 503 until a Google client ID is configured', async () => {
@@ -218,9 +221,9 @@ describe.skipIf(!migrator)('sessions', () => {
     expect((await request(app).get('/api/v1/me').set('Authorization', `Bearer ${forged}`)).status).toBe(401);
     const me = await request(app).get('/api/v1/me').set('Authorization', `Bearer ${s.access}`);
     expect(me.body).toMatchObject({ id: s.user.id, role: 'customer' });
-    await trx('users').where({ id: s.user.id }).update({ status: 'blocked' });
+    await trx('users').where({ id: s.user.id }).update({ status: 'suspended', status_reason: 'Test (demo)' });
     expect((await request(app).get('/api/v1/me').set('Authorization', `Bearer ${s.access}`)).status).toBe(403);
-    expect((await refresh(s.cookie)).body.error.code).toBe('ACCOUNT_BLOCKED');
+    expect((await refresh(s.cookie)).body.error.code).toBe('ACCOUNT_SUSPENDED');
   });
 });
 
@@ -229,13 +232,15 @@ describe.skipIf(!migrator)('role checks', () => {
     const { requireRole } = await import('../src/middleware/auth.js');
     const trx = await identity.transaction();
     try {
-      const seller = await trx('users').where({ role: 'seller' }).first();
+      const seller = await trx('user_roles').where({ role: 'seller', status: 'active' }).first();
       const check = (user) =>
         new Promise((resolve) => requireRole({ identity: trx }, 'seller')({ user }, {}, (err) => resolve(err?.status ?? 200)));
-      expect(await check({ userId: seller.id, role: 'seller' })).toBe(200);
-      expect(await check({ userId: seller.id, role: 'customer' })).toBe(403); // token role must match
-      await trx('users').where({ id: seller.id }).update({ role: 'customer' });
-      expect(await check({ userId: seller.id, role: 'seller' })).toBe(403); // old token, role taken away
+      expect(await check({ userId: seller.user_id, role: 'seller' })).toBe(200);
+      expect(await check({ userId: seller.user_id, role: 'customer' })).toBe(403); // token role must match
+      await trx('user_roles').where({ user_id: seller.user_id, role: 'seller' }).update({ status: 'suspended', status_reason: 'Test (demo)' });
+      expect(await check({ userId: seller.user_id, role: 'seller' })).toBe(403); // old token, role suspended
+      await trx('user_roles').where({ user_id: seller.user_id, role: 'seller' }).del();
+      expect(await check({ userId: seller.user_id, role: 'seller' })).toBe(403); // and removed
     } finally {
       await trx.rollback();
     }

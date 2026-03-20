@@ -17,6 +17,8 @@
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "test": "npm --prefix backend test",
-    "build": "npm --prefix frontend run build"
+    "build": "npm --prefix frontend run build",
+    "jobs": "npm --prefix backend run jobs",
+    "dev:admin": "npm --prefix frontend run dev:admin"
   }
 }

@@ -1,7 +1,8 @@
-// identity.admin_recovery_codes: ten single-use codes per admin, stored only as hashes.
-const TABLE = 'admin_recovery_codes';
+// identity.recovery_codes: ten single-use codes per person with an authenticator app,
+// stored only as hashes and shown once, when they are made.
+const TABLE = 'recovery_codes';
 
-export const adminRecoveryCodeModel = {
+export const recoveryCodeModel = {
   /** A new set replaces the old one. */
   replace: async (db, userId, hashes) => {
     await db(TABLE).where({ user_id: userId }).del();

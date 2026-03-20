@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ConsoleLayout from '../../components/layout/Console';
+import SellerApproved from './Approved';
+import { isDemoSession } from '../../store/slices/auth';
 import SellerOrders from './Orders';
 import SellerProducts from './Products';
 import SellerShop from './Shop';
@@ -10,8 +12,11 @@ const TABS = [
   { to: '/seller/shop', label: 'Shop', icon: 'settings' },
 ];
 
-/** Seller console (doc 11.2): order board, products and stock, shop status. */
-const SellerConsole = () => (
+/**
+ * Seller console (doc 11.2): order board, products and stock, shop status. The demo seller's
+ * console runs on the in-browser mock; a real account sees onboarding until it is approved.
+ */
+const SellerConsole = () => (!isDemoSession() ? <SellerApproved /> : (
   <ConsoleLayout title="Seller console" tabs={TABS} mobileTabs>
     <Routes>
       <Route index element={<SellerOrders />} />
@@ -21,6 +26,6 @@ const SellerConsole = () => (
       <Route path="*" element={<Navigate to="/seller" replace />} />
     </Routes>
   </ConsoleLayout>
-);
+));
 
 export default SellerConsole;

@@ -5,6 +5,8 @@ import { randomUUID } from 'node:crypto';
 import pinoHttp from 'pino-http';
 
 const REQUEST_ID = /^[A-Za-z0-9-]{8,64}$/;
+// a signed document link is a credential for five minutes; the log keeps only that a file was asked for
+const scrubUrl = (url) => String(url).replace(/\/files\/[^/?#]+/, '/files/[redacted]');
 
 export function requestLogger(logger) {
   return pinoHttp({
@@ -16,5 +18,8 @@ export function requestLogger(logger) {
       return id;
     },
     autoLogging: { ignore: (req) => req.url === '/health' },
+    serializers: {
+      req: (req) => ({ id: req.id, method: req.method, url: scrubUrl(req.url), remoteAddress: req.remoteAddress }),
+    },
   });
 }

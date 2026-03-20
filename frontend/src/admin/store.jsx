@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../store/slices/auth';
 import toastReducer from '../store/slices/toast';
 import adminReducer from '../store/slices/admin';
+import verificationReducer from '../store/slices/verification';
 
 // The admin console is a separate build with its own store (doc 16.3)
 export const store = configureStore({
@@ -9,6 +10,7 @@ export const store = configureStore({
     auth: authReducer,
     toast: toastReducer,
     admin: adminReducer,
+    verification: verificationReducer,
   },
 });
 

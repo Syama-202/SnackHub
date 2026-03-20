@@ -1,3 +1,4 @@
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button, Modal, CloseButton, LogoMark } from '../ui';
 import GoogleG from '../ui/GoogleG';
@@ -17,12 +18,17 @@ export default function CartPrompts() {
   const conflict = useSelector((state) => state.ui.cartConflict);
   const prompt = useSelector((state) => state.ui.signInPrompt);
   const isLoading = useSelector((state) => state.auth.isLoading);
+  const navigate = useNavigate();
+  const loc = useLocation();
+  const here = encodeURIComponent(loc.pathname + loc.search);
 
   // signs in (Google, or the demo customer until Google is set up), then adds the snack
   const quickSignIn = async (signInAction) => {
     const res = await dispatch(signInAction);
     if (res.meta.requestStatus !== 'fulfilled') return;
     dispatch(setSignInPrompt(null));
+    // an account with an authenticator finishes on the sign-in page, with the code step
+    if (!res.payload.accessToken) return navigate(`/customer/signin?next=${here}`);
     await Promise.all([dispatch(fetchCart()), dispatch(fetchAddresses())]);
     if (prompt) dispatch(updateQuantity(prompt.product, prompt.qty));
   };
@@ -63,7 +69,11 @@ export default function CartPrompts() {
               <GoogleG /> Continue with the demo account
             </button>
           )}
-          <p className="mt-3 text-center text-xs text-grey-600">{GOOGLE_CLIENT_ID ? 'New accounts are always customers.' : 'Demo sign-in. No Google account is used. New accounts are always customers.'}</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Link to={`/customer/signin?next=${here}`} onClick={() => dispatch(setSignInPrompt(null))} className="inline-flex h-11 items-center justify-center rounded-full bg-grey-800 text-sm font-bold text-white">Sign in with email</Link>
+            <Link to={`/customer/signup?next=${here}`} onClick={() => dispatch(setSignInPrompt(null))} className="inline-flex h-11 items-center justify-center rounded-full border border-grey-800/15 bg-white text-sm font-bold text-grey-800">Create account</Link>
+          </div>
+          <p className="mt-3 text-center text-xs text-grey-600">{GOOGLE_CLIENT_ID ? 'A Google sign-in here is always a customer account.' : 'The demo sign-in uses no Google account.'}</p>
         </div>
       </Modal>
     </>

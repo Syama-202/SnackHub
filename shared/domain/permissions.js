@@ -1,0 +1,59 @@
+/**
+ * Who may do what. One account (one email) can hold several roles; each portal signs in
+ * separately and its token carries only that portal's role. A permission comes from the
+ * role in the token, which the server re-reads from MySQL on every protected route, never
+ * from the body, a URL or local storage.
+ *
+ * Holding the seller or rider role is not the same as being approved: the business
+ * permissions marked VERIFIED_ONLY also need an approved application and valid documents
+ * (shared/domain/eligibility.js).
+ */
+export const ROLES = ['customer', 'seller', 'rider', 'reviewer', 'admin'];
+
+// portals a person can sign up or sign in through; reviewer and admin use the admin console
+export const PUBLIC_PORTALS = ['customer', 'seller', 'rider'];
+export const STAFF_ROLES = ['reviewer', 'admin'];
+
+export const ROLE_PERMISSIONS = {
+  customer: ['profile.self', 'addresses.self', 'orders.self', 'payments.self', 'security.self'],
+  seller: [
+    'profile.self',
+    'security.self',
+    'seller.onboarding',
+    'seller.profile.self',
+    'seller.products.read',
+    'seller.products.publish',
+    'seller.orders.accept',
+    'seller.settlements.receive',
+  ],
+  rider: ['profile.self', 'security.self', 'rider.onboarding', 'rider.profile.self', 'rider.availability', 'rider.deliveries.accept'],
+  // the verification team: reads applications and documents, reviews them, decides
+  reviewer: ['security.self', 'verification.read', 'verification.documents.read', 'verification.review', 'verification.decide'],
+  admin: [
+    'security.self',
+    'verification.read',
+    'verification.documents.read',
+    'verification.review',
+    'verification.decide',
+    'verification.suspend',
+    'verification.requirements.write',
+    'users.read',
+    'users.suspend',
+    'users.mfa.reset',
+    'audit.read',
+  ],
+};
+
+// business actions that also need an approved application and valid documents. Going
+// offline never does; going online is checked by the availability route itself.
+export const VERIFIED_ONLY = ['seller.products.publish', 'seller.orders.accept', 'seller.settlements.receive', 'rider.deliveries.accept'];
+
+export const can = (role, permission) => Boolean(ROLE_PERMISSIONS[role]?.includes(permission));
+
+/**
+ * MFA policy: the roles that must enrol an authenticator app before reaching any protected
+ * route. The server's MFA_REQUIRED_ROLES setting overrides it; admins and reviewers are
+ * always included whatever the setting says.
+ */
+export const DEFAULT_MFA_REQUIRED = ['admin', 'reviewer', 'seller'];
+export const mfaRequiredFor = (role, configured = DEFAULT_MFA_REQUIRED) => STAFF_ROLES.includes(role) || configured.includes(role);

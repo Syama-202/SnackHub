@@ -1,9 +1,13 @@
-// Who is calling (doc 16.1, 16.2). Role and user id come from the access token, never the
-// body. requireRole also re-reads the role from MySQL, so a role taken away works at once
-// on sensitive routes, not only at the next refresh.
+// Who is calling and what they may do (doc 16.1, 16.2). The user id and role come from the
+// signed access token, never the body, a URL or local storage. requireRole and
+// requirePermission also re-read the account and the role membership from MySQL, so a
+// suspension works at once, not only at the next refresh; a token whose role the account does
+// not hold (a forged or stale claim) is refused.
 import { AppError } from '../utils/AppError.js';
 import { verifyAccessToken } from '../utils/tokens.js';
 import { userModel } from '../models/identity/user.js';
+import { userRoleModel } from '../models/identity/userRole.js';
+import { can, mfaRequiredFor } from '../../../shared/domain/permissions.js';
 
 export function requireAuth(env) {
   return (req, res, next) => {
@@ -18,12 +22,42 @@ export function requireAuth(env) {
   };
 }
 
+/** The account and the membership behind req.user, both active, or a 403. Cached per request. */
+async function activeMembership(dbs, req) {
+  if (req.membership) return req.membership;
+  const [account, membership] = await Promise.all([userModel.findById(dbs.identity, req.user.userId), userRoleModel.find(dbs.identity, req.user.userId, req.user.role)]);
+  if (!account || account.status !== 'active') throw new AppError(403, 'ACCOUNT_SUSPENDED', 'This account is suspended');
+  if (!membership || membership.status !== 'active') throw new AppError(403, 'FORBIDDEN', 'Your role cannot do this');
+  req.account = account;
+  req.membership = membership;
+  return membership;
+}
+
+/** The token is for one of these portals, and the account still holds that role. */
 export function requireRole(dbs, ...roles) {
   return async (req, res, next) => {
     try {
       if (!req.user || !roles.includes(req.user.role)) throw new AppError(403, 'FORBIDDEN', 'Your role cannot do this');
-      const current = await userModel.findById(dbs.identity, req.user.userId);
-      if (!current || current.status !== 'active' || !roles.includes(current.role)) throw new AppError(403, 'FORBIDDEN', 'Your role cannot do this');
+      await activeMembership(dbs, req);
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
+}
+
+/**
+ * The token's role grants this permission (shared/domain/permissions.js), the account holds
+ * the role, and, where the MFA policy asks for it, the session passed a second factor.
+ * Business actions additionally check eligibility in their controller.
+ */
+export function requirePermission(deps, permission) {
+  const { dbs, env } = deps;
+  return async (req, res, next) => {
+    try {
+      if (!req.user || !can(req.user.role, permission)) throw new AppError(403, 'FORBIDDEN', 'Your role cannot do this');
+      await activeMembership(dbs, req);
+      if (mfaRequiredFor(req.user.role, env.MFA_REQUIRED_ROLES) && !req.user.mfaAt) throw new AppError(401, 'MFA_REQUIRED', 'Set up two-step sign-in to continue');
       next();
     } catch (err) {
       next(err);
@@ -43,8 +77,8 @@ export const adminHostOnly = (env) => (req, res, next) => {
 };
 
 /**
- * Admin routes need a recent second factor (doc 16.3): 8 hours for the console, 5 minutes
- * for decisions that grant a role or move money (step-up). The time comes from the token.
+ * Staff routes need a recent second factor (doc 16.3): 8 hours for the console, 5 minutes
+ * for decisions that grant, suspend or move money (step-up). The time comes from the token.
  */
 export const requireFreshMfa = (maxMinutes) => (req, res, next) => {
   const at = req.user?.mfaAt;

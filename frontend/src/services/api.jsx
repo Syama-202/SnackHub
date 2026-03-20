@@ -106,5 +106,44 @@ export async function apiFetch(path, { method = 'GET', body, idempotencyKey, ret
   return data;
 }
 
+/**
+ * A multipart upload (one document file plus its fields) with progress, for the onboarding
+ * forms. fetch cannot report upload progress, so this uses XMLHttpRequest; like apiFetch it
+ * sends the access token and retries once after a silent refresh.
+ */
+export async function apiUpload(path, formData, { onProgress } = {}) {
+  await apiReady;
+  const send = (token) =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_URL}${path}`);
+      xhr.withCredentials = true;
+      for (const [k, v] of Object.entries({ Accept: 'application/json', ...baseHeaders(), ...(token ? { Authorization: `Bearer ${token}` } : {}) })) xhr.setRequestHeader(k, v);
+      xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(Math.round((e.loaded / e.total) * 100));
+      xhr.onload = () => {
+        let data = null;
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch {
+          /* not JSON */
+        }
+        resolve({ status: xhr.status, data });
+      };
+      xhr.onerror = () => reject(new ApiError(0, { code: 'NETWORK', message: 'The upload stopped. Check your connection and try again.' }));
+      xhr.send(formData);
+    });
+  let res = await send(accessToken);
+  if (res.status === 401 && res.data?.error?.code === 'UNAUTHENTICATED' && accessToken) {
+    try {
+      await refreshAccessToken();
+      res = await send(accessToken);
+    } catch {
+      // the still-401 answer is handled below
+    }
+  }
+  if (res.status < 200 || res.status >= 300) throw new ApiError(res.status, res.data?.error);
+  return res.data;
+}
+
 export const newIdempotencyKey = () =>
   crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;

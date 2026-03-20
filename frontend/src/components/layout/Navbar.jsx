@@ -122,7 +122,7 @@ function LocationSelector() {
             ))
           ) : (
             <div className="p-3 text-sm text-grey-600">
-              Browsing from <b className="text-grey-800">Brodipet, Guntur</b> (demo). <Link to="/signin" className="font-bold text-orange-text underline">Sign in</Link> to pick a saved address.
+              Browsing from <b className="text-grey-800">Brodipet, Guntur</b> (demo). <Link to="/customer/signin" className="font-bold text-orange-text underline">Sign in</Link> to pick a saved address.
             </div>
           )}
           {isCustomer && <Link to="/account" onClick={() => setOpen(false)} className="mt-1 block rounded-xl px-3 py-2 text-sm font-bold text-orange-text hover:bg-grey-50">Manage addresses</Link>}
@@ -248,7 +248,7 @@ function AccountMenu() {
   useOutside(ref, () => setOpen(false));
   if (!user)
     return (
-      <Link to="/signin" className="hidden h-11 items-center rounded-full px-4 text-sm font-bold hover:bg-grey-800/5 sm:inline-flex">
+      <Link to="/join" className="hidden h-11 items-center rounded-full px-4 text-sm font-bold hover:bg-grey-800/5 sm:inline-flex">
         Sign in
       </Link>
     );
@@ -269,6 +269,7 @@ function AccountMenu() {
           )}
           {user.role === 'seller' && <MenuLink to="/seller" icon="box" onClick={() => setOpen(false)}>Seller console</MenuLink>}
           {user.role === 'rider' && <MenuLink to="/rider" icon="scooter" onClick={() => setOpen(false)}>Rider app</MenuLink>}
+          <MenuLink to="/account/security" icon="lock" onClick={() => setOpen(false)}>Security and sign-in</MenuLink>
           <button
             role="menuitem"
             onClick={() => {

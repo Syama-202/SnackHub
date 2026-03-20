@@ -1,10 +1,12 @@
-// Refresh-token sessions shared by the customer site and the admin console (doc 16.1, 16.3).
-// One token per device, stored hashed, replaced on every use; a used token that comes back
-// was copied, so its whole family ends. Each kind ("web", "admin") has its own cookie and
-// never accepts the other's tokens.
+// Refresh-token sessions shared by the public portals and the admin console (doc 16.1, 16.3).
+// One token per device and app, stored hashed, replaced on every use; a used token that comes
+// back was copied, so its whole family ends. Each kind ("web", "admin") has its own cookie and
+// never accepts the other's tokens. Each session belongs to one portal (customer, seller,
+// rider, reviewer or admin), and a refresh re-checks that the account still holds that role.
 import { AppError } from './AppError.js';
 import { newRefreshToken, hashToken, newFamilyId } from './tokens.js';
 import { userModel } from '../models/identity/user.js';
+import { userRoleModel } from '../models/identity/userRole.js';
 import { refreshTokenModel } from '../models/identity/refreshToken.js';
 import { auditLogModel } from '../models/identity/auditLog.js';
 
@@ -16,10 +18,10 @@ const RACE_GRACE_MS = 10_000;
  * Starts a new token family for this device. Returns the raw token for the cookie.
  * expiresAt is fixed for the family: rotation never extends it.
  */
-export async function startSession(trx, { kind, userId, deviceId, expiresAt, mfaAt = null }) {
+export async function startSession(trx, { kind, portal, userId, deviceId, userAgent = null, expiresAt, mfaAt = null, amr = null }) {
   await refreshTokenModel.revokeDevice(trx, userId, deviceId, kind);
   const raw = newRefreshToken();
-  await refreshTokenModel.create(trx, { kind, userId, familyId: newFamilyId(), deviceId, tokenHash: hashToken(raw), expiresAt, mfaAt });
+  await refreshTokenModel.create(trx, { kind, portal, userId, familyId: newFamilyId(), deviceId, userAgent, tokenHash: hashToken(raw), expiresAt, mfaAt, amr: amr?.join(',') ?? null });
   return raw;
 }
 
@@ -42,7 +44,12 @@ export async function rotateSession(db, raw, { kind, clear }) {
   const user = await userModel.findById(db, row.user_id);
   if (!user || user.status !== 'active') {
     await refreshTokenModel.revokeUser(db, row.user_id);
-    throw end(403, 'ACCOUNT_BLOCKED', 'This account is blocked. Contact support.');
+    throw end(403, 'ACCOUNT_SUSPENDED', 'This account is suspended. Contact support.');
+  }
+  const membership = await userRoleModel.find(db, row.user_id, row.portal);
+  if (!membership || membership.status !== 'active') {
+    await refreshTokenModel.revokeFamily(db, row.family_id);
+    throw end(403, 'ROLE_NOT_ACTIVE', `This account can no longer use the ${row.portal} portal`);
   }
   if (row.used_at) {
     if (Date.now() - new Date(row.used_at).getTime() < RACE_GRACE_MS) return { user, row, next: null };
@@ -56,7 +63,18 @@ export async function rotateSession(db, raw, { kind, clear }) {
   const next = newRefreshToken();
   const rotated = await db.transaction(async (trx) => {
     if (!(await refreshTokenModel.use(trx, row.id))) return false;
-    await refreshTokenModel.create(trx, { kind, userId: row.user_id, familyId: row.family_id, deviceId: row.device_id, tokenHash: hashToken(next), expiresAt: row.expires_at, mfaAt: row.mfa_at });
+    await refreshTokenModel.create(trx, {
+      kind,
+      portal: row.portal,
+      userId: row.user_id,
+      familyId: row.family_id,
+      deviceId: row.device_id,
+      userAgent: row.user_agent,
+      tokenHash: hashToken(next),
+      expiresAt: row.expires_at,
+      mfaAt: row.mfa_at,
+      amr: row.amr,
+    });
     return true;
   });
   // lost a race with another request using the same cookie: answer like the grace path
@@ -70,3 +88,6 @@ export async function endSession(db, raw) {
   if (row) await refreshTokenModel.revokeFamily(db, row.family_id);
   return row;
 }
+
+/** amr as stored ("pwd,totp") back to a list. */
+export const amrOf = (row) => (row?.amr ? row.amr.split(',') : []);

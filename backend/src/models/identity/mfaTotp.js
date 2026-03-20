@@ -1,10 +1,11 @@
-// identity.admin_mfa: an admin's TOTP secret (encrypted), the last time step used, so a code
-// works once, and the lockout after five wrong codes (doc 16.3).
-const TABLE = 'admin_mfa';
+// identity.mfa_totp: a person's authenticator secret (AES-256-GCM encrypted), the last time
+// step used, so a code works once, and the lockout after five wrong codes. Any role can
+// enrol; admins and reviewers must (shared/domain/permissions.js).
+const TABLE = 'mfa_totp';
 
-export const adminMfaModel = {
+export const mfaTotpModel = {
   find: (db, userId) => db(TABLE).where({ user_id: userId }).first(),
-  /** Replaces any earlier secret: enrolment and an owner's reset both end here. */
+  /** Replaces any earlier secret: enrolment and a reset both end here. */
   enrol: (db, userId, secretEnc) =>
     db(TABLE).insert({ user_id: userId, secret_enc: secretEnc, enrolled_at: new Date(), last_step: null, failed_count: 0, locked_until: null }).onConflict('user_id').merge(),
   remove: (db, userId) => db(TABLE).where({ user_id: userId }).del(),

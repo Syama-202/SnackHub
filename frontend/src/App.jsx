@@ -17,7 +17,15 @@ const OrderTracking = lazy(() => import('./pages/customer/OrderTracking'));
 const ReportProblem = lazy(() => import('./pages/customer/ReportProblem'));
 const Profile = lazy(() => import('./pages/customer/Profile'));
 const Notifications = lazy(() => import('./pages/customer/Notifications'));
-const Login = lazy(() => import('./pages/auth/Login'));
+const Join = lazy(() => import('./pages/auth/Join'));
+const SignIn = lazy(() => import('./pages/auth/SignIn'));
+const SignUp = lazy(() => import('./pages/auth/SignUp'));
+const VerifyEmail = lazy(() => import('./pages/auth/VerifyEmail'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
+const Security = lazy(() => import('./pages/common/Security'));
+const SellerOnboarding = lazy(() => import('./pages/seller/Onboarding'));
+const RiderOnboarding = lazy(() => import('./pages/rider/Onboarding'));
 const DesignSystem = lazy(() => import('./pages/common/DesignSystem'));
 const NotFound = lazy(() => import('./pages/common/NotFound'));
 const SellerConsole = lazy(() => import('./pages/seller/Console'));
@@ -56,7 +64,19 @@ function AppRoutes() {
           <Route path="orders/:id/report" element={<RequireRole role="customer"><ReportProblem /></RequireRole>} />
           <Route path="account" element={<RequireRole role="customer"><Profile /></RequireRole>} />
           <Route path="notifications" element={<RequireRole role="customer"><Notifications /></RequireRole>} />
-          <Route path="signin" element={<Login />} />
+          {/* one sign-up and one sign-in per portal; /signin?as=seller still lands on the right one */}
+          <Route path="join" element={<Join />} />
+          <Route path="signin" element={<Join />} />
+          {['customer', 'seller', 'rider'].map((portal) => [
+            <Route key={`${portal}-in`} path={`${portal}/signin`} element={<SignIn portal={portal} />} />,
+            <Route key={`${portal}-up`} path={`${portal}/signup`} element={<SignUp portal={portal} />} />,
+          ])}
+          <Route path="verify-email" element={<VerifyEmail />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="reset-password" element={<ResetPassword />} />
+          <Route path="account/security" element={<RequireRole role={['customer', 'seller', 'rider']}><Security /></RequireRole>} />
+          <Route path="seller/onboarding" element={<RequireRole role="seller"><SellerOnboarding /></RequireRole>} />
+          <Route path="rider/onboarding" element={<RequireRole role="rider"><RiderOnboarding /></RequireRole>} />
           <Route path="design" element={<DesignSystem />} />
           <Route path="*" element={<NotFound />} />
         </Route>

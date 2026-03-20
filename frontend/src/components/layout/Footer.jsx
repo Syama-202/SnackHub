@@ -5,7 +5,7 @@ import { PROMISE_WORDING } from '@shared/domain/promise';
 const COLS = [
   { title: 'Regional collections', links: [['Andhra Pradesh', '/shop?region=Andhra Pradesh'], ['Tamil Nadu', '/shop?region=Tamil Nadu'], ['Karnataka', '/shop?region=Karnataka'], ['Maharashtra', '/shop?region=Maharashtra'], ['West Bengal', '/shop?region=West Bengal']] },
   { title: 'Snack categories', links: [['Spicy snacks', '/shop?cat=spicy'], ['Traditional sweets', '/shop?cat=sweets'], ['Savoury mixtures', '/shop?cat=mixtures'], ['Tea-time snacks', '/shop?cat=tea-time'], ['Festive treats', '/shop?cat=festive']] },
-  { title: 'SnackHub', links: [['How delivery works', '/#delivery'], ['Every shop is checked', '/#checked'], ['Sell on SnackHub', '/seller'], ['Ride with SnackHub', '/rider'], ['Design system', '/design']] },
+  { title: 'SnackHub', links: [['How delivery works', '/#delivery'], ['Every shop is checked', '/#checked'], ['Sell on SnackHub', '/seller/signup'], ['Ride with SnackHub', '/rider/signup'], ['Sign in or join', '/join'], ['Design system', '/design']] },
 ];
 
 /** Warm dark footer, cream text, restrained yellow and orange (master prompt 14). */

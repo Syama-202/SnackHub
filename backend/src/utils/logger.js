@@ -17,6 +17,12 @@ export const REDACT = [
   '*.address',
   '*.addressText',
   '*.line',
+  '*.challenge',
+  '*.recoveryCodes',
+  '*.secret',
+  '*.number',
+  '*.bankAccount',
+  '*.sealed',
 ];
 
 export function createLogger(env) {

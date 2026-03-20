@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import DemoBanner from '../components/layout/DemoBanner';
 import Backdrop from '../components/ui/Backdrop';
@@ -12,7 +12,10 @@ import { GOOGLE_CLIENT_ID } from '../constants/auth';
 import { adminStepUp, logoutUser, mfaCancelled, restoreSession, signInAdminWithGoogle, signInWithDemo, verifyAdminMfa } from '../store/slices/auth';
 import { addToast } from '../store/slices/toast';
 import LiveOps from './pages/LiveOps';
-import Approvals from './pages/Approvals';
+import Verification from './pages/Verification';
+import Expiring from './pages/Expiring';
+import Requirements from './pages/Requirements';
+import Users from './pages/Users';
 import Complaints from './pages/Complaints';
 import PolicyEditor from './pages/PolicyEditor';
 import AuditLog from './pages/AuditLog';
@@ -21,13 +24,18 @@ import Enrol from './pages/Enrol';
 const AdminCtx = createContext(null);
 export const useAdmin = () => useContext(AdminCtx);
 
+// reviewers (the verification team) see only the queue and expiring documents
 const TABS = [
-  { to: '/', label: 'Live operations', icon: 'map', end: true },
-  { to: '/approvals', label: 'Approvals', icon: 'shield' },
-  { to: '/complaints', label: 'Complaints', icon: 'flag' },
-  { to: '/policy', label: 'Delivery policy', icon: 'settings' },
-  { to: '/audit', label: 'Audit log', icon: 'list' },
+  { to: '/', label: 'Live operations', icon: 'map', end: true, roles: ['admin'] },
+  { to: '/verification', label: 'Verification', icon: 'shield', roles: ['admin', 'reviewer'] },
+  { to: '/expiring', label: 'Expiring documents', icon: 'clock', roles: ['admin', 'reviewer'] },
+  { to: '/requirements', label: 'Requirements', icon: 'file', roles: ['admin'] },
+  { to: '/users', label: 'Accounts', icon: 'user', roles: ['admin'] },
+  { to: '/complaints', label: 'Complaints', icon: 'flag', roles: ['admin'] },
+  { to: '/policy', label: 'Delivery policy', icon: 'settings', roles: ['admin'] },
+  { to: '/audit', label: 'Audit log', icon: 'list', roles: ['admin'] },
 ];
+const STAFF = ['admin', 'reviewer'];
 
 const AdminApp = () => {
   const dispatch = useDispatch();
@@ -73,7 +81,8 @@ const AdminApp = () => {
   // the one-time enrolment link works before the admin can sign in
   if (pathname === '/enrol') return <Enrol />;
   if (isInitializing) return <PageFallback />;
-  if (!accessToken || user?.role !== 'admin') return <AdminSignIn />;
+  if (!accessToken || !STAFF.includes(user?.role)) return <AdminSignIn />;
+  const tabs = TABS.filter((t) => t.roles.includes(user.role));
 
   return (
     <AdminCtx.Provider value={{ run }}>
@@ -83,9 +92,9 @@ const AdminApp = () => {
         <div className="flex">
           <aside className="glass glass-strong sticky top-3 m-3 hidden h-[calc(100dvh-1.5rem)] w-64 shrink-0 flex-col p-4 lg:flex">
             <Logo />
-            <p className="mt-1 text-xs font-extrabold uppercase tracking-wider text-red-text">Admin · private host</p>
+            <p className="mt-1 text-xs font-extrabold uppercase tracking-wider text-red-text">{user.role === 'admin' ? 'Admin' : 'Verification team'} · private host</p>
             <nav className="mt-6 grid gap-1" aria-label="Admin">
-              {TABS.map((t) => (
+              {tabs.map((t) => (
                 <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition', isActive ? 'chip-on' : 'text-grey-800 hover:bg-white/70')}>
                   <Icon name={t.icon} className="h-4 w-4" /> {t.label}
                 </NavLink>
@@ -99,17 +108,27 @@ const AdminApp = () => {
           </aside>
           <div className="min-w-0 flex-1">
             <nav className="glass glass-strong no-scrollbar m-2 flex gap-1 overflow-x-auto p-2 lg:hidden" aria-label="Admin">
-              {TABS.map((t) => (
+              {tabs.map((t) => (
                 <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('h-10 shrink-0 rounded-full px-4 text-sm font-bold leading-10', isActive ? 'chip-on' : 'text-grey-800')}>{t.label}</NavLink>
               ))}
             </nav>
             <main className="page py-4 lg:py-8">
               <Routes>
-                <Route index element={<LiveOps />} />
-                <Route path="approvals" element={<Approvals />} />
-                <Route path="complaints" element={<Complaints />} />
-                <Route path="policy" element={<PolicyEditor />} />
-                <Route path="audit" element={<AuditLog />} />
+                <Route index element={user.role === 'admin' ? <LiveOps /> : <Verification />} />
+                <Route path="verification" element={<Verification />} />
+                <Route path="expiring" element={<Expiring />} />
+                {user.role === 'admin' && (
+                  <>
+                    <Route path="requirements" element={<Requirements />} />
+                    <Route path="users" element={<Users />} />
+                    <Route path="complaints" element={<Complaints />} />
+                    <Route path="policy" element={<PolicyEditor />} />
+                    <Route path="audit" element={<AuditLog />} />
+                  </>
+                )}
+                {/* the old approvals page is now the verification queue */}
+                <Route path="approvals" element={<Navigate to="/verification" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
           </div>

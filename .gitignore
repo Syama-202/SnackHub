@@ -21,6 +21,9 @@ coverage/
 # Large media originals stay in a private bucket (doc 22.8)
 assets/raw/
 
+# Uploaded verification documents: private storage, never in git
+backend/storage/
+
 # Markdown stays local (CLAUDE.md, docs, test notes); only README files are committed
 *.md
 !README.md

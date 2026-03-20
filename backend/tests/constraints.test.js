@@ -110,11 +110,48 @@ describe.skipIf(!db)('database constraints', () => {
       await trx('ordering.complaints').insert({ ...c, rider_share_pct: 60, seller_share_pct: 40 });
     });
 
-    it('a verification decision needs a reason', async () => {
+    it('a verification decision needs a reason, and a submitted application a shop and a date', async () => {
       const s = await makeSeller(trx);
-      const a = { seller_id: s, status: 'REJECTED', submitted_at: now() };
+      const a = { user_id: 900500000 + n++, seller_id: s, status: 'REJECTED', submitted_at: now() };
       await expectError(trx('catalog.seller_applications').insert(a), ER.CHECK_VIOLATED);
       await trx('catalog.seller_applications').insert({ ...a, decision_reason: 'Licence number does not match the certificate' });
+      for (const status of ['ACTION_REQUIRED', 'SUSPENDED', 'APPROVED']) {
+        await expectError(trx('catalog.seller_applications').insert({ ...a, user_id: 900500000 + n++, status }), ER.CHECK_VIOLATED);
+      }
+      await expectError(trx('catalog.seller_applications').insert({ user_id: 900500000 + n++, status: 'SUBMITTED', seller_id: s }), ER.CHECK_VIOLATED);
+      await expectError(trx('catalog.seller_applications').insert({ user_id: 900500000 + n++, status: 'SUBMITTED', submitted_at: now() }), ER.CHECK_VIOLATED);
+      await trx('catalog.seller_applications').insert({ user_id: 900500000 + n++, status: 'DRAFT' });
+    });
+
+    it('a suspended account or role always says why', async () => {
+      const [u] = await trx('identity.users').insert({ email: `held-${uniq()}@example.test`, name: 'Held (demo)' });
+      await expectError(trx('identity.users').where({ id: u }).update({ status: 'suspended' }), ER.CHECK_VIOLATED);
+      await trx('identity.users').where({ id: u }).update({ status: 'suspended', status_reason: 'Chargeback fraud under review' });
+      await expectError(trx('identity.user_roles').insert({ user_id: u, role: 'seller', status: 'suspended', granted_at: now() }), ER.CHECK_VIOLATED);
+      await trx('identity.user_roles').insert({ user_id: u, role: 'seller', status: 'suspended', status_reason: 'FSSAI licence lapsed', granted_at: now() });
+    });
+
+    it('a password is only ever an Argon2id hash', async () => {
+      const [u] = await trx('identity.users').insert({ email: `pw-${uniq()}@example.test`, name: 'Pw (demo)' });
+      await expectError(trx('identity.credentials').insert({ user_id: u, password_hash: 'plain-text-password', changed_at: now() }), ER.CHECK_VIOLATED);
+      await expectError(trx('identity.credentials').insert({ user_id: u, password_hash: '$2b$10$bcrypthashbcrypthash', changed_at: now() }), ER.CHECK_VIOLATED);
+      await trx('identity.credentials').insert({ user_id: u, password_hash: '$argon2id$v=19$m=19456,t=2,p=1$c2FsdA$aGFzaA', changed_at: now() });
+    });
+
+    it('a rejected document says why, and only safe file types and sizes are stored', async () => {
+      const [app] = await trx('dispatch.rider_applications').insert({ user_id: 900600000 + n++, status: 'DRAFT' });
+      const doc = { user_id: 900600000 + n, application_id: app, doc_type: 'PHOTO', version: 1, storage_key: uniq().padEnd(32, '0').slice(0, 32), mime: 'image/png', size_bytes: 1000, sha256: 'a'.repeat(64), uploaded_at: now() };
+      await expectError(trx('dispatch.rider_documents').insert({ ...doc, status: 'REJECTED' }), ER.CHECK_VIOLATED);
+      await expectError(trx('dispatch.rider_documents').insert({ ...doc, mime: 'application/x-msdownload' }), ER.CHECK_VIOLATED);
+      await expectError(trx('dispatch.rider_documents').insert({ ...doc, size_bytes: 6 * 1024 * 1024 }), ER.CHECK_VIOLATED);
+      await expectError(trx('dispatch.rider_documents').insert({ ...doc, issued_on: '2026-05-01', expires_on: '2026-04-01' }), ER.CHECK_VIOLATED);
+      await expectError(trx('dispatch.rider_documents').insert({ ...doc, number_last4: '1234' }), ER.CHECK_VIOLATED);
+      await trx('dispatch.rider_documents').insert({ ...doc, status: 'REJECTED', rejection_reason: 'The photo is blurred' });
+    });
+
+    it('a bicycle has no registration number', async () => {
+      await expectError(trx('dispatch.rider_vehicles').insert({ user_id: 900700000 + n++, mode: 'bicycle', registration_no: 'AP07AB1234' }), ER.CHECK_VIOLATED);
+      await trx('dispatch.rider_vehicles').insert({ user_id: 900700000 + n++, mode: 'bicycle' });
     });
 
     it('cash payment states belong to cash payments', async () => {
@@ -126,6 +163,22 @@ describe.skipIf(!db)('database constraints', () => {
   });
 
   describe('UNIQUE', () => {
+    it('one application in progress or approved per person; rejected ones stay as history', async () => {
+      const user_id = 900800000 + n++;
+      await trx('dispatch.rider_applications').insert({ user_id, status: 'REJECTED', submitted_at: now(), decision_reason: 'Licence photo unreadable' });
+      await trx('dispatch.rider_applications').insert({ user_id, status: 'REJECTED', submitted_at: now(), decision_reason: 'Second try, still unreadable' });
+      await trx('dispatch.rider_applications').insert({ user_id, status: 'DRAFT' });
+      await expectError(trx('dispatch.rider_applications').insert({ user_id, status: 'DRAFT' }), ER.DUP_ENTRY);
+    });
+
+    it('a verified mobile number belongs to one account; unverified numbers may repeat', async () => {
+      const mobile = `+9198${String(Date.now()).slice(-8)}`;
+      const [a] = await trx('identity.users').insert({ email: `m1-${uniq()}@example.test`, name: 'M1 (demo)', mobile, mobile_verified_at: now() });
+      await trx('identity.users').insert({ email: `m2-${uniq()}@example.test`, name: 'M2 (demo)', mobile });
+      await expectError(trx('identity.users').insert({ email: `m3-${uniq()}@example.test`, name: 'M3 (demo)', mobile, mobile_verified_at: now() }), ER.DUP_ENTRY);
+      expect(a).toBeGreaterThan(0);
+    });
+
     it('one account per email', async () => {
       const email = `dup-${uniq()}@example.test`;
       await trx('identity.users').insert({ email, name: 'Dup (demo)' });
@@ -223,6 +276,15 @@ describe.skipIf(!db)('database constraints', () => {
     it('a refund and a ledger entry need a real payment', async () => {
       await expectError(trx('payment.refunds').insert({ payment_id: 999999999, amount_paise: 100, status: 'PENDING', created_at: now() }), ER.NO_REFERENCED_ROW);
       await expectError(trx('payment.ledger_entries').insert({ payment_id: 999999999, entry_type: 'CHARGE', amount_paise: 100, created_at: now() }), ER.NO_REFERENCED_ROW);
+    });
+  });
+
+  describe('append-only review history', () => {
+    it('a review decision can be added but never changed or removed', async () => {
+      const [app] = await trx('catalog.seller_applications').insert({ user_id: 900900000 + n++, status: 'DRAFT' });
+      const [id] = await trx('catalog.seller_reviews').insert({ application_id: app, actor_id: 9001, action: 'reject', from_status: 'UNDER_REVIEW', to_status: 'REJECTED', reason: 'Fake licence', at: now() });
+      await expectError(trx('catalog.seller_reviews').where({ id }).update({ reason: 'Never mind' }), ER.SIGNAL);
+      await expectError(trx('catalog.seller_reviews').where({ id }).del(), ER.SIGNAL);
     });
   });
 

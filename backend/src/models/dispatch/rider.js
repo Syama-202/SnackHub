@@ -1,10 +1,15 @@
-// dispatch.riders: who is online, and where they last were.
+// dispatch.riders: who is online, and where they last were. Being online is separate from
+// being verified: docs_valid_until (the earliest expiry among the rider's required approved
+// documents) keeps an online rider out of every assignment once a licence or insurance lapses.
 const TABLE = 'riders';
+const today = () => new Date().toISOString().slice(0, 10);
+const docsValid = (q) => q.whereNull('docs_valid_until').orWhere('docs_valid_until', '>=', today());
 
 export const riderModel = {
   findById: (db, id) => db(TABLE).where({ id }).first(),
   findByUser: (db, userId) => db(TABLE).where({ user_id: userId }).first(),
-  listOnlineInCity: (db, city) => db(TABLE).where({ city, status: 'ONLINE' }).whereNotNull('last_lat').orderBy('id'),
+  /** Riders an order may be offered to: online, with a known position and valid documents. */
+  listOnlineInCity: (db, city) => db(TABLE).where({ city, status: 'ONLINE' }).whereNotNull('last_lat').andWhere(docsValid).orderBy('id'),
   /**
    * The rider row for an approved application. riders.id has no auto-increment (the seed
    * fixes ids), so the next id is taken under a lock inside the approval transaction.
@@ -15,5 +20,8 @@ export const riderModel = {
     return next;
   },
   setStatus: (db, id, status) => db(TABLE).where({ id }).update({ status }),
+  setDocsValidUntil: (db, id, date) => db(TABLE).where({ id }).update({ docs_valid_until: date }),
+  /** Expired documents take a rider offline at once (the daily expiry job). */
+  offlineWithExpiredDocs: (db) => db(TABLE).whereIn('status', ['ONLINE']).andWhere('docs_valid_until', '<', today()).update({ status: 'OFFLINE' }),
   setPosition: (db, id, { lat, lng }) => db(TABLE).where({ id }).update({ last_lat: lat, last_lng: lng, last_seen_at: new Date() }),
 };

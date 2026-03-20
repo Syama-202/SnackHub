@@ -1,6 +1,5 @@
 import { http, HttpResponse, delay, passthrough, bypass } from 'msw';
 import { getDb, saveDb, resetDb, nextId } from './db';
-import { GOOGLE_CLIENT_ID } from '../constants/auth';
 import { tick, addEvent, notify, acceptOrder, assignRider, deliver, trackState, closeOrder, policyFor } from './simulate';
 import { deliveryPromise, cartTempClass } from '@shared/domain/promise';
 import { distanceM } from '@shared/domain/geo';
@@ -211,29 +210,29 @@ export const handlers = [
     if (!user) return fail(400, 'BAD_REQUEST', 'Unknown demo account');
     if (user.role === 'admin') {
       if (request.headers.get('x-snackhub-host') !== 'admin') return fail(404, 'NOT_FOUND', 'Not found');
-      return ok({ mfaPending: true, halfToken: `demo.mfa_pending.${user.id}`, user });
+      return ok({ mfaPending: true, challenge: `demo.mfa_pending.${user.id}`, user });
     }
     const accessToken = `demo.${user.role}.${user.id}`;
     setRefreshCookie(request, { accessToken, user });
     return ok({ accessToken, user });
   })),
-  // Rotate the refresh cookie into a new access token (doc 16.1)
+  // Rotate the refresh cookie into a new access token (doc 16.1). Without a demo session the
+  // real one (password or Google) lives in the backend's httpOnly cookie.
   http.post(`${API}/auth/refresh`, withDb(({ request }) => {
     const s = readRefreshCookie(request);
     if (s) return ok(s);
-    // no demo session here: a real Google session lives in the backend's httpOnly cookie
-    if (GOOGLE_CLIENT_ID) return passthrough();
-    return fail(401, 'NO_SESSION', 'No active session');
+    return passthrough();
   })),
   http.post(`${API}/auth/logout`, ({ request }) => {
+    const demo = readRefreshCookie(request);
     setRefreshCookie(request, null);
-    if (GOOGLE_CLIENT_ID) return passthrough();
+    if (!demo) return passthrough();
     return new HttpResponse(null, { status: 204 });
   }),
   // Admin sign-in with a real Google account runs on the backend (Google, then TOTP); only the
-  // demo admin's half-session (demo.mfa_pending.*) is answered here, with the demo code.
+  // demo admin's challenge (demo.mfa_pending.*) is answered here, with the demo code.
   http.post(`${API}/admin/auth/mfa`, withDb(({ body, request, db }) => {
-    if (body.halfToken && !String(body.halfToken).startsWith('demo.')) return passthrough();
+    if (!String(body.challenge ?? '').startsWith('demo.')) return passthrough();
     if (request.headers.get('x-snackhub-host') !== 'admin') return fail(404, 'NOT_FOUND', 'Not found');
     const { code } = body;
     const user = db.users.find((u) => u.role === 'admin');
@@ -246,9 +245,8 @@ export const handlers = [
   http.post(`${API}/admin/auth/refresh`, withDb(({ request }) => {
     const s = readRefreshCookie(request);
     if (s) return ok(s);
-    // a real admin session lives in the backend's admin cookie
-    if (GOOGLE_CLIENT_ID) return passthrough();
-    return fail(401, 'NO_SESSION', 'No active session');
+    // a real staff session lives in the backend's admin cookie
+    return passthrough();
   })),
   http.post(`${API}/admin/auth/step-up`, withDb(({ body, request, db }) => {
     if (!isDemoToken(request)) return passthrough();
@@ -266,8 +264,8 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 });
   }),
   http.get(`${API}/me`, withDb(({ request, db }) => {
-    // a real Google account is read from the backend
-    if (!isDemoToken(request) && GOOGLE_CLIENT_ID) return passthrough();
+    // a real account is read from the backend
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request);
     if (g.res) return g.res;
     return ok(db.users.find((u) => u.id === g.u.userId));
@@ -605,6 +603,7 @@ export const handlers = [
 
   // ---------- seller console
   http.get(`${API}/seller/shop`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['seller']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -614,6 +613,7 @@ export const handlers = [
     return ok({ ...s, stats: { ordersToday: mine.filter((o) => Date.now() - o.placedAt < 86400000).length, delivered: delivered.length, salesPaise: delivered.reduce((a, o) => a + o.subtotalPaise, 0) } });
   })),
   http.patch(`${API}/seller/shop`, withDb(({ body, request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['seller']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -623,12 +623,14 @@ export const handlers = [
     return ok(s);
   })),
   http.get(`${API}/seller/products`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['seller']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
     return ok(db.products.filter((p) => p.sellerId === user.sellerId));
   })),
   http.patch(`${API}/seller/products/:id/stock`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['seller']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -644,6 +646,7 @@ export const handlers = [
     return ok(p);
   })),
   http.patch(`${API}/seller/products/:id`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['seller']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -654,12 +657,14 @@ export const handlers = [
     return ok(p);
   })),
   http.get(`${API}/seller/orders`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['seller']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
     return ok(db.orders.filter((o) => o.sellerId === user.sellerId && o.status !== 'PENDING_PAYMENT').sort((a, b) => b.placedAt - a.placedAt).slice(0, 40).map((o) => orderView(db, o, 'seller')));
   })),
   http.post(`${API}/seller/orders/:id/:action`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['seller']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -687,12 +692,14 @@ export const handlers = [
 
   // ---------- rider app
   http.get(`${API}/rider/me`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
     return ok(db.riders.find((r) => r.id === user.riderId));
   })),
   http.put(`${API}/rider/status`, withDb(({ body, request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -701,6 +708,7 @@ export const handlers = [
     return ok(r);
   })),
   http.get(`${API}/rider/offers`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -716,6 +724,7 @@ export const handlers = [
     return ok(offers);
   })),
   http.post(`${API}/rider/offers/:id/:action`, withDb(({ request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -744,6 +753,7 @@ export const handlers = [
     return ok({ accepted: true, orderId: o.id });
   })),
   http.get(`${API}/rider/active`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -754,6 +764,7 @@ export const handlers = [
     return ok({ ...orderView(db, o, 'rider'), track: t, insideGeofence: t.distanceM <= db.policy.arrivalGeofenceM, hotHoldWarning: holdMin > 10 });
   })),
   http.post(`${API}/rider/location`, withDb(({ body, request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -772,6 +783,7 @@ export const handlers = [
     return ok({ ok: true });
   })),
   http.post(`${API}/rider/orders/:id/:step`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -823,12 +835,14 @@ export const handlers = [
     return fail(404, 'NOT_FOUND', 'Unknown step');
   })),
   http.get(`${API}/rider/earnings`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
     return ok(db.earnings.filter((e) => e.riderId === user.riderId).sort((a, b) => b.createdAt - a.createdAt));
   })),
   http.post(`${API}/rider/earnings/:id/dispute`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -876,42 +890,6 @@ export const handlers = [
     return ok(db.sellers);
   })),
   // Applications live in MySQL for a real admin session (backend); the demo admin sees the mock's
-  http.get(`${API}/admin/applications`, withDb(({ request, db }) => {
-    if (!isDemoToken(request)) return passthrough();
-    const g = adminGuard(request);
-    if (g.res) return g.res;
-    return ok(db.applications);
-  })),
-  http.post(`${API}/admin/applications/:id/:action`, withDb(({ body, request, params, db }) => {
-    if (!isDemoToken(request)) return passthrough();
-    // Ticking a checklist item is routine; approving or rejecting needs fresh MFA
-    const g = adminGuard(request, { stepUp: params.action !== 'check' });
-    if (g.res) return g.res;
-    const a = db.applications.find((x) => x.id === Number(params.id));
-    if (!a) return fail(404, 'NOT_FOUND', 'Not found');
-    const b = body;
-    const before = a.status;
-    if (params.action === 'approve') {
-      if (a.kind === 'SELLER' && Object.values(a.checks).some((v) => !v)) return fail(422, 'CHECKS_INCOMPLETE', 'Every verification check must pass before approval');
-      a.status = 'APPROVED';
-      if (a.sellerId) {
-        const s = db.sellers.find((x) => x.id === a.sellerId);
-        s.status = 'probation';
-        s.verified = true;
-        s.isNew = true;
-      }
-    } else if (params.action === 'reject') {
-      if (!b.reason) return fail(422, 'REASON_REQUIRED', 'A written reason is required');
-      a.status = 'REJECTED';
-    } else if (params.action === 'needs-info') {
-      if (!b.reason) return fail(422, 'REASON_REQUIRED', 'A written reason is required');
-      a.status = 'NEEDS_INFO';
-    }
-    else if (params.action === 'check') a.checks[b.check] = Boolean(b.value);
-    a.decisionReason = b.reason || a.decisionReason;
-    audit(db, g.u, `application.${params.action}`, { status: before }, { status: a.status, reason: b.reason });
-    return ok(a);
-  })),
   http.get(`${API}/admin/complaints`, withDb(({ request, db }) => {
     const g = adminGuard(request);
     if (g.res) return g.res;
@@ -991,6 +969,8 @@ export const handlers = [
     return ok(db.orders.filter((o) => o.paymentMode === 'COD' && o.status === 'DELIVERED').map((o) => ({ orderId: o.id, totalPaise: o.totalPaise, collectedPaise: o.collectedPaise ?? o.totalPaise, mismatch: Boolean(o.cashMismatch), riderId: o.riderId })));
   })),
   http.get(`${API}/admin/audit`, withDb(({ request, db }) => {
+    // a real staff session reads the backend's audit log
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request);
     if (g.res) return g.res;
     return ok(db.audit.slice(0, 100));

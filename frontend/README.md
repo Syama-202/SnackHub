@@ -18,7 +18,11 @@ Demo admin authenticator code: `246810`. "Reset demo" in the banner restores the
 
 ## Demo scripts
 
-- **Customer, simulated:** Shop, ADD (one-tap demo Google sign-in), cart, checkout with UPI
+- **Real accounts (needs the backend):** `/join`, then sign up as a customer, seller or rider.
+  Open the confirmation email from `backend/storage/mail`, sign in, and (sellers) set up the
+  authenticator. Sellers and riders fill in `/seller/onboarding` or `/rider/onboarding`, upload
+  their documents and submit; a reviewer approves them in the admin console's Verification page.
+- **Customer, simulated:** Shop, ADD (one-tap demo sign-in), cart, checkout with UPI
   (`success@razorpay` or `failure@razorpay`), "confirming" until the simulated webhook,
   then live tracking. The code unlocks at about 500 m; the rider lane stays at the bottom
   of every page while the order is active.
@@ -26,8 +30,10 @@ Demo admin authenticator code: `246810`. "Reset demo" in the banner restores the
   an incoming order", Accept. Rider: accept the 20 second offer. Seller: Start packing,
   Mark packed. Rider: tick the seal check, Picked up, "Simulate drive", enter the code
   inside 150 m (three wrong tries lock it).
-- **Admin:** `/admin.html`, Google step, code. "Expire my MFA" then save the policy to see
-  the step-up. Approvals, complaint review, policy preview of the three worked penalty cases.
+- **Admin:** `npm run dev:admin` and http://localhost:5181, Google step, code. Verification
+  (sellers and riders, documents, checks, decisions), expiring documents, requirements, accounts
+  and the audit log use the real backend; the demo admin keeps live operations, complaint review
+  and the policy preview in the mock ("Expire my MFA" then save the policy shows the step-up).
 
 ## Stack and structure
 
@@ -38,15 +44,16 @@ React 19, Redux Toolkit and Tailwind CSS v4, following the old frontend kept in 
 | Pages (one file per screen), by role | `src/pages/customer/`, `src/pages/seller/`, `src/pages/rider/`, `src/pages/auth/`, `src/pages/common/` |
 | UI primitives (Button, Icon, Modal, ...) and media | `src/components/ui/` (`index.jsx`, `Carousel`, `SnackImage`, `SnackArt`, `LoopVideo`, `Toast`) |
 | Layout, cart, product, payment | `src/components/layout/` (`Navbar`, `Footer`, `Customer`, `Console`, `DemoBanner`), `src/components/cart/` (`Drawer`, `Prompts`), `src/components/product/` (`Card`, `Modal`), `src/components/payment/` |
+| Sign-up, sign-in and onboarding | `src/pages/auth/` (`Join`, `SignUp`, `SignIn`, `VerifyEmail`, `ForgotPassword`, `ResetPassword`), `src/pages/common/Security.jsx`, `src/pages/{seller,rider}/Onboarding.jsx`, `src/components/auth/` (`Shell`, `Fields`, `Mfa`, `RecoveryCodes`), `src/components/onboarding/` (`Wizard`, `Stepper`, `DocumentCard`, `StatusPanel`) |
 | Route guards (sign-in and role checks) | `src/routes/Guards.jsx` |
 | Landing sections (one file each) and live tracking | `src/components/landing/` (`Hero`, `SnackStrip`, `Regions`, `ScrollStory`, `Bestsellers`, `ShopChecks`, `VariantPicker`, `Delivery`, `Moods`, `LanePreview`, `Stories`, `Offers`, `OrderNow`), `src/components/tracking/` |
-| Redux store and slices | `src/store/index.jsx`, `src/store/slices/` (`auth`, `toast`, `ui`, `products`, `cart`, `profile`, `order`, `notification`, `seller`, `rider`, `admin`) |
-| API client | `src/services/api.jsx` (`apiFetch`, in-memory access token, silent refresh) |
+| Redux store and slices | `src/store/index.jsx`, `src/store/slices/` (`auth`, `security`, `onboarding`, `verification` (admin), `toast`, `ui`, `products`, `cart`, `profile`, `order`, `notification`, `seller`, `rider`, `admin`) |
+| API client | `src/services/api.jsx` (`apiFetch`, `apiUpload` with progress, in-memory access token, silent refresh) |
 | Hooks | `src/hooks/` (`index.jsx` for motion, visibility and polling; `useCatalog.jsx`; `useTracking.jsx`) |
 | Helpers and fixed lists | `src/utils/assets.jsx` (image URLs), `src/constants/catalog.jsx` (categories, moods, regions), `src/assets/ready.json` (ready images) |
 | Design tokens and utilities (22.1 to 22.3) | `src/styles/index.css` (`@theme` tokens and animations, `@utility glass`, `bg-hero`, `lift`, `shine`, `reveal`, `reveal-mask`, `split-words`, `parallax`) |
 | Business rules as pure functions | `../shared/domain/` via the `@shared` alias, also used by the API (promise 8.3, penalty 8.4, states 10.1, triage 10.7) |
-| Mock API and simulator | `src/mocks/` (demo data from `../shared/seed/seed.js`, the same data `npm run seed` loads into MySQL). Catalog reads and sign-in go to the backend when it runs |
+| Mock API and simulator | `src/mocks/` (demo data from `../shared/seed/seed.js`, the same data `npm run seed` loads into MySQL). Demo sessions stay in the mock; every real account, the catalog reads and the admin verification pages go to the backend |
 | Admin console (separate build and store) | `src/admin/` (`App.jsx`, `store.jsx`, `pages/`) |
 
 All server data goes through `createAsyncThunk` thunks in the slices (shared error handling in
