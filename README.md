@@ -181,6 +181,30 @@ suspensions, requirement changes and revealing a document number need a code fro
 minutes (the console asks again). "Use the demo admin instead" keeps the in-browser demo (code
 `246810`); the verification queue needs a real staff sign-in.
 
+## Ordering
+
+With real accounts the whole order runs on MySQL. An approved seller adds snacks in the
+console (**Products**: add, edit, stock adjustments with a reason, list or hide), and the
+shop appears to customers in range. The customer fills the cart (one shop per cart), checks
+out with pay on delivery, and follows the order. The seller has 2 minutes to accept, then
+packs; an approved, online rider nearby gets a 20-second offer, collects the sealed package
+and rides. The customer's 4-digit delivery code shows only once the rider is within 500 m,
+and the rider can enter it only inside 150 m; three wrong codes lock it and alert an admin.
+The rider records the cash collected and the pay for the delivery is written. Every change
+goes through `canTransition()`, and each step puts a message in the person's inbox
+(**Notifications**, never containing the code).
+
+- Prices, fees and the delivery promise are recomputed on the server at checkout; stock is
+  held all-or-nothing, and one Idempotency-Key makes one order however often it is sent.
+- Nobody reaches another person's order, shop board or delivery: ids are always checked
+  against the account in the token.
+- The seeded demo shops and riders take no real orders; the one-tap demo account keeps the
+  simulated shop, rider and online payment in the browser.
+- Riders share their phone's location while online. On a development build (and in the
+  demo) the rider app also has a "Simulate drive" button for testing without moving.
+- The clocks (shop timeout, offer expiry, finding a rider) run every 5 seconds in the API
+  (`RUN_JOBS`), or once per `npm run jobs`.
+
 ## How the code is organised
 
 ```
@@ -189,12 +213,13 @@ backend/
     config/        env.js (settings checked at start), database.js (schemas, users, pool options)
     db/            connection.js, ddl.js, migrations/, seeds/demo.js
     models/        one file per table, named after it, by module: identity/user.js, catalog/product.js, ...
-    controllers/   request handlers, one file per area: auth, security, adminAuth, onboarding, work,
+    controllers/   request handlers, one file per area: auth, security, adminAuth, onboarding, cart,
+                   orders, shop, delivery, addresses, notifications,
                    verification, adminUsers, files, me, catalog, health
     routes/        URL to controller, one file per area (zod-checked input); index.js mounts them all
     middleware/    auth (roles, permissions, fresh MFA), rate limits, uploads, logging, errors
     utils/         passwords, keys, tokens, sessions, secondFactor, storage, fileCheck, mailer, ...
-    jobs/          outboxRelay.js (emails and texts), documentExpiry.js
+    jobs/          outboxRelay.js (emails, texts, inbox), orderTimers.js, documentExpiry.js
     app.js, server.js
   scripts/         migrate.js, seed.js, local-db-init.js, create-admin.js, jobs.js
   storage/         private uploads and development emails (git-ignored)
@@ -248,10 +273,9 @@ From the repository root:
   sign-in, password reset, sessions (`/api/v1/auth/*`), seller and rider onboarding with
   documents (`/seller/onboarding`, `/rider/onboarding`), the verification console
   (`/admin/verification`, `/admin/documents`, `/admin/requirements`, `/admin/users`,
-  `/admin/audit`), product publishing for approved sellers and online/offline for approved riders.
-  Cart, orders, rider offers and the other admin pages still use the mock, so a real approved
-  seller or rider sees a short console until the order service is built. Seller product
-  editing comes next, then cart and checkout. Passkeys are not built yet.
+  `/admin/audit`), and the customer order flow (see "Ordering" above). Complaints, credits,
+  fines, rider pay disputes, the delivery policy editor and the other admin pages still use the
+  mock, and online payment is not built (pay on delivery only). Passkeys are not built yet.
 - The demo catalogue has 201 snacks in 28 cities, most of them from the Telugu states, Tamil
   Nadu, Karnataka, Kerala and Maharashtra (`shared/seed/regional.js`).
 - Every shop is a shop, a street stall (a cart, bandi or kadai) or a home kitchen (`catalog.sellers.kind`):

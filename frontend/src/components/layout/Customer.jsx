@@ -16,6 +16,7 @@ import { fetchCart, resetCart } from '../../store/slices/cart';
 import { fetchAddresses, resetProfile } from '../../store/slices/profile';
 import { fetchOrders, resetOrders } from '../../store/slices/order';
 import { fetchNotifications, resetNotifications } from '../../store/slices/notification';
+import { setAddress } from '../../store/slices/ui';
 import { usePolling, useReducedMotion } from '../../hooks';
 
 /**
@@ -28,6 +29,8 @@ export default function CustomerLayout() {
   const outlet = useOutlet();
   const reduced = useReducedMotion();
   const isCustomer = useSelector((state) => state.auth.user?.role === 'customer');
+  const { addresses, addressesLoaded } = useSelector((state) => state.profile);
+  const addressId = useSelector((state) => state.ui.addressId);
 
   useEffect(() => {
     if (isCustomer) {
@@ -40,6 +43,11 @@ export default function CustomerLayout() {
       dispatch(resetNotifications());
     }
   }, [isCustomer, dispatch]);
+
+  // the remembered address may belong to another account (or the demo): use one of theirs
+  useEffect(() => {
+    if (isCustomer && addressesLoaded && addresses.length && !addresses.some((a) => a.id === addressId)) dispatch(setAddress(addresses[0].id));
+  }, [isCustomer, addressesLoaded, addresses, addressId, dispatch]);
 
   // Order list drives the always-visible rider lane; notifications drive the bell
   usePolling(() => dispatch(fetchOrders()), 5000, isCustomer);

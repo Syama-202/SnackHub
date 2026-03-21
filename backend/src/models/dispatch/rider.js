@@ -20,6 +20,12 @@ export const riderModel = {
     return next;
   },
   setStatus: (db, id, status) => db(TABLE).where({ id }).update({ status }),
+  /**
+   * Riders a real order may be offered to: online or on a delivery, with a position and valid
+   * documents. Demo riders from the seed never get a real order.
+   */
+  listDispatchable: (db) => db(TABLE).whereIn('status', ['ONLINE', 'BUSY']).where({ is_demo: false }).whereNotNull('last_lat').andWhere(docsValid).orderBy('id'),
+  listByIds: (db, ids) => (ids.length ? db(TABLE).whereIn('id', ids) : Promise.resolve([])),
   setDocsValidUntil: (db, id, date) => db(TABLE).where({ id }).update({ docs_valid_until: date }),
   /** Expired documents take a rider offline at once (the daily expiry job). */
   offlineWithExpiredDocs: (db) => db(TABLE).whereIn('status', ['ONLINE']).andWhere('docs_valid_until', '<', today()).update({ status: 'OFFLINE' }),

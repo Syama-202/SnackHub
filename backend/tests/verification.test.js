@@ -149,21 +149,21 @@ describe.skipIf(h.skip)('verification', () => {
       const s = await readySeller(t);
       const shop = await t.trx.catalog('sellers').where({ user_id: s.user.id }).first();
       const [productId] = await t.trx.catalog('products').insert({ seller_id: shop.id, slug: `test-${h.uniq()}`, title: 'Test bajji (demo)', category: 'fried', serving_temp: 'HOT', prep_minutes: 8, price_paise: 4000, active: false });
-      const res = await request(t.app).post(`/api/v1/seller/products/${productId}/publish`).set(bearer(s.token)).expect(403);
+      const res = await request(t.app).patch(`/api/v1/seller/products/${productId}`).set(bearer(s.token)).send({ active: true }).expect(403);
       expect(res.body.error).toMatchObject({ code: 'NOT_ELIGIBLE', details: { reasons: expect.arrayContaining([expect.objectContaining({ code: 'NOT_APPROVED' })]) } });
-      await request(t.app).post(`/api/v1/seller/products/${productId}/unpublish`).set(bearer(s.token)).expect(200);
+      await request(t.app).patch(`/api/v1/seller/products/${productId}`).set(bearer(s.token)).send({ active: false }).expect(200);
 
       await approveAll(t, staff.token, await refOf(t, s.token, 'seller'));
-      await request(t.app).post(`/api/v1/seller/products/${productId}/publish`).set(bearer(s.token)).expect(200);
+      await request(t.app).patch(`/api/v1/seller/products/${productId}`).set(bearer(s.token)).send({ active: true }).expect(200);
       expect((await t.trx.catalog('products').where({ id: productId }).first()).active).toBe(1);
       // another seller cannot touch it by id
       const other = await readySeller(t);
-      await request(t.app).post(`/api/v1/seller/products/${productId}/unpublish`).set(bearer(other.token)).expect(404);
+      await request(t.app).patch(`/api/v1/seller/products/${productId}`).set(bearer(other.token)).send({ active: false }).expect(404);
     });
 
     it('a rider goes online only when approved with valid documents; expired insurance takes them out', async () => {
       const r = await readyRider(t, { mode: 'scooter' });
-      const online = () => request(t.app).post('/api/v1/rider/availability').set(bearer(r.token)).send({ status: 'ONLINE' });
+      const online = () => request(t.app).put('/api/v1/rider/status').set(bearer(r.token)).send({ status: 'ONLINE' });
       expect((await online().expect(403)).body.error.code).toBe('NOT_ELIGIBLE');
       await approveAll(t, staff.token, await refOf(t, r.token, 'rider'));
       const rider = await t.trx.dispatch('riders').where({ user_id: r.user.id }).first();
@@ -180,14 +180,14 @@ describe.skipIf(h.skip)('verification', () => {
       expect((await t.trx.dispatch('riders').where({ id: rider.id }).first()).status).toBe('OFFLINE');
       expect((await riderModel.listOnlineInCity(t.trx.dispatch, 'Guntur')).some((x) => x.id === rider.id)).toBe(false);
       // going offline is always allowed
-      await request(t.app).post('/api/v1/rider/availability').set(bearer(r.token)).send({ status: 'OFFLINE' }).expect(200);
+      await request(t.app).put('/api/v1/rider/status').set(bearer(r.token)).send({ status: 'OFFLINE' }).expect(200);
     });
 
     it('a bicycle rider is approved on identity and photo alone', async () => {
       const r = await readyRider(t, { mode: 'bicycle' });
       const item = await approveAll(t, staff.token, await refOf(t, r.token, 'rider'));
       expect(item.status).toBe('APPROVED');
-      await request(t.app).post('/api/v1/rider/availability').set(bearer(r.token)).send({ status: 'ONLINE' }).expect(200);
+      await request(t.app).put('/api/v1/rider/status').set(bearer(r.token)).send({ status: 'ONLINE' }).expect(200);
     });
   });
 

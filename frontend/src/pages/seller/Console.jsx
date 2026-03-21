@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ConsoleLayout from '../../components/layout/Console';
-import SellerApproved from './Approved';
+import SellerApproved, { Standing } from './Approved';
 import { isDemoSession } from '../../store/slices/auth';
 import SellerOrders from './Orders';
 import SellerProducts from './Products';
@@ -14,18 +14,25 @@ const TABS = [
 
 /**
  * Seller console (doc 11.2): order board, products and stock, shop status. The demo seller's
- * console runs on the in-browser mock; a real account sees onboarding until it is approved.
+ * console runs on the in-browser mock; a real account works on the API once approved, and
+ * until then is sent to onboarding.
  */
-const SellerConsole = () => (!isDemoSession() ? <SellerApproved /> : (
-  <ConsoleLayout title="Seller console" tabs={TABS} mobileTabs>
+const SellerConsole = () => {
+  const demo = isDemoSession();
+  const screens = (
     <Routes>
-      <Route index element={<SellerOrders />} />
+      <Route index element={<>{!demo && <Standing compact />}<SellerOrders /></>} />
       <Route path="products" element={<SellerProducts />} />
-      <Route path="shop" element={<SellerShop />} />
+      <Route path="shop" element={<>{!demo && <Standing />}<SellerShop /></>} />
       {/* an unknown address inside the console goes back to its first screen */}
       <Route path="*" element={<Navigate to="/seller" replace />} />
     </Routes>
-  </ConsoleLayout>
-));
+  );
+  return (
+    <ConsoleLayout title="Seller console" tabs={TABS} mobileTabs>
+      {demo ? screens : <SellerApproved>{screens}</SellerApproved>}
+    </ConsoleLayout>
+  );
+};
 
 export default SellerConsole;

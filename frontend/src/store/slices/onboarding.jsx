@@ -29,21 +29,12 @@ export const submitApplication = apiThunk('onboarding/submit', ({ kind }, { apiF
 
 export const restartApplication = apiThunk('onboarding/restart', ({ kind }, { apiFetch }) => apiFetch(`/${kind}/onboarding/restart`, { method: 'POST', body: {} }));
 
-// Approved riders go online and offline; going online is refused while a document is missing or expired
-export const setAvailability = apiThunk('onboarding/availability', ({ status }, { apiFetch }) => apiFetch('/rider/availability', { method: 'POST', body: { status } }));
-
-// An approved seller's own menu on the real API: publishing needs valid documents
-export const loadOwnProducts = apiThunk('onboarding/products', (_, { apiFetch }) => apiFetch('/seller/products'));
-export const setProductPublished = apiThunk('onboarding/publish', ({ id, active }, { apiFetch }) =>
-  apiFetch(`/seller/products/${id}/${active ? 'publish' : 'unpublish'}`, { method: 'POST', body: {} }),
-);
-
 const empty = { view: null, loading: false, saving: false, error: null };
 const key = (kind, docType) => `${kind}:${docType}`;
 
 const onboardingSlice = createSlice({
   name: 'onboarding',
-  initialState: { seller: { ...empty }, rider: { ...empty }, uploads: {}, products: null, availability: null, workError: null },
+  initialState: { seller: { ...empty }, rider: { ...empty }, uploads: {} },
   reducers: {
     uploadProgress: (state, action) => {
       const { kind, docType, pct } = action.payload;
@@ -54,29 +45,6 @@ const onboardingSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder
-      .addCase(loadOwnProducts.fulfilled, (state, action) => {
-        state.products = action.payload;
-      })
-      .addCase(setProductPublished.pending, (state) => {
-        state.workError = null;
-      })
-      .addCase(setProductPublished.fulfilled, (state, action) => {
-        const p = state.products?.find((x) => x.id === action.payload.id);
-        if (p) p.active = action.payload.active;
-      })
-      .addCase(setProductPublished.rejected, (state, action) => {
-        state.workError = action.payload;
-      })
-      .addCase(setAvailability.pending, (state) => {
-        state.workError = null;
-      })
-      .addCase(setAvailability.fulfilled, (state, action) => {
-        state.availability = action.payload.status;
-      })
-      .addCase(setAvailability.rejected, (state, action) => {
-        state.workError = action.payload;
-      });
     const kindOf = (action) => action.meta.arg?.kind ?? 'rider';
     const viewThunks = [loadOnboarding, saveProfile, saveVehicle, uploadDocument, withdrawDocument, submitApplication, restartApplication];
     for (const t of viewThunks) {

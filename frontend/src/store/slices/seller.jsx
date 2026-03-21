@@ -11,6 +11,8 @@ export const fetchSellerProducts = apiThunk('seller/fetchProducts', async (_, { 
 // Stock edits are adjustments (plus or minus, with a reason), never a replacement (doc 10.8)
 export const adjustStock = apiThunk('seller/adjustStock', async ({ id, delta, reason }, { apiFetch }) => apiFetch(`/seller/products/${id}/stock`, { method: 'PATCH', body: { delta, reason } }));
 export const updateProduct = apiThunk('seller/updateProduct', async ({ id, ...changes }, { apiFetch }) => apiFetch(`/seller/products/${id}`, { method: 'PATCH', body: changes }));
+// A new snack starts unlisted with no stock; listing it needs an approved shop with valid documents
+export const createProduct = apiThunk('seller/createProduct', async (fields, { apiFetch }) => apiFetch('/seller/products', { method: 'POST', body: fields }));
 // Demo only: an order arrives at this shop, to be run by hand
 export const simulateIncomingOrder = apiThunk('seller/simulateOrder', async (_, { apiFetch }) => apiFetch('/dev/incoming-order', { method: 'POST' }));
 
@@ -51,7 +53,10 @@ const sellerSlice = createSlice({
         state.productsLoaded = true;
       })
       .addCase(adjustStock.fulfilled, (state, action) => replaceProduct(state, action.payload))
-      .addCase(updateProduct.fulfilled, (state, action) => replaceProduct(state, action.payload));
+      .addCase(updateProduct.fulfilled, (state, action) => replaceProduct(state, action.payload))
+      .addCase(createProduct.fulfilled, (state, action) => {
+        state.products = [...state.products, action.payload];
+      });
   },
 });
 

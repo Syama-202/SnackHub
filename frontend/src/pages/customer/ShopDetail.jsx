@@ -5,6 +5,7 @@ import { fetchShop } from '../../store/slices/products';
 import { selectDeliveryPoint } from '../../store/slices/profile';
 import ProductCard, { ProductCardSkeleton } from '../../components/product/Card';
 import { Pill, Icon, EmptyState, Button } from '../../components/ui';
+import { isDemoSession } from '../../store/slices/auth';
 
 /** One verified shop, its delivery promise for this address, and its menu. */
 const ShopDetail = () => {
@@ -43,11 +44,13 @@ const ShopDetail = () => {
             <div className="flex flex-wrap gap-2">
               {shop.verified && <Pill tone="dark"><Icon name="shield" className="h-3.5 w-3.5" /> Verified shop · licence checked</Pill>}
               {shop.isNew && <Pill className="bg-white text-grey-800">New on SnackHub</Pill>}
-              <Pill className="bg-white/80 text-grey-800"><Icon name="star" className="h-3.5 w-3.5 fill-current" /> {shop.rating}</Pill>
-              <Pill className="bg-white/80 text-grey-800">Quality score {shop.qualityScore}</Pill>
+              {shop.rating != null && <Pill className="bg-white/80 text-grey-800"><Icon name="star" className="h-3.5 w-3.5 fill-current" /> {shop.rating}</Pill>}
+              {shop.qualityScore != null && <Pill className="bg-white/80 text-grey-800">Quality score {shop.qualityScore}</Pill>}
+              {shop.demo && <Pill tone="sun">Demo shop</Pill>}
             </div>
             <h1 className="mt-3 text-[clamp(2rem,5vw,3.4rem)] font-extrabold leading-none">{shop.shopName}</h1>
-            <p className="mt-2 font-semibold">{shop.city}, {shop.region}</p>
+            <p className="mt-2 font-semibold">{[shop.city, shop.region].filter(Boolean).join(', ')}</p>
+            {shop.demo && !isDemoSession() && <p className="mt-2 max-w-xl rounded-xl bg-white/80 p-3 text-sm font-semibold text-grey-800">This demo shop shows how SnackHub works but takes no real orders. Try the demo sign-in to order from it.</p>}
             <div className="mt-4 flex flex-wrap gap-3 text-sm font-bold">
               {hot && <span className="glass glass-strong rounded-full px-3 py-1.5">{hot.serviceable ? `Hot snacks: ${hot.window[0]} to ${hot.window[1]} min` : `Hot snacks: ${hot.reasons[0]}`}</span>}
               {amb && <span className="glass glass-strong rounded-full px-3 py-1.5">{amb.serviceable ? `Sweets and dry: ${amb.window[0]} to ${amb.window[1]} min` : amb.reasons[0]}</span>}

@@ -98,6 +98,7 @@ export function seedRows(data = buildSeed()) {
       status: s.status,
       licence_no: s.licenceNo,
       licence_expires_on: s.licenceExpiresOn,
+      is_demo: true,
       verified_at: s.verified ? VERIFIED_AT : null,
       quality_score: s.qualityScore,
     })),
@@ -140,6 +141,7 @@ export function seedRows(data = buildSeed()) {
       status: r.status,
       last_lat: r.lat,
       last_lng: r.lng,
+      is_demo: true,
     })),
     // every shop still waiting for approval has an application under review (doc 16.4)
     sellerApplications: pendingShops.map((s, i) => ({

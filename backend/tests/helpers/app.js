@@ -16,7 +16,7 @@ import { hashPassword } from '../../src/utils/passwords.js';
 import { signAccessToken } from '../../src/utils/tokens.js';
 import { encryptSecret, newTotpSecret, totpNow } from '../../src/utils/mfa.js';
 
-export const MODULES = ['identity', 'catalog', 'dispatch'];
+export const MODULES = ['identity', 'catalog', 'dispatch', 'ordering', 'notify'];
 export const STEP = 30_000;
 export const PASSWORD = 'mango pickle on a rainy tuesday';
 export const WEB = { 'X-SnackHub-Client': 'web' };

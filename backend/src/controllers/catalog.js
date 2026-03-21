@@ -47,7 +47,7 @@ export function productView(row, seller) {
 }
 
 // what a customer may see of a shop: no owner, licence number or exact status
-function sellerView(row, products) {
+export function sellerView(row, products = []) {
   return {
     id: row.id,
     shopName: row.shop_name,
@@ -63,6 +63,8 @@ function sellerView(row, products) {
     busyExtraMin: row.busy_extra_min,
     qualityScore: row.quality_score == null ? null : Number(row.quality_score),
     licenceValid: !row.licence_expires_on || dateOnly(row.licence_expires_on) >= today(),
+    // a seeded demo shop shows how SnackHub works but takes no real orders
+    demo: Boolean(row.is_demo),
   };
 }
 

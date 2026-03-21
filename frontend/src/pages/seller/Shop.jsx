@@ -16,12 +16,13 @@ const SellerShop = () => {
 
   if (!s) return <Skeleton className="h-64" />;
   const save = (changes) => dispatch(updateShop(changes));
-  const expDays = Math.round((new Date(s.licenceExpiresOn) - Date.now()) / 86400000);
+  const expDays = s.licenceExpiresOn ? Math.round((new Date(s.licenceExpiresOn) - Date.now()) / 86400000) : null;
+  const soon = expDays != null && expDays < 30;
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div>
         <h1 className="text-3xl font-extrabold">{s.shopName}</h1>
-        <p className="text-grey-600">{s.city}, {s.region}</p>
+        <p className="text-grey-600">{[s.city, s.region].filter(Boolean).join(', ')}</p>
         <Card className="mt-4 p-5">
           <h2 className="text-lg font-extrabold">Verification status</h2>
           <ol className="mt-3 flex flex-wrap items-center gap-2 text-sm">
@@ -36,12 +37,12 @@ const SellerShop = () => {
             })}
           </ol>
           <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div><dt className="text-grey-600">Food licence</dt><dd className="font-mono font-bold">{s.licenceNo}</dd></div>
-            <div><dt className="text-grey-600">Expires</dt><dd className={cx('font-bold', expDays < 30 && 'text-red-text')}>{s.licenceExpiresOn} ({expDays} days)</dd></div>
-            <div><dt className="text-grey-600">Quality score</dt><dd className="font-bold">{s.qualityScore} / 100</dd></div>
-            <div><dt className="text-grey-600">Acceptance rate</dt><dd className="font-bold">{Math.round(s.acceptanceRate * 100)}%</dd></div>
+            <div><dt className="text-grey-600">Food licence</dt><dd className="font-mono font-bold">{s.licenceNo ?? '–'}</dd></div>
+            <div><dt className="text-grey-600">Expires</dt><dd className={cx('font-bold', soon && 'text-red-text')}>{s.licenceExpiresOn ? `${s.licenceExpiresOn} (${expDays} days)` : '–'}</dd></div>
+            <div><dt className="text-grey-600">Quality score</dt><dd className="font-bold">{s.qualityScore == null ? 'No ratings yet' : `${s.qualityScore} / 100`}</dd></div>
+            <div><dt className="text-grey-600">Acceptance rate</dt><dd className="font-bold">{s.acceptanceRate == null ? '–' : `${Math.round(s.acceptanceRate * 100)}%`}</dd></div>
           </dl>
-          {expDays < 30 && <p className="mt-3 rounded-xl bg-red/10 p-3 text-sm font-semibold text-red-text">Your licence expires soon. The shop is suspended on the expiry date until a renewed licence is verified.</p>}
+          {soon && <p className="mt-3 rounded-xl bg-red/10 p-3 text-sm font-semibold text-red-text">Your licence expires soon. The shop is suspended on the expiry date until a renewed licence is verified.</p>}
           <p className="mt-3 text-xs text-grey-600">The “Verified shop” badge shows only while your licence is valid and the shop is active. Below 70 warns, below 60 limits your reach, below 50 suspends.</p>
         </Card>
       </div>

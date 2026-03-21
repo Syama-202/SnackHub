@@ -1,5 +1,5 @@
 // Every router in one place. Health checks sit at the root; the API lives under /api/v1.
-// Module routers (ordering, dispatch, payment) are added here as each is built.
+// Payment routes come when online payment is built (pay on delivery only for now).
 import { Router } from 'express';
 import { healthRoutes } from './health.js';
 import { authRoutes } from './auth.js';
@@ -10,6 +10,9 @@ import { onboardingRoutes } from './onboarding.js';
 import { verificationRoutes } from './verification.js';
 import { adminAuthRoutes } from './adminAuth.js';
 import { filesRoutes } from './files.js';
+import { ordersRoutes } from './orders.js';
+import { shopRoutes } from './shop.js';
+import { deliveryRoutes } from './delivery.js';
 
 export function routes(deps) {
   const router = Router();
@@ -23,6 +26,9 @@ export function routes(deps) {
   api.use(verificationRoutes(deps));
   api.use(adminAuthRoutes(deps));
   api.use(filesRoutes(deps));
+  api.use(ordersRoutes(deps));
+  api.use(shopRoutes(deps));
+  api.use(deliveryRoutes(deps));
   router.use('/api/v1', api);
   return router;
 }

@@ -3,6 +3,10 @@ const TABLE = 'sellers';
 // states a customer can order from; draft, pending, suspended and rejected shops stay hidden
 export const VISIBLE_STATUSES = ['active', 'probation', 'warned'];
 
+/** Whether a customer can order from this shop right now (the same rules as the listings). */
+export const isOpenForOrders = (row) =>
+  Boolean(row) && VISIBLE_STATUSES.includes(row.status) && !row.paused && (!row.docs_valid_until || new Date(row.docs_valid_until).toISOString().slice(0, 10) >= new Date().toISOString().slice(0, 10));
+
 export const sellerModel = {
   findById: (db, id) => db(TABLE).where({ id }).first(),
   findByUser: (db, userId) => db(TABLE).where({ user_id: userId }).first(),
@@ -46,4 +50,5 @@ export const sellerModel = {
   markVerified: (db, id, status) => db(TABLE).where({ id }).update({ status, verified_at: new Date() }),
   setPaused: (db, id, paused) => db(TABLE).where({ id }).update({ paused }),
   setBusyExtra: (db, id, minutes) => db(TABLE).where({ id }).update({ busy_extra_min: minutes }),
+  listByIds: (db, ids) => (ids.length ? db(TABLE).whereIn('id', ids) : Promise.resolve([])),
 };

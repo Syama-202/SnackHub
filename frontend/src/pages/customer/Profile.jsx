@@ -6,7 +6,9 @@ import { z } from 'zod';
 import { addAddress, deleteAddress, fetchCredits } from '../../store/slices/profile';
 import { setAddress } from '../../store/slices/ui';
 import { addToast } from '../../store/slices/toast';
+import { isDemoSession } from '../../store/slices/auth';
 import { rupees } from '@shared/domain/money';
+import { Link } from 'react-router-dom';
 import { Button, Card, Input, Icon, Pill } from '../../components/ui';
 
 // Same shape the backend validates with zod (doc 5.1: shared schemas where possible)
@@ -30,6 +32,10 @@ const Profile = () => {
   const { addresses, credits } = useSelector((state) => state.profile);
   const selectedId = useSelector((state) => state.ui.addressId);
   const [adding, setAdding] = useState(false);
+  // the exact pin from the phone's location; without it the address uses the city centre
+  const [pin, setPin] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const demo = isDemoSession();
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(AddressSchema), defaultValues: { city: 'guntur' } });
 
   useEffect(() => {
@@ -46,11 +52,30 @@ const Profile = () => {
     }
   };
 
+  const locate = () => {
+    if (!('geolocation' in navigator)) return dispatch(addToast({ type: 'error', title: 'Location not available', message: 'This browser cannot share a location.' }));
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setLocating(false);
+        setPin({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), accuracyM: Math.round(p.coords.accuracy) });
+      },
+      () => {
+        setLocating(false);
+        dispatch(addToast({ type: 'error', title: 'No location', message: 'Allow location for SnackHub, or save the address with the city centre pin.' }));
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+    return undefined;
+  };
+
   const onSubmit = async (v) => {
     try {
-      await dispatch(addAddress({ label: v.label, line: `${v.line} (demo)`, cityId: v.city, ...CITY_PIN[v.city] })).unwrap();
+      const at = pin ? { lat: pin.lat, lng: pin.lng } : CITY_PIN[v.city];
+      await dispatch(addAddress({ label: v.label, line: demo ? `${v.line} (demo)` : v.line, cityId: v.city, ...at })).unwrap();
       dispatch(addToast({ type: 'success', title: 'Address saved' }));
       reset();
+      setPin(null);
       setAdding(false);
     } catch (e) {
       dispatch(addToast({ type: 'error', title: 'Address not saved', message: e.message }));
@@ -64,7 +89,8 @@ const Profile = () => {
         <span className="grid h-14 w-14 place-items-center rounded-full bg-hero font-display text-2xl font-extrabold text-grey-800">{user.name[0]}</span>
         <div>
           <p className="text-lg font-bold">{user.name}</p>
-          <p className="text-sm text-grey-600">{user.email} · signed in with Google (demo)</p>
+          <p className="text-sm text-grey-600">{user.email}{demo ? ' · demo account' : ''}</p>
+          {!demo && <Link to="/account/security" className="text-sm font-bold text-orange-text">Sign-in and security</Link>}
         </div>
       </Card>
 
@@ -90,12 +116,18 @@ const Profile = () => {
             <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid gap-4 sm:grid-cols-2">
               <Input label="Label" placeholder="Home" {...register('label')} error={errors.label?.message} />
               <label className="block">
-                <span className="mb-1.5 block text-sm font-bold">City (demo cities)</span>
+                <span className="mb-1.5 block text-sm font-bold">City</span>
                 <select {...register('city')} className="h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3">
                   {Object.keys(CITY_PIN).map((c) => <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>)}
                 </select>
               </label>
-              <Input className="sm:col-span-2" label="Street and area" placeholder="House no., street, area" {...register('line')} error={errors.line?.message} hint="The map pin is set to the city centre in this demo." />
+              <Input className="sm:col-span-2" label="Street and area" placeholder="House no., street, area" {...register('line')} error={errors.line?.message} />
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-grey-50 p-3 text-sm sm:col-span-2">
+                <Button type="button" size="sm" variant="ghost" loading={locating} onClick={locate}><Icon name="pin" className="h-4 w-4" /> Use my current location</Button>
+                <span className="text-grey-600" aria-live="polite">
+                  {pin ? `Pin set to your location (within about ${pin.accuracyM} m).` : 'Without your location the pin is the city centre, and riders and delivery times are judged from there.'}
+                </span>
+              </div>
               <div className="flex gap-2 sm:col-span-2">
                 <Button type="submit" loading={isSubmitting}>Save address</Button>
                 <Button type="button" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>

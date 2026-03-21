@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { disputeEarning, fetchEarnings } from '../../store/slices/rider';
+import { isDemoSession } from '../../store/slices/auth';
 import { addToast } from '../../store/slices/toast';
 import { rupeesExact } from '@shared/domain/money';
 import { Button, Card, Pill, Skeleton } from '../../components/ui';
@@ -37,7 +38,8 @@ const RiderEarnings = () => {
         {!earningsLoaded && <Skeleton className="h-28" />}
         {earnings.map((e) => {
           const i = e.inputs;
-          const canDispute = e.penaltyPaise > 0 && e.status === 'OK' && Date.now() - e.createdAt < 48 * 3600000;
+          // disputes reach an admin in the demo; for real accounts they come with the admin tools
+          const canDispute = isDemoSession() && e.penaltyPaise > 0 && e.status === 'OK' && Date.now() - e.createdAt < 48 * 3600000;
           return (
             <Card key={e.id} className="p-4">
               <button className="flex w-full items-center justify-between text-left" onClick={() => setOpen(open === e.id ? null : e.id)} aria-expanded={open === e.id}>
@@ -64,7 +66,7 @@ const RiderEarnings = () => {
                     Late by {Math.max(0, i.lateMin).toFixed(0)} min − shop delay {i.sellerDelayMin.toFixed(0)} − customer delay {i.customerDelayMin} − grace {i.graceMin} = <b>{i.riderLateMin.toFixed(0)} min</b> × {rupeesExact(i.ratePaisePerMin)}/min, capped at {rupeesExact(i.capPaise)} · policy v{i.policyVersion}
                   </p>
                   {canDispute && <Button size="sm" variant="outline" className="mt-3" onClick={() => dispute(e)}>Dispute this cut</Button>}
-                  {e.penaltyPaise > 0 && !canDispute && e.status === 'OK' && <p className="mt-2 text-xs text-grey-600">Disputes close 48 hours after delivery.</p>}
+                  {e.penaltyPaise > 0 && !canDispute && e.status === 'OK' && <p className="mt-2 text-xs text-grey-600">{isDemoSession() ? 'Disputes close 48 hours after delivery.' : 'To question a cut, contact SnackHub support within 48 hours of the delivery.'}</p>}
                 </div>
               )}
             </Card>

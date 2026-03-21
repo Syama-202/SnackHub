@@ -5,13 +5,47 @@ import { addToast } from '../../store/slices/toast';
 import { rupees, rupeesExact } from '@shared/domain/money';
 import { distanceM } from '@shared/domain/geo';
 import { useNow, usePolling } from '../../hooks';
+import { isDemoSession } from '../../store/slices/auth';
 import { Button, Card, Pill, Icon, TempBadge, Modal, CloseButton, cx } from '../../components/ui';
 import LaneSvg from '../../components/tracking/LaneSvg';
+
+// a real rider's phone shares its position while online, at most every 5 seconds
+const GPS_EVERY_MS = 5000;
+// the simulated drive is for the demo, and for testing a real account on a development build
+const canSimulate = () => isDemoSession() || import.meta.env.DEV;
+let simulating = false;
+
+/** Real GPS for a real account (watchPosition); the server checks every ping. */
+function useRiderGps(enabled) {
+  const dispatch = useDispatch();
+  const [state, setState] = useState('off'); // off | on | denied | unavailable
+  useEffect(() => {
+    if (!enabled || !('geolocation' in navigator)) {
+      setState(enabled ? 'unavailable' : 'off');
+      return undefined;
+    }
+    let last = 0;
+    const id = navigator.geolocation.watchPosition(
+      (p) => {
+        setState('on');
+        if (simulating || Date.now() - last < GPS_EVERY_MS) return;
+        last = Date.now();
+        dispatch(sendLocation({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), accuracyM: Math.round(p.coords.accuracy) }));
+      },
+      (err) => setState(err.code === err.PERMISSION_DENIED ? 'denied' : 'unavailable'),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, [enabled, dispatch]);
+  return state;
+}
 
 const RiderToday = () => {
   const dispatch = useDispatch();
   const { me, offers, active } = useSelector((state) => state.rider);
   const online = me && me.status !== 'OFFLINE';
+  const demo = isDemoSession();
+  const gps = useRiderGps(Boolean(online) && !demo);
 
   useEffect(() => {
     dispatch(fetchRiderProfile());
@@ -19,6 +53,15 @@ const RiderToday = () => {
   usePolling(() => dispatch(fetchActiveDelivery()), 1500);
   // Offers arrive over Socket.io in the real app; polled here
   usePolling(() => dispatch(fetchOffers()), 1500, Boolean(online) && !active);
+
+  const toggle = async () => {
+    try {
+      await dispatch(setRiderStatus(online ? 'OFFLINE' : 'ONLINE')).unwrap();
+    } catch (e) {
+      const more = Array.isArray(e.details?.reasons) ? e.details.reasons.slice(1).map((r) => r.message).join(' ') : '';
+      dispatch(addToast({ type: 'error', title: online ? 'Still online' : 'Not online yet', message: [e.message, more].filter(Boolean).join(' ') }));
+    }
+  };
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -28,10 +71,15 @@ const RiderToday = () => {
           <p className="font-extrabold">{online ? 'You are online' : 'You are offline'}</p>
           <p className="text-sm text-grey-600">{online ? 'Offers arrive here with a 20 second timer.' : 'Go online to receive offers.'}</p>
         </div>
-        <button role="switch" aria-checked={Boolean(online)} aria-label="Online" onClick={() => dispatch(setRiderStatus(online ? 'OFFLINE' : 'ONLINE'))} className={cx('relative h-8 w-14 rounded-full transition', online ? 'bg-emerald-500' : 'bg-grey-400')}>
+        <button role="switch" aria-checked={Boolean(online)} aria-label="Online" onClick={toggle} className={cx('relative h-8 w-14 rounded-full transition', online ? 'bg-emerald-500' : 'bg-grey-400')}>
           <span className={cx('absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all', online ? 'left-7' : 'left-1')} />
         </button>
       </Card>
+      {!demo && online && gps !== 'on' && (
+        <p role="status" className={cx('mt-3 rounded-xl p-3 text-sm', gps === 'denied' ? 'bg-red/10 font-semibold text-red-text' : 'bg-sun/20')}>
+          {gps === 'denied' ? 'Location is blocked. Allow it for SnackHub so offers near you reach you and the customer can follow the delivery.' : gps === 'unavailable' ? 'Your location is not available right now. Offers need a recent position.' : 'Finding your location…'}
+        </p>
+      )}
 
       {active ? (
         <ActiveDelivery o={active} />
@@ -43,7 +91,7 @@ const RiderToday = () => {
             {online && offers.length === 0 && (
               <Card className="p-6 text-center text-grey-600">
                 <p className="font-bold text-grey-800">Waiting for offers…</p>
-                <p className="mt-1 text-sm">To get one: in the seller console (another tab) press “Simulate an incoming order”, then Accept it. The offer appears here for 20 seconds.</p>
+                <p className="mt-1 text-sm">{demo ? 'To get one: in the seller console (another tab) press “Simulate an incoming order”, then Accept it. The offer appears here for 20 seconds.' : 'Keep this screen open. When a shop near you accepts an order, the offer appears here for 20 seconds.'}</p>
               </Card>
             )}
           </div>
@@ -95,7 +143,7 @@ function ActiveDelivery({ o }) {
   const stepPending = useSelector((state) => state.rider.stepPending);
   const [sealed, setSealed] = useState(false);
   const [code, setCode] = useState('');
-  const [cash, setCash] = useState('');
+  const [cash, setCash] = useState(o.paymentMode === 'COD' ? String(Math.round(o.totalPaise / 100)) : '');
   const [driving, setDriving] = useState(false);
   const [sos, setSos] = useState(false);
   const drive = useRef(null);
@@ -115,6 +163,7 @@ function ActiveDelivery({ o }) {
 
   // Simulated GPS: one ping a second toward the next stop (real app: watchPosition every 5 s)
   useEffect(() => {
+    simulating = driving;
     if (!driving) return;
     let pos = t.riderPos || o.seller;
     drive.current = setInterval(async () => {
@@ -128,7 +177,10 @@ function ActiveDelivery({ o }) {
       await dispatch(sendLocation(pos));
       dispatch(fetchActiveDelivery());
     }, 1000);
-    return () => clearInterval(drive.current);
+    return () => {
+      clearInterval(drive.current);
+      simulating = false;
+    };
   }, [driving]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${target.lat},${target.lng}`;
@@ -149,8 +201,8 @@ function ActiveDelivery({ o }) {
           {o.hotHoldWarning && <p className="mt-2 rounded-xl bg-red/10 p-2 text-sm font-bold text-red-text">Packed over 10 minutes ago. Ask the shop to re-pack hot items.</p>}
           <div className="mt-3 flex flex-wrap gap-2">
             <a href={mapsUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1 rounded-full bg-grey-50 px-4 text-sm font-bold"><Icon name="map" className="h-4 w-4" /> Navigate</a>
-            {(!pickedUp || o.status === 'ON_THE_WAY') && (
-              <Button size="sm" variant={driving ? 'dark' : 'ghost'} onClick={() => setDriving((d) => !d)}>{driving ? 'Stop simulated drive' : 'Simulate drive (demo GPS)'}</Button>
+            {canSimulate() && (!pickedUp || o.status === 'ON_THE_WAY') && (
+              <Button size="sm" variant={driving ? 'dark' : 'ghost'} onClick={() => setDriving((d) => !d)}>{driving ? 'Stop simulated drive' : isDemoSession() ? 'Simulate drive (demo GPS)' : 'Simulate drive (test GPS, development only)'}</Button>
             )}
           </div>
         </div>
@@ -197,7 +249,7 @@ function ActiveDelivery({ o }) {
           )}
           <div className="mt-4 grid grid-cols-2 gap-2">
             <a href="tel:+910000000000" className="inline-flex h-11 items-center justify-center gap-1 rounded-full bg-grey-50 text-sm font-bold"><Icon name="phone" className="h-4 w-4" /> Call customer</a>
-            <Button variant="ghost" onClick={() => step('unreachable', {}, { type: 'sun', title: 'Waiting 5 minutes', message: 'Then an admin takes over. No penalty for you.' })}>Not reachable</Button>
+            <Button variant="ghost" className="whitespace-nowrap text-sm" onClick={() => step('unreachable', {}, { type: 'sun', title: 'Waiting 5 minutes', message: 'Then an admin takes over. No penalty for you.' })}>Not reachable</Button>
           </div>
         </Card>
       )}

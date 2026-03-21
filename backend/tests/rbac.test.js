@@ -20,12 +20,29 @@ const SELLER_ROUTES = [
   ['post', '/api/v1/seller/onboarding/submit', {}],
   ['get', '/api/v1/seller/eligibility'],
   ['get', '/api/v1/seller/products'],
+  ['post', '/api/v1/seller/products', { title: 'Not mine (demo)' }],
+  ['get', '/api/v1/seller/shop'],
+  ['get', '/api/v1/seller/orders'],
+  ['post', '/api/v1/seller/orders/1/accept', {}],
 ];
 const RIDER_ROUTES = [
   ['get', '/api/v1/rider/onboarding'],
   ['put', '/api/v1/rider/onboarding/vehicle', { mode: 'bicycle' }],
-  ['post', '/api/v1/rider/availability', { status: 'ONLINE' }],
+  ['put', '/api/v1/rider/status', { status: 'ONLINE' }],
   ['get', '/api/v1/rider/eligibility'],
+  ['get', '/api/v1/rider/offers'],
+  ['post', '/api/v1/rider/location', { lat: 16.3, lng: 80.45 }],
+  ['get', '/api/v1/rider/active'],
+  ['post', '/api/v1/rider/orders/1/deliver', { code: '1234' }],
+  ['get', '/api/v1/rider/earnings'],
+];
+const CUSTOMER_ROUTES = [
+  ['get', '/api/v1/cart'],
+  ['put', '/api/v1/cart', { productId: 1, qty: 1 }],
+  ['post', '/api/v1/orders/quote', { addressId: 1 }],
+  ['get', '/api/v1/orders'],
+  ['get', '/api/v1/orders/1/otp'],
+  ['get', '/api/v1/me/addresses'],
 ];
 const call = (app, [method, path, body], token, headers = {}) => {
   const r = request(app)[method](path).set(headers).set(bearer(token));
@@ -53,6 +70,15 @@ describe.skipIf(h.skip)('role-based access', () => {
     for (const r of [...SELLER_ROUTES, ...RIDER_ROUTES]) expect((await call(t.app, r, token)).status).toBe(403);
     await call(t.app, ['get', '/api/v1/admin/verification/seller'], token).expect(404);
     await call(t.app, ['get', '/api/v1/admin/verification/seller'], token, ADMIN).expect(403);
+  });
+
+  it('sellers and riders reach no customer route: cart, checkout, orders and addresses', async () => {
+    const seller = await t.makeUser({ roles: ['seller'], mfa: true });
+    const rider = await t.makeUser({ roles: ['rider'] });
+    for (const r of CUSTOMER_ROUTES) {
+      expect((await call(t.app, r, t.tokenFor(seller, 'seller'))).status).toBe(403);
+      expect((await call(t.app, r, t.tokenFor(rider, 'rider', { mfa: false }))).status).toBe(403);
+    }
   });
 
   it('a seller reaches no rider or admin route, and a rider no seller route', async () => {

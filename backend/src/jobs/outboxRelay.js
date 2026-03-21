@@ -1,4 +1,4 @@
-// Sends the emails and texts waiting in the module outboxes (doc 12.1). Each row is claimed
+// Sends the emails, texts and inbox messages waiting in the module outboxes (doc 12.1). Each row is claimed
 // with FOR UPDATE SKIP LOCKED, sent, then marked published in the same transaction; a failed
 // send waits longer each time (1, 2, 4 ... minutes) and gives up after 8 tries. The message
 // id is the outbox row, so a retry that did reach the provider is recognisable there. The
@@ -6,11 +6,13 @@
 import { open } from '../utils/keys.js';
 import { render } from '../utils/emails.js';
 import { outboxModel } from '../models/outbox.js';
+import { notificationModel } from '../models/notify/notification.js';
 
-const MODULES = ['identity', 'catalog', 'dispatch'];
+const MODULES = ['identity', 'catalog', 'dispatch', 'ordering'];
 
 export function createOutboxRelay({ env, dbs, mailer, sms, logger }) {
-  const types = () => [...(mailer.enabled ? ['email.send', 'admin.alert'] : []), ...(sms.enabled ? ['sms.send'] : [])];
+  // inbox messages need no provider, so they always go out
+  const types = () => ['notify.inbox', ...(mailer.enabled ? ['email.send', 'admin.alert'] : []), ...(sms.enabled ? ['sms.send'] : [])];
 
   async function adminEmails() {
     return dbs.identity('users').join('user_roles', 'user_roles.user_id', 'users.id').where({ 'user_roles.role': 'admin', 'user_roles.status': 'active', 'users.status': 'active' }).pluck('users.email');
@@ -20,10 +22,15 @@ export function createOutboxRelay({ env, dbs, mailer, sms, logger }) {
     const p = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
     const messageId = `<outbox-${module}-${row.id}@snackhub.local>`;
     const name = `${p.template ?? row.type}-${module}-${row.id}`;
+    if (row.type === 'notify.inbox') {
+      // the unique (order, type, person) key makes a second delivery of the same row harmless
+      await notificationModel.create(dbs.notify, { userId: p.userId, orderId: p.orderId ?? null, type: p.type, body: p.body });
+      return;
+    }
     if (row.type === 'admin.alert') {
       const to = await adminEmails();
       if (!to.length) return;
-      const text = `SnackHub admin alert: ${p.type} for user ${p.userId}${p.left !== undefined ? ` (${p.left} recovery codes left)` : ''}. Check the audit log.`;
+      const text = `SnackHub admin alert: ${p.type} for user ${p.userId}${p.orderId ? ` on order #${p.orderId}` : ''}${p.left !== undefined ? ` (${p.left} recovery codes left)` : ''}. Check the audit log.`;
       await mailer.send({ to, subject: `Admin alert: ${p.type.replaceAll('_', ' ')}`, text, messageId, name });
       return;
     }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { newIdempotencyKey } from '../../services/api';
+import { isDemoSession } from '../../store/slices/auth';
 import { usePolling } from '../../hooks';
 import { setAddress } from '../../store/slices/ui';
 import { addToast } from '../../store/slices/toast';
@@ -26,7 +27,9 @@ const Checkout = () => {
   const addresses = useSelector((state) => state.profile.addresses);
   const cart = useSelector((state) => state.cart);
   const { quote: q, quoteLoading, quoteError } = useSelector((state) => state.orders);
-  const [method, setMethod] = useState('UPI');
+  // a real account pays on delivery for now; online payment runs only in the demo
+  const demo = isDemoSession();
+  const [method, setMethod] = useState(demo ? 'UPI' : 'COD');
   const [simulate, setSimulate] = useState(true);
   const [placing, setPlacing] = useState(false);
   const [problem, setProblem] = useState(null);
@@ -53,7 +56,7 @@ const Checkout = () => {
     setPlacing(true);
     setProblem(null);
     try {
-      const { order } = await dispatch(placeOrder({ addressId, paymentMode: mode, simulate, idempotencyKey: idem.current })).unwrap();
+      const { order } = await dispatch(placeOrder({ addressId, paymentMode: mode, simulate: demo ? simulate : undefined, idempotencyKey: idem.current })).unwrap();
       dispatch(fetchCart());
       dispatch(fetchOrders());
       if (mode === 'COD') {
@@ -104,7 +107,8 @@ const Checkout = () => {
           <Card className="p-5">
             <h2 className="text-xl font-extrabold">Deliver to</h2>
             <div className="mt-3 grid gap-2" role="radiogroup" aria-label="Delivery address">
-              {addresses.map((a) => (
+              {!addresses.length && <p className="text-sm text-grey-600">Add a delivery address to check out.</p>}
+            {addresses.map((a) => (
                 <label key={a.id} className={cx('flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-3 transition', a.id === addressId ? 'border-orange bg-sun/10' : 'border-grey-800/10')}>
                   <input type="radio" name="addr" checked={a.id === addressId} onChange={() => dispatch(setAddress(a.id))} className="mt-1 h-4 w-4 accent-orange-deep" />
                   <span>
@@ -120,7 +124,7 @@ const Checkout = () => {
           <Card className="p-5">
             <h2 className="text-xl font-extrabold">Payment</h2>
             <div className="mt-3 grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Payment method">
-              {METHODS.filter((m) => m.id !== 'COD' || q?.codEnabled !== false).map((m) => (
+              {METHODS.filter((m) => (demo || m.mode === 'COD') && (m.id !== 'COD' || q?.codEnabled !== false)).map((m) => (
                 <label key={m.id} className={cx('flex cursor-pointer flex-col rounded-2xl border-2 p-3 transition', method === m.id ? 'border-orange bg-sun/10' : 'border-grey-800/10')}>
                   <span className="flex items-center gap-2">
                     <input type="radio" name="pay" checked={method === m.id} onChange={() => setMethod(m.id)} className="h-4 w-4 accent-orange-deep" />
@@ -130,13 +134,16 @@ const Checkout = () => {
                 </label>
               ))}
             </div>
+            {!demo && <p className="mt-3 text-xs text-grey-600">UPI and card payments are coming soon. For now you pay the rider at your door, in cash or by UPI.</p>}
             {mode === 'COD' && q?.creditPaise > 0 && <p className="mt-3 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">You have {rupees(q.creditPaise)} of app credit. It is applied to this pay-on-delivery order.</p>}
-            <label className="mt-4 flex items-start gap-3 rounded-2xl bg-grey-50 p-3 text-sm">
-              <input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} className="mt-0.5 h-4 w-4 accent-orange-deep" />
-              <span>
-                <b>Simulate the shop and rider</b> (demo). Turn this off to accept and pack the order yourself in the <Link className="font-bold text-orange-text underline" to="/seller" target="_blank">seller console</Link> and deliver it in the <Link className="font-bold text-orange-text underline" to="/rider" target="_blank">rider app</Link>.
-              </span>
-            </label>
+            {demo && (
+              <label className="mt-4 flex items-start gap-3 rounded-2xl bg-grey-50 p-3 text-sm">
+                <input type="checkbox" checked={simulate} onChange={(e) => setSimulate(e.target.checked)} className="mt-0.5 h-4 w-4 accent-orange-deep" />
+                <span>
+                  <b>Simulate the shop and rider</b> (demo). Turn this off to accept and pack the order yourself in the <Link className="font-bold text-orange-text underline" to="/seller" target="_blank">seller console</Link> and deliver it in the <Link className="font-bold text-orange-text underline" to="/rider" target="_blank">rider app</Link>.
+                </span>
+              </label>
+            )}
           </Card>
         </div>
 

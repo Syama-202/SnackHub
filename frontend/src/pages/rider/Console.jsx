@@ -12,17 +12,23 @@ const TABS = [
 
 /**
  * Rider PWA (doc 11.3): offers, delivery steps, earnings. The demo rider runs on the
- * in-browser mock; a real account sees onboarding until it is approved.
+ * in-browser mock; a real account works on the API once approved, and until then is sent to
+ * onboarding.
  */
-const RiderConsole = () => (!isDemoSession() ? <RiderApproved /> : (
-  <ConsoleLayout title="Rider app" tabs={TABS} mobileTabs>
+const RiderConsole = () => {
+  const screens = (
     <Routes>
       <Route index element={<RiderToday />} />
       <Route path="earnings" element={<RiderEarnings />} />
       {/* an unknown address inside the console goes back to its first screen */}
       <Route path="*" element={<Navigate to="/rider" replace />} />
     </Routes>
-  </ConsoleLayout>
-));
+  );
+  return (
+    <ConsoleLayout title="Rider app" tabs={TABS} mobileTabs>
+      {isDemoSession() ? screens : <RiderApproved>{screens}</RiderApproved>}
+    </ConsoleLayout>
+  );
+};
 
 export default RiderConsole;

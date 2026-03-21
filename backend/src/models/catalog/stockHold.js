@@ -39,5 +39,18 @@ export const stockHoldModel = {
       await trx(TABLE).where({ order_key: orderKey, status: 'HELD' }).update({ status: 'RELEASED' });
       return held.length;
     }),
+  /**
+   * A placed order that will not be delivered (cancelled or rejected before pickup): its
+   * units go back on the shelf whether the hold was still held or already committed.
+   */
+  returnToShelf: (db, orderKey) => {
+    const run = async (trx) => {
+      const rows = await trx(TABLE).where({ order_key: orderKey }).whereIn('status', ['HELD', 'COMMITTED']).forUpdate();
+      for (const h of rows) await stockModel.putBack(trx, h.product_id, h.qty);
+      await trx(TABLE).where({ order_key: orderKey }).whereIn('status', ['HELD', 'COMMITTED']).update({ status: 'RELEASED' });
+      return rows.length;
+    };
+    return db.isTransaction ? run(db) : db.transaction(run);
+  },
   listExpiredKeys: (db, limit = 100) => db(TABLE).distinct('order_key').where({ status: 'HELD' }).andWhere('expires_at', '<', db.fn.now(3)).limit(limit).pluck('order_key'),
 };

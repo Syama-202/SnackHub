@@ -5,6 +5,7 @@ import { fetchSellerOrders, fetchShopProfile, sellerOrderAction, simulateIncomin
 import { addToast } from '../../store/slices/toast';
 import { rupees } from '@shared/domain/money';
 import { useNow, usePolling } from '../../hooks';
+import { isDemoSession } from '../../store/slices/auth';
 import { Button, Card, Pill, TempBadge, Skeleton, cx } from '../../components/ui';
 
 const COLUMNS = [
@@ -55,8 +56,8 @@ const SellerOrders = () => {
         <h1 className="text-3xl font-extrabold">Orders</h1>
         {shop && <Pill tone={shop.paused ? 'red' : 'green'}>{shop.paused ? 'Shop paused' : 'Taking orders'}</Pill>}
         {shop?.busyExtraMin > 0 && <Pill tone="orange">Busy +{shop.busyExtraMin} min</Pill>}
-        <Button size="sm" variant="ghost" className="ml-auto" onClick={simulate}>Simulate an incoming order (demo)</Button>
-        <label className="flex items-center gap-2 text-sm font-bold">
+        {isDemoSession() && <Button size="sm" variant="ghost" className="ml-auto" onClick={simulate}>Simulate an incoming order (demo)</Button>}
+        <label className={cx('flex items-center gap-2 text-sm font-bold', !isDemoSession() && 'ml-auto')}>
           <input type="checkbox" checked={sound} onChange={(e) => setSound(e.target.checked)} className="h-4 w-4 accent-orange-deep" /> Sound alert
         </label>
       </div>
@@ -65,7 +66,7 @@ const SellerOrders = () => {
           <Stat label="Orders today" value={shop.stats.ordersToday} />
           <Stat label="Delivered" value={shop.stats.delivered} />
           <Stat label="Sales (delivered)" value={rupees(shop.stats.salesPaise)} />
-          <Stat label="Quality score" value={shop.qualityScore} hint={shop.qualityScore < 70 ? 'Below 70 warns' : 'Healthy'} />
+          <Stat label="Quality score" value={shop.qualityScore ?? '–'} hint={shop.qualityScore == null ? 'After your first ratings' : shop.qualityScore < 70 ? 'Below 70 warns' : 'Healthy'} />
         </div>
       )}
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
@@ -96,6 +97,7 @@ const SellerOrders = () => {
         <table className="w-full min-w-[560px] text-sm">
           <thead className="text-left text-grey-600"><tr><th className="p-3">Order</th><th className="p-3">Items</th><th className="p-3">Status</th><th className="p-3 text-right">Value</th></tr></thead>
           <tbody>
+            {done.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-grey-600">Finished, cancelled and rejected orders show here.</td></tr>}
             {done.map((o) => (
               <tr key={o.id} className="border-t border-grey-800/5">
                 <td className="p-3 font-bold">#{o.id}</td>
@@ -150,6 +152,7 @@ function OrderCard({ order: o }) {
         <p className="mt-2 rounded-xl bg-sun/25 p-2 text-xs font-semibold">{o.rider ? `Rider ${o.rider.name} assigned. Cook now so it is hot at pickup.` : 'Wait for a rider before frying. You will get a “cook now” prompt.'}</p>
       )}
       {o.status === 'PACKED' && <p className="mt-2 text-xs text-grey-600">{o.rider ? `Waiting for ${o.rider.name} to collect.` : 'Finding a rider…'}</p>}
+      {['ACCEPTED', 'PACKING'].includes(o.status) && o.tempClass !== 'HOT' && !o.rider && <p className="mt-2 text-xs text-grey-600">Finding a rider…</p>}
       <div className="mt-3 flex flex-wrap gap-2">
         {o.status === 'PLACED' && (
           <>

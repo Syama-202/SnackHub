@@ -8,6 +8,7 @@ import { rupees } from '@shared/domain/money';
 import { addToast } from '../../store/slices/toast';
 import { cancelOrder, fetchOrders, fetchOtp, reviewOrder } from '../../store/slices/order';
 import { Button, Card, Icon, Pill, EmptyState, Spinner, cx } from '../../components/ui';
+import { isDemoSession } from '../../store/slices/auth';
 
 const OrderTracking = () => {
   const { id } = useParams();
@@ -71,7 +72,7 @@ const OrderTracking = () => {
               <Pill tone={o.tempClass === 'HOT' ? 'red' : 'orange'}>{o.tempClass === 'HOT' ? 'Hot order' : 'Sweet and dry order'}</Pill>
             </div>
             <p className="mt-3 text-sm text-grey-600"><Icon name="pin" className="mr-1 inline h-4 w-4" />{o.addressText}</p>
-            {o.rider && <p className="mt-2 text-sm text-grey-600"><Icon name="scooter" className="mr-1 inline h-4 w-4" />{o.rider.name} · {o.rider.vehicle} · ★ {o.rider.rating}</p>}
+            {o.rider && <p className="mt-2 text-sm text-grey-600"><Icon name="scooter" className="mr-1 inline h-4 w-4" />{[o.rider.name, o.rider.vehicle, o.rider.rating != null && `★ ${o.rider.rating}`].filter(Boolean).join(' · ')}</p>}
           </Card>
           <CancelBox order={o} />
         </div>
@@ -170,25 +171,35 @@ function CancelBox({ order }) {
 
 function DeliveredPanel({ order }) {
   const dispatch = useDispatch();
-  const [rating, setRating] = useState(0);
-  const [sent, setSent] = useState(false);
+  const [rating, setRating] = useState(order.review?.rating ?? 0);
+  const [sent, setSent] = useState(Boolean(order.review));
   const send = async (r) => {
+    if (sent) return;
     setRating(r);
-    await dispatch(reviewOrder({ id: order.id, rating: r }));
-    setSent(true);
+    try {
+      await dispatch(reviewOrder({ id: order.id, rating: r })).unwrap();
+      setSent(true);
+    } catch (e) {
+      setRating(0);
+      dispatch(addToast({ type: 'error', title: 'Rating not saved', message: e.message }));
+    }
   };
   return (
     <Card className="p-5">
       <h2 className="text-xl font-extrabold">How was the food?</h2>
       <div className="mt-3 flex gap-1" role="radiogroup" aria-label="Rate the food">
         {[1, 2, 3, 4, 5].map((r) => (
-          <button key={r} role="radio" aria-checked={rating === r} aria-label={`${r} star${r > 1 ? 's' : ''}`} onClick={() => send(r)} className="grid h-11 w-11 place-items-center rounded-full hover:bg-sun/20">
+          <button key={r} role="radio" aria-checked={rating === r} aria-label={`${r} star${r > 1 ? 's' : ''}`} onClick={() => send(r)} disabled={sent} className="grid h-11 w-11 place-items-center rounded-full hover:bg-sun/20 disabled:hover:bg-transparent">
             <Icon name="star" className={cx('h-7 w-7', r <= rating ? 'fill-sun text-sun' : 'text-grey-400')} />
           </button>
         ))}
       </div>
       {sent && <p className="mt-2 text-sm font-semibold text-emerald-700">Thanks. Ratings feed the shop’s quality score.</p>}
-      <Link to={`/orders/${order.id}/report`} className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-red-text"><Icon name="flag" className="h-4 w-4" /> Report a problem</Link>
+      {isDemoSession() ? (
+        <Link to={`/orders/${order.id}/report`} className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-red-text"><Icon name="flag" className="h-4 w-4" /> Report a problem</Link>
+      ) : (
+        <p className="mt-4 text-sm text-grey-600">Something wrong with the order? Contact SnackHub support; reporting it here is coming soon.</p>
+      )}
     </Card>
   );
 }

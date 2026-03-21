@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
 import { createLimiter } from '../utils/rateLimit.js';
 import { onboardingController } from '../controllers/onboarding.js';
-import { workController } from '../controllers/work.js';
 import { validateBody, validateParams } from '../middleware/validate.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
@@ -89,7 +88,6 @@ const uploadFields = (kind) =>
     })
     .strict();
 const idParams = z.object({ id: z.coerce.number().int().positive() }).strict();
-const availability = z.object({ status: z.enum(['ONLINE', 'OFFLINE']) }).strict();
 const empty = z.object({}).strict();
 
 export function onboardingRoutes(deps) {
@@ -112,10 +110,5 @@ export function onboardingRoutes(deps) {
     router.get(`/${kind}/eligibility`, ...me, wrap(c.eligibility));
   }
 
-  const w = workController(deps);
-  router.get('/seller/products', auth, requirePermission(deps, 'seller.products.read'), wrap(w.products));
-  router.post('/seller/products/:id/publish', auth, requirePermission(deps, 'seller.products.publish'), validateParams(idParams), wrap(w.publish));
-  router.post('/seller/products/:id/unpublish', auth, requirePermission(deps, 'seller.products.read'), validateParams(idParams), wrap(w.unpublish));
-  router.post('/rider/availability', auth, requirePermission(deps, 'rider.availability'), validateBody(availability), wrap(w.availability));
   return router;
 }

@@ -31,13 +31,11 @@ export default defineConfig({
     port: 5180,
     strictPort: true,
     fs: { allow: ['..'] },
-    // Requests the mock passes on (Google sign-in, refresh, logout, /me, the catalog reads
-    // and a real admin's sign-in and approvals) go to the real backend on the same origin,
-    // so the httpOnly refresh cookies work without CORS.
-    // real API routes; the seller and rider console mocks answer demo sessions only and pass
-    // real accounts through to these
+    // Requests the mock passes on go to the real backend on the same origin, so the httpOnly
+    // refresh cookies work without CORS: every real account (sign-in, cart, orders, the seller
+    // and rider consoles, a real admin), and the catalog reads. Demo sessions stay in the mock.
     proxy: Object.fromEntries(
-      ['auth', 'me', 'cities', 'sellers', 'products', 'search', 'admin', 'files', 'seller', 'rider'].map((p) => [`/api/v1/${p}`, backend]),
+      ['auth', 'me', 'cities', 'sellers', 'products', 'search', 'admin', 'files', 'seller', 'rider', 'cart', 'orders'].map((p) => [`/api/v1/${p}`, backend]),
     ),
   },
   build: {

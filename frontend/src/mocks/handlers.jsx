@@ -17,9 +17,10 @@ const fail = (status, code, message, details) =>
   HttpResponse.json({ error: { code, message, requestId: rid(), ...(details ? { details } : {}) } }, { status });
 const ok = (data, status = 200) => HttpResponse.json(data, { status });
 
-// --- auth: demo tokens look like demo.<role>.<userId>[.<mfaAt>]. With Google set up, a
-// customer holds the backend's real JWT instead; the backend checked it when it was issued,
-// so this stand-in for the not-yet-built shop APIs only reads its user id and role.
+// --- auth: demo tokens look like demo.<role>.<userId>[.<mfaAt>]. A real account holds the
+// backend's JWT, and its cart, orders, addresses, inbox and consoles pass through to the
+// backend. Complaints, credits and payments are still answered here for everyone; for a real
+// token this only reads its user id and role, so it finds nothing of theirs.
 const isDemoToken = (request) => (request.headers.get('authorization') || '').startsWith('Bearer demo.');
 function who(request) {
   const h = request.headers.get('authorization') || '';
@@ -87,7 +88,9 @@ function audit(db, actor, action, before, after) {
  */
 const withDb = (fn) => async (ctx) => {
   const body = ['GET', 'HEAD'].includes(ctx.request.method) ? undefined : await ctx.request.clone().json().catch(() => undefined);
-  await delay(120 + Math.random() * 180);
+  // the made-up network delay is for the demo; a real account's request goes on at once
+  const realAccount = Boolean(ctx.request.headers.get('authorization')) && !isDemoToken(ctx.request);
+  if (!realAccount) await delay(120 + Math.random() * 180);
   const db = getDb();
   tick(db);
   const res = fn({ ...ctx, body: body ?? {}, db });
@@ -271,11 +274,13 @@ export const handlers = [
     return ok(db.users.find((u) => u.id === g.u.userId));
   })),
   http.get(`${API}/me/addresses`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     return ok(db.addresses);
   })),
   http.post(`${API}/me/addresses`, withDb(({ body, request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const b = body;
@@ -284,17 +289,20 @@ export const handlers = [
     return ok(a, 201);
   })),
   http.delete(`${API}/me/addresses/:id`, withDb(({ request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     db.addresses = db.addresses.filter((a) => a.id !== Number(params.id));
     return ok({ deleted: true });
   })),
   http.get(`${API}/me/notifications`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request);
     if (g.res) return g.res;
     return ok(db.notifications.filter((n) => n.userId === g.u.userId).slice(0, 50));
   })),
   http.post(`${API}/me/notifications/read`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request);
     if (g.res) return g.res;
     db.notifications.forEach((n) => n.userId === g.u.userId && !n.readAt && (n.readAt = Date.now()));
@@ -352,11 +360,13 @@ export const handlers = [
 
   // ---------- cart (Redis hash cart:{userId}, one seller only)
   http.get(`${API}/cart`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     return ok(cartView(db, g.u.userId));
   })),
   http.put(`${API}/cart`, withDb(({ body, request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const { productId, qty, replace } = body;
@@ -381,6 +391,7 @@ export const handlers = [
     return ok(cartView(db, g.u.userId));
   })),
   http.delete(`${API}/cart`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     delete db.carts[g.u.userId];
@@ -389,6 +400,7 @@ export const handlers = [
 
   // ---------- orders
   http.post(`${API}/orders/quote`, withDb(({ body, request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const { addressId } = body;
@@ -402,6 +414,7 @@ export const handlers = [
     return ok({ ...cart, promise, codEnabled: db.policy.codEnabled, creditPaise: credit?.amountPaise || 0 });
   })),
   http.post(`${API}/orders`, withDb(({ body, request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const key = request.headers.get('idempotency-key');
@@ -452,11 +465,13 @@ export const handlers = [
     return ok({ order: orderView(db, order) }, 201);
   })),
   http.get(`${API}/orders`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     return ok(db.orders.filter((o) => o.customerId === g.u.userId).sort((a, b) => b.placedAt - a.placedAt).map((o) => orderView(db, o)));
   })),
   http.get(`${API}/orders/:id`, withDb(({ request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const o = db.orders.find((x) => x.id === Number(params.id));
@@ -465,6 +480,7 @@ export const handlers = [
     return ok(orderView(db, o));
   })),
   http.get(`${API}/orders/:id/track`, withDb(({ request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const o = db.orders.find((x) => x.id === Number(params.id));
@@ -472,6 +488,7 @@ export const handlers = [
     return ok({ ...trackState(db, o), order: orderView(db, o), simulated: o.simSeller || o.simRider });
   })),
   http.get(`${API}/orders/:id/otp`, withDb(({ request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const o = db.orders.find((x) => x.id === Number(params.id));
@@ -481,6 +498,7 @@ export const handlers = [
     return ok({ code: db.otpPlain[o.id] });
   })),
   http.post(`${API}/orders/:id/cancel`, withDb(({ request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const o = db.orders.find((x) => x.id === Number(params.id));
@@ -490,6 +508,7 @@ export const handlers = [
     return ok(orderView(db, o));
   })),
   http.post(`${API}/orders/:id/review`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const o = db.orders.find((x) => x.id === Number(params.id));
@@ -835,6 +854,7 @@ export const handlers = [
     return fail(404, 'NOT_FOUND', 'Unknown step');
   })),
   http.get(`${API}/rider/earnings`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
