@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion, useScroll, useTransform } from 'motion/react';
+import { AnimatePresence, m, useScroll, useTransform } from 'motion/react';
 import { AssetImage } from '../ui/SnackImage';
 import RotatingWords from '../ui/RotatingWords';
 import { readyIds } from '../../utils/assets';
@@ -70,23 +70,23 @@ export default function Spotlight({ eyebrow, title, shops, snacks, fastest, chil
         {ids.length > 0 && (
           <div className="relative mx-auto aspect-square w-full max-w-[15.625rem] sm:max-w-[23.75rem]" aria-hidden="true">
             {/* the wheel turns with the scroll; each photo stays upright */}
-            <motion.div className="absolute inset-0" style={reduced ? undefined : { rotate: turn, y: lift }}>
+            <m.div className="absolute inset-0" style={reduced ? undefined : { rotate: turn, y: lift }}>
               {ring.map((id, k) => {
                 const a = (k / ring.length) * Math.PI * 2;
                 return (
-                  <motion.div
+                  <m.div
                     key={id}
                     className="absolute h-[22%] w-[22%] overflow-hidden rounded-full border-[3px] border-white/80 shadow-lg"
                     style={{ left: `${39 + Math.cos(a) * 40}%`, top: `${39 + Math.sin(a) * 40}%`, rotate: reduced ? 0 : upright }}
                   >
                     <AssetImage id={id} sizes="96px" className="block h-full w-full" imgClassName="block h-full w-full scale-125 object-cover" />
-                  </motion.div>
+                  </m.div>
                 );
               })}
-            </motion.div>
+            </m.div>
             <div className="absolute inset-[18%] overflow-hidden rounded-full border-[6px] border-white/85 bg-white/40 shadow-2xl">
               <AnimatePresence mode="popLayout" initial={false}>
-                <motion.div
+                <m.div
                   key={ids[i]}
                   className="absolute inset-0"
                   initial={reduced ? false : { opacity: 0, scale: 1.15, rotate: -8 }}
@@ -95,7 +95,7 @@ export default function Spotlight({ eyebrow, title, shops, snacks, fastest, chil
                   transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <AssetImage id={ids[i]} sizes="300px" className="block h-full w-full" imgClassName="block h-full w-full object-cover" />
-                </motion.div>
+                </m.div>
               </AnimatePresence>
             </div>
             <span className="absolute bottom-[6%] left-1/2 -translate-x-1/2 rounded-full bg-grey-900/80 px-3 py-1 text-xs font-bold text-white backdrop-blur">{nameOf(ids[i])}</span>

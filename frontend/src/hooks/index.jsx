@@ -118,9 +118,16 @@ export function useNow(intervalMs = 1000) {
   return now;
 }
 
+const HIDDEN_POLL_MS = 30_000;
+const MAX_BACKOFF_MS = 60_000;
+const failed = (r) => r?.meta?.requestStatus === 'rejected';
+
 /**
- * Run `callback` now and then every `ms` while enabled, slower while the tab
- * is hidden. Stands in for socket pushes until Socket.io is wired (Phase 3).
+ * Run `callback` now and then `ms` after each run finishes while enabled. A run that
+ * returns a promise (a dispatched thunk) is awaited, so slow requests never pile up;
+ * a rejected thunk doubles the wait up to a minute. Offline ticks are skipped, a hidden
+ * tab polls every 30 s and refreshes as soon as it is shown again. Stands in for socket
+ * pushes until Socket.io is wired (Phase 3).
  */
 export function usePolling(callback, ms, enabled = true) {
   const saved = useRef(callback);
@@ -130,9 +137,26 @@ export function usePolling(callback, ms, enabled = true) {
   });
   useEffect(() => {
     if (!enabled) return;
-    saved.current();
-    const t = setInterval(() => saved.current(), visible ? ms : ms * 4);
-    return () => clearInterval(t);
+    let timer;
+    let stopped = false;
+    let wait = ms;
+    const run = async () => {
+      if (navigator.onLine !== false) {
+        let ok = true;
+        try {
+          ok = !failed(await saved.current());
+        } catch {
+          ok = false;
+        }
+        wait = ok ? ms : Math.min(wait * 2, MAX_BACKOFF_MS);
+      }
+      if (!stopped) timer = setTimeout(run, visible ? wait : Math.max(wait, HIDDEN_POLL_MS));
+    };
+    run();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
   }, [ms, enabled, visible]);
 }
 

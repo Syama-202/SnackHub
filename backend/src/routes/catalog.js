@@ -5,7 +5,7 @@ import { catalogController } from '../controllers/catalog.js';
 import { validateQuery, validateParams } from '../middleware/validate.js';
 
 // a delivery point inside India
-const num = () => z.coerce.number({ invalid_type_error: 'Must be a number' });
+const num = () => z.coerce.number({ error: 'Must be a number' });
 const lat = num().min(6).max(38);
 const lng = num().min(68).max(98);
 const point = { lat, lng };

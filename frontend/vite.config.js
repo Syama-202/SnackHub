@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { vendorChunks } from './vite.chunks.js';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
@@ -40,9 +41,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    // No manualChunks: three.js, React Three Fiber and GSAP are only reached through
-    // lazy imports, so Rollup keeps them out of the entry. Forcing them into a named
-    // chunk let shared helpers land there and pulled all of three.js into every page.
-    rollupOptions: { input: 'index.html' },
+    // vendor split only (vite.chunks.js); three.js and GSAP stay in their lazy chunks
+    rollupOptions: { input: 'index.html', output: { manualChunks: vendorChunks } },
   },
 });

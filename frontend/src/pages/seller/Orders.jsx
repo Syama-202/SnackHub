@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { fetchSellerOrders, fetchShopProfile, sellerOrderAction, simulateIncomingOrder } from '../../store/slices/seller';
 import { addToast } from '../../store/slices/toast';
 import { rupees } from '@shared/domain/money';
@@ -22,8 +22,8 @@ const SellerOrders = () => {
   const [sound, setSound] = useState(false);
   const seen = useRef(null);
 
-  usePolling(() => dispatch(fetchSellerOrders()), 2000);
-  usePolling(() => dispatch(fetchShopProfile()), 10000);
+  usePolling(() => dispatch(fetchSellerOrders()), 4000);
+  usePolling(() => dispatch(fetchShopProfile()), 30000);
 
   // A toast and an optional sound for new orders (doc 11.2: push and a sound alert)
   useEffect(() => {
@@ -81,9 +81,9 @@ const SellerOrders = () => {
                 {!ordersLoaded && <Skeleton className="h-36" />}
                 <AnimatePresence initial={false}>
                   {list.map((o) => (
-                    <motion.div key={o.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}>
+                    <m.div key={o.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}>
                       <OrderCard order={o} />
-                    </motion.div>
+                    </m.div>
                   ))}
                 </AnimatePresence>
                 {ordersLoaded && list.length === 0 && <p className="px-1 py-6 text-center text-sm text-grey-600">Nothing here</p>}

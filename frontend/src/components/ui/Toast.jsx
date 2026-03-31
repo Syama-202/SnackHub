@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { removeToast } from '../../store/slices/toast';
 import { cx } from './index';
 
@@ -33,7 +33,7 @@ const ToastItem = ({ toast, onDismiss }) => {
   }, [toast.duration]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <motion.div
+    <m.div
       layout
       initial={{ opacity: 0, y: 16, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -48,7 +48,7 @@ const ToastItem = ({ toast, onDismiss }) => {
       <button onClick={onDismiss} aria-label="Dismiss" className="grid h-9 w-9 shrink-0 place-items-center rounded-full opacity-80 hover:bg-black/10 hover:opacity-100">
         <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" /></svg>
       </button>
-    </motion.div>
+    </m.div>
   );
 };
 

@@ -1,7 +1,7 @@
 import { Suspense, useEffect } from 'react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import DemoBanner from './DemoBanner';
 import Backdrop from '../ui/Backdrop';
 import Toast from '../ui/Toast';
@@ -50,8 +50,8 @@ export default function CustomerLayout() {
   }, [isCustomer, addressesLoaded, addresses, addressId, dispatch]);
 
   // Order list drives the always-visible rider lane; notifications drive the bell
-  usePolling(() => dispatch(fetchOrders()), 5000, isCustomer);
-  usePolling(() => dispatch(fetchNotifications()), 4000, isCustomer);
+  usePolling(() => dispatch(fetchOrders()), 15000, isCustomer);
+  usePolling(() => dispatch(fetchNotifications()), 15000, isCustomer);
 
   return (
     <>
@@ -65,9 +65,9 @@ export default function CustomerLayout() {
             outlet
           ) : (
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={location.pathname} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.22, ease: 'easeInOut' }}>
+              <m.div key={location.pathname} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.22, ease: 'easeInOut' }}>
                 {outlet}
-              </motion.div>
+              </m.div>
             </AnimatePresence>
           )}
         </Suspense>

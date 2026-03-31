@@ -12,7 +12,7 @@ import { usePolling } from './index';
 export function useTracking(orderId, { enabled = true } = {}) {
   const dispatch = useDispatch();
   const id = orderId == null ? null : String(orderId);
-  usePolling(() => dispatch(fetchTracking(id)), 1500, Boolean(id) && enabled);
+  usePolling(() => dispatch(fetchTracking(id)), 3000, Boolean(id) && enabled);
   const track = useSelector((state) => (id ? state.orders.tracking[id] : null));
   const error = useSelector((state) => (id ? state.orders.trackingErrors[id] : null));
   return { track, error, isLoading: Boolean(id) && !track && !error };

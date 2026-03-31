@@ -13,7 +13,7 @@ const ping = z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-1
 const offerParams = z.object({ id, action: z.enum(['accept', 'decline']) }).strict();
 const stepParams = z.object({ id, step: z.enum(['picked-up', 'deliver', 'emergency', 'unreachable']) }).strict();
 const STEP_BODY = {
-  'picked-up': z.object({ sealed: z.literal(true, { errorMap: () => ({ message: 'Confirm the package is sealed and the items are counted' }) }) }).strict(),
+  'picked-up': z.object({ sealed: z.literal(true, { error: 'Confirm the package is sealed and the items are counted' }) }).strict(),
   deliver: z.object({ code: z.string().regex(/^\d{4}$/, 'The code has 4 digits'), collectedPaise: z.number().int().min(0).max(10_000_000).optional() }).strict(),
   emergency: z.object({ note: z.string().trim().max(200).optional() }).strict(),
   unreachable: z.object({}).strict(),

@@ -27,7 +27,7 @@ const schemaFor = () =>
       mobile: z.string().trim().regex(/^\d{0,14}$/, 'Digits only, without the country code').optional(),
       password: z.string().max(PASSWORD_MAX),
       confirm: z.string(),
-      acceptTerms: z.literal(true, { errorMap: () => ({ message: 'Accept the terms and privacy policy to continue' }) }),
+      acceptTerms: z.literal(true, { error: 'Accept the terms and privacy policy to continue' }),
     })
     .superRefine((v, ctx) => {
       const problems = passwordProblems(v.password, { email: v.email, name: v.name });

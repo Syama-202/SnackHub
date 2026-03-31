@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { vendorChunks } from './vite.chunks.js';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
@@ -34,5 +35,5 @@ export default defineConfig({
   // the host header stays localhost:5181, which is on the backend's ADMIN_HOSTS list, and the
   // admin refresh cookie works because the API is on the same origin
   server: { port: 5181, strictPort: true, fs: { allow: ['..'] }, proxy: Object.fromEntries(['admin', 'auth', 'me', 'files'].map((p) => [`/api/v1/${p}`, backend])) },
-  build: { outDir: 'dist-admin', rollupOptions: { input: 'admin.html' } },
+  build: { outDir: 'dist-admin', rollupOptions: { input: 'admin.html', output: { manualChunks: vendorChunks } } },
 });

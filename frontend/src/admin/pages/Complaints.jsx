@@ -13,9 +13,9 @@ export default function Complaints() {
   const dispatch = useDispatch();
   const { run } = useAdmin();
   const { complaints: data, fines, earnings } = useSelector((state) => state.admin);
-  usePolling(() => dispatch(fetchComplaints()), 4000);
-  usePolling(() => dispatch(fetchFines()), 8000);
-  usePolling(() => dispatch(fetchEarningsAdmin()), 8000);
+  usePolling(() => dispatch(fetchComplaints()), 10000);
+  usePolling(() => dispatch(fetchFines()), 20000);
+  usePolling(() => dispatch(fetchEarningsAdmin()), 20000);
   const [sel, setSel] = useState(null);
   const c = data?.find((x) => x.id === sel) || data?.find((x) => x.status === 'IN_REVIEW') || data?.[0];
   const [form, setForm] = useState({ resolution: 'VALID', creditPaise: 5000, riderFinePaise: 0, sellerFinePaise: 0, reason: '' });

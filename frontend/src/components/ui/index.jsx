@@ -1,6 +1,6 @@
 import { Fragment, forwardRef, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { rupees } from '@shared/domain/money';
 import { useReveal } from '../../hooks';
 
@@ -123,9 +123,9 @@ export function Modal({ open, onClose, title, children, className, wide }) {
   return createPortal(
     <AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[60] flex items-end justify-center p-0 sm:items-center sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <m.div className="fixed inset-0 z-[60] flex items-end justify-center p-0 sm:items-center sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <div className="absolute inset-0 bg-grey-900/45 backdrop-blur-[2px]" onClick={onClose} aria-hidden="true" />
-          <motion.div
+          <m.div
             ref={ref}
             role="dialog"
             aria-modal="true"
@@ -138,8 +138,8 @@ export function Modal({ open, onClose, title, children, className, wide }) {
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
           >
             {children}
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>,
     document.body,
@@ -151,9 +151,9 @@ export function Drawer({ open, onClose, title, children, side = 'right' }) {
   return createPortal(
     <AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[60]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <m.div className="fixed inset-0 z-[60]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <div className="absolute inset-0 bg-grey-900/40" onClick={onClose} aria-hidden="true" />
-          <motion.aside
+          <m.aside
             ref={ref}
             role="dialog"
             aria-modal="true"
@@ -166,8 +166,8 @@ export function Drawer({ open, onClose, title, children, side = 'right' }) {
             transition={{ type: 'spring', damping: 32, stiffness: 300 }}
           >
             {children}
-          </motion.aside>
-        </motion.div>
+          </m.aside>
+        </m.div>
       )}
     </AnimatePresence>,
     document.body,

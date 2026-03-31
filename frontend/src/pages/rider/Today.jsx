@@ -50,9 +50,9 @@ const RiderToday = () => {
   useEffect(() => {
     dispatch(fetchRiderProfile());
   }, [dispatch]);
-  usePolling(() => dispatch(fetchActiveDelivery()), 1500);
+  usePolling(() => dispatch(fetchActiveDelivery()), 3000);
   // Offers arrive over Socket.io in the real app; polled here
-  usePolling(() => dispatch(fetchOffers()), 1500, Boolean(online) && !active);
+  usePolling(() => dispatch(fetchOffers()), 3000, Boolean(online) && !active);
 
   const toggle = async () => {
     try {

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { Drawer, CloseButton, Button, QtyControl, EmptyState, TempBadge, Pill } from '../ui';
 import SnackImage from '../ui/SnackImage';
 import { closeCart } from '../../store/slices/ui';
@@ -52,7 +52,7 @@ export default function CartDrawer() {
             <ul className="space-y-3">
               <AnimatePresence initial={false}>
                 {items.map((i) => (
-                  <motion.li key={i.productId} layout initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20, height: 0 }} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
+                  <m.li key={i.productId} layout initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20, height: 0 }} className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
                     <div className="grid h-16 w-20 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sun/25 to-orange/10">
                       <SnackImage slug={i.slug} art={i.art} plate={false} sizes="64px" className="h-14 w-16 rounded-lg" title={i.title} />
                     </div>
@@ -68,7 +68,7 @@ export default function CartDrawer() {
                       <QtyControl size="sm" qty={i.qty} onChange={(q) => dispatch(updateQuantity({ id: i.productId, sellerId: cart.sellerId, ...i }, q))} max={i.stock} label={i.title} />
                       <span className="text-sm font-extrabold">{rupees(i.pricePaise * i.qty)}</span>
                     </div>
-                  </motion.li>
+                  </m.li>
                 ))}
               </AnimatePresence>
             </ul>

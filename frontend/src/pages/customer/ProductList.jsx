@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { useNearbyProducts, useNearbySellers } from '../../hooks/useCatalog';
 import { CATEGORIES, MOODS, REGIONS, SELLER_KINDS } from '../../constants/catalog';
 import ProductCard, { ProductCardSkeleton } from '../../components/product/Card';
@@ -139,9 +139,9 @@ const ProductList = () => {
         {isLoading && !list.length && Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)}
         <AnimatePresence mode="popLayout">
           {list.map((p) => (
-            <motion.div key={p.id} layout={!reduced} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.3 }}>
+            <m.div key={p.id} layout={!reduced} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.3 }}>
               <ProductCard product={p} className="h-full" />
-            </motion.div>
+            </m.div>
           ))}
         </AnimatePresence>
       </div>

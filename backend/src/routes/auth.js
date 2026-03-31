@@ -35,7 +35,7 @@ const register = z
     password: fields.password,
     countryCode: fields.countryCode.optional(),
     mobile: fields.localMobile.optional(),
-    acceptTerms: z.literal(true, { errorMap: () => ({ message: 'Accept the terms and privacy policy to continue' }) }),
+    acceptTerms: z.literal(true, { error: 'Accept the terms and privacy policy to continue' }),
   })
   .strict()
   .superRefine((b, ctx) => {

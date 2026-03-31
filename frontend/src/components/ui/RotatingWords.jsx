@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { useReducedMotion } from '../../hooks';
 
 /**
@@ -18,7 +18,7 @@ export default function RotatingWords({ words, every = 2600, className }) {
     <span className={`relative inline-grid overflow-hidden align-bottom ${className || ''}`}>
       <span className="sr-only">{words.join(', ')}</span>
       <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span
+        <m.span
           key={i}
           aria-hidden="true"
           className="col-start-1 row-start-1 whitespace-nowrap"
@@ -28,7 +28,7 @@ export default function RotatingWords({ words, every = 2600, className }) {
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
           {words[i]}
-        </motion.span>
+        </m.span>
       </AnimatePresence>
     </span>
   );

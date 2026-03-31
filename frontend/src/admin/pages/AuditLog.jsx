@@ -18,7 +18,7 @@ export default function AuditLog() {
   const real = useSelector((state) => state.verification.audit);
   const [action, setAction] = useState('');
   const [page, setPage] = useState(1);
-  usePolling(() => demo && dispatch(fetchAudit()), 5000);
+  usePolling(() => demo && dispatch(fetchAudit()), 10000);
   useEffect(() => {
     if (!demo) dispatch(loadAudit({ action: /^[a-z_.]{2,60}$/.test(action) ? action : undefined, page, pageSize: 50 }));
   }, [dispatch, demo, action, page]);
