@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { fetchOrder, fileComplaint } from '../../store/slices/order';
+import { isDemoSession } from '../../store/slices/auth';
 import { COMPLAINT_TYPES } from '@shared/domain/triage';
 import { rupees } from '@shared/domain/money';
 import { Button, Card, Icon, Pill, cx } from '../../components/ui';
@@ -40,15 +41,15 @@ export default function ReportProblem() {
 
   const onPhotos = (e) => {
     const files = [...e.target.files].slice(0, 3);
-    setPhotos(files.map((f) => ({ name: f.name, url: URL.createObjectURL(f) })));
+    setPhotos(files.map((f) => ({ name: f.name, url: URL.createObjectURL(f), file: f })));
     setValue('photoCount', files.length, { shouldValidate: true });
   };
 
   const onSubmit = async (v) => {
     setServerError(null);
     try {
-      // Real API: multipart with the photos. The mock only needs the count.
-      const c = await dispatch(fileComplaint({ id, ...v })).unwrap();
+      // a real account uploads the photos; the demo mock only needs their count
+      const c = await dispatch(fileComplaint({ id, ...v, files: photos.map((p) => p.file), demo: isDemoSession() })).unwrap();
       setResult(c);
     } catch (e) {
       setServerError(e.message);

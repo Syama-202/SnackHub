@@ -36,5 +36,6 @@ export function deliveryRoutes(deps) {
   router.get('/rider/active', ...can('rider.deliveries.read'), wrap(c.active));
   router.post('/rider/orders/:id/:step', ...can('rider.deliveries.accept'), perRider('step', 30), validateParams(stepParams), stepBody, wrap(c.step));
   router.get('/rider/earnings', ...can('rider.earnings.read'), wrap(c.earnings));
+  router.post('/rider/earnings/:id/dispute', ...can('rider.earnings.dispute'), perRider('dispute', 10), validateParams(z.object({ id }).strict()), validateBody(z.object({ reason: z.string().trim().min(5, 'Say what happened in a few words').max(300) }).strict()), wrap(c.dispute));
   return router;
 }

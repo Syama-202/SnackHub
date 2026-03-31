@@ -13,6 +13,8 @@ import { filesRoutes } from './files.js';
 import { ordersRoutes } from './orders.js';
 import { shopRoutes } from './shop.js';
 import { deliveryRoutes } from './delivery.js';
+import { complaintsRoutes } from './complaints.js';
+import { operationsRoutes } from './operations.js';
 
 export function routes(deps) {
   const router = Router();
@@ -29,6 +31,8 @@ export function routes(deps) {
   api.use(ordersRoutes(deps));
   api.use(shopRoutes(deps));
   api.use(deliveryRoutes(deps));
+  api.use(complaintsRoutes(deps));
+  api.use(operationsRoutes(deps));
   router.use('/api/v1', api);
   return router;
 }

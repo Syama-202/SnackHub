@@ -47,7 +47,7 @@ const LiveOps = () => {
     <div>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-3xl font-extrabold">Live operations</h1>
-        <Button size="sm" variant="ghost" className="ml-auto" onClick={expireMfa}>Expire my MFA (demo step-up)</Button>
+        {token?.startsWith('demo.') && <Button size="sm" variant="ghost" className="ml-auto" onClick={expireMfa}>Expire my MFA (demo step-up)</Button>}
       </div>
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
         <Metric label="Active orders" value={m?.activeOrders} />

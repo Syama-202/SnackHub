@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { apiThunk } from '../apiThunk';
+import { apiUpload } from '../../services/api';
 
 // Checkout: the server recomputes prices, re-runs serviceability and reserves stock
 export const fetchQuote = apiThunk('orders/quote', async ({ addressId }, { apiFetch }) => apiFetch('/orders/quote', { method: 'POST', body: { addressId } }));
@@ -28,7 +29,17 @@ export const fetchOtp = apiThunk('orders/otp', async (id, { apiFetch }) => apiFe
 
 export const cancelOrder = apiThunk('orders/cancel', async (id, { apiFetch }) => apiFetch(`/orders/${id}/cancel`, { method: 'POST' }));
 export const reviewOrder = apiThunk('orders/review', async ({ id, rating }, { apiFetch }) => apiFetch(`/orders/${id}/review`, { method: 'POST', body: { rating } }));
-export const fileComplaint = apiThunk('orders/complaint', async ({ id, ...body }, { apiFetch }) => apiFetch(`/orders/${id}/complaints`, { method: 'POST', body }));
+// A real account sends the photos as multipart; the demo mock only needs their count
+export const fileComplaint = apiThunk('orders/complaint', async ({ id, files, demo, ...body }, { apiFetch }) => {
+  if (demo) return apiFetch(`/orders/${id}/complaints`, { method: 'POST', body });
+  const form = new FormData();
+  form.append('category', body.category);
+  form.append('subtype', body.subtype);
+  if (body.description) form.append('description', body.description);
+  if (body.itemIds?.length) form.append('itemIds', body.itemIds.join(','));
+  for (const f of files ?? []) form.append('photos', f);
+  return apiUpload(`/orders/${id}/complaints`, form);
+});
 
 const orderSlice = createSlice({
   name: 'orders',

@@ -202,6 +202,15 @@ goes through `canTransition()`, and each step puts a message in the person's inb
   simulated shop, rider and online payment in the browser.
 - Riders share their phone's location while online. On a development build (and in the
   demo) the rider app also has a "Simulate drive" button for testing without moving.
+- Problems after delivery: the customer reports within 2 hours (food, with 1 to 3 photos) or
+  24 hours (anything else), once per kind. The order's own timeline is attached as evidence
+  and the shared triage rules decide: a confident, small, safe case is resolved at once with
+  app credit (used on the next pay-on-delivery order, returned if that order is cancelled);
+  the rest wait in the admin console's **Complaints**, where an admin adds credit or fines
+  with a fresh code. Unsafe food hides the shop at once. Photos are private and open only
+  through five-minute links.
+- A rider can dispute a lateness cut within 48 hours with a reason; an admin gives it back or
+  keeps it. **Delivery policy** changes become a new version for later orders only.
 - The clocks (shop timeout, offer expiry, finding a rider) run every 5 seconds in the API
   (`RUN_JOBS`), or once per `npm run jobs`.
 
@@ -214,7 +223,7 @@ backend/
     db/            connection.js, ddl.js, migrations/, seeds/demo.js
     models/        one file per table, named after it, by module: identity/user.js, catalog/product.js, ...
     controllers/   request handlers, one file per area: auth, security, adminAuth, onboarding, cart,
-                   orders, shop, delivery, addresses, notifications,
+                   orders, shop, delivery, addresses, notifications, complaints, operations,
                    verification, adminUsers, files, me, catalog, health
     routes/        URL to controller, one file per area (zod-checked input); index.js mounts them all
     middleware/    auth (roles, permissions, fresh MFA), rate limits, uploads, logging, errors
@@ -273,9 +282,9 @@ From the repository root:
   sign-in, password reset, sessions (`/api/v1/auth/*`), seller and rider onboarding with
   documents (`/seller/onboarding`, `/rider/onboarding`), the verification console
   (`/admin/verification`, `/admin/documents`, `/admin/requirements`, `/admin/users`,
-  `/admin/audit`), and the customer order flow (see "Ordering" above). Complaints, credits,
-  fines, rider pay disputes, the delivery policy editor and the other admin pages still use the
-  mock, and online payment is not built (pay on delivery only). Passkeys are not built yet.
+  `/admin/audit`), the customer order flow, complaints, credit, fines, rider pay disputes, the
+  delivery policy and the live operations board (see "Ordering" above). Online payment is not
+  built (pay on delivery only), so it stays in the demo. Passkeys are not built yet.
 - The demo catalogue has 201 snacks in 28 cities, most of them from the Telugu states, Tamil
   Nadu, Karnataka, Kerala and Maharashtra (`shared/seed/regional.js`).
 - Every shop is a shop, a street stall (a cart, bandi or kadai) or a home kitchen (`catalog.sellers.kind`):

@@ -10,6 +10,7 @@
 //   GET  /rider/active              the delivery in hand, with the server's distances
 //   POST /rider/orders/:id/:step    picked-up | deliver | emergency | unreachable
 //   GET  /rider/earnings            pay for each delivery
+//   POST /rider/earnings/:id/dispute  question a lateness cut within 48 hours
 import { AppError } from '../utils/AppError.js';
 import { loadApplicant, eligibilityOf } from '../utils/applicants.js';
 import { inbox, move, policyOf, refreshRiderStatus, trackState, viewOrder } from '../utils/orders.js';
@@ -29,6 +30,24 @@ const ms = (d) => (d ? new Date(d).getTime() : null);
 const refuse = (verdict) => new AppError(403, 'NOT_ELIGIBLE', verdict.reasons[0]?.message ?? 'Not allowed yet', { reasons: verdict.reasons });
 const NOT_APPROVED = { code: 'NOT_APPROVED', message: 'Your rider application has not been approved yet' };
 const HOT_HOLD_WARN_MIN = 10;
+const DISPUTE_HOURS = 48;
+
+const earningView = (e) => ({
+  id: e.id,
+  orderId: e.order_id,
+  basePaise: e.base_paise,
+  distancePaise: e.distance_paise,
+  bonusPaise: e.bonus_paise,
+  penaltyPaise: e.penalty_paise,
+  netPaise: e.net_paise,
+  lateMin: e.late_min,
+  sellerDelayMin: e.seller_delay_min,
+  status: e.status,
+  disputeReason: e.dispute_reason,
+  adjustmentPaise: e.adjustment_paise,
+  resolutionReason: e.resolution_reason,
+  createdAt: ms(e.created_at),
+});
 
 const meView = (r) => ({ id: r.id, name: r.name, city: r.city, vehicle: r.vehicle, status: r.status, lat: r.last_lat == null ? null : Number(r.last_lat), lng: r.last_lng == null ? null : Number(r.last_lng), lastSeenAt: ms(r.last_seen_at) });
 
@@ -197,23 +216,20 @@ export function deliveryController({ env, dbs }) {
 
   async function earnings(req, res) {
     const rider = await ownRider(req.user.userId);
-    const rows = await riderEarningModel.listByRider(dbs.dispatch, rider.id, 50);
-    res.json(
-      rows.map((e) => ({
-        id: e.id,
-        orderId: e.order_id,
-        basePaise: e.base_paise,
-        distancePaise: e.distance_paise,
-        bonusPaise: e.bonus_paise,
-        penaltyPaise: e.penalty_paise,
-        netPaise: e.net_paise,
-        lateMin: e.late_min,
-        sellerDelayMin: e.seller_delay_min,
-        status: e.status,
-        createdAt: ms(e.created_at),
-      })),
-    );
+    res.json((await riderEarningModel.listByRider(dbs.dispatch, rider.id, 50)).map(earningView));
   }
 
-  return { me, setStatus, location, offers, respond, active, step, earnings };
+  async function dispute(req, res) {
+    const rider = await ownRider(req.user.userId);
+    const e = await dbs.dispatch('rider_earnings').where({ id: req.params.id, rider_id: rider.id }).first();
+    if (!e) throw new AppError(404, 'NOT_FOUND', 'Pay row not found');
+    if (!e.penalty_paise) throw new AppError(409, 'NOTHING_TO_DISPUTE', 'There was no lateness cut on this delivery');
+    if (Date.now() - ms(e.created_at) > DISPUTE_HOURS * 3_600_000) throw new AppError(409, 'APPEAL_WINDOW_CLOSED', `Disputes close ${DISPUTE_HOURS} hours after delivery`);
+    const n = await dbs.dispatch('rider_earnings').where({ id: e.id, status: 'OK' }).update({ status: 'DISPUTED', dispute_reason: req.body.reason, disputed_at: new Date() });
+    if (!n) throw new AppError(409, 'ALREADY_DISPUTED', 'This pay row was already disputed');
+    await audit(req.user.userId, 'earning.dispute', `earning:${e.id}`, null, { reason: req.body.reason });
+    res.json(earningView(await dbs.dispatch('rider_earnings').where({ id: e.id }).first()));
+  }
+
+  return { me, setStatus, location, offers, respond, active, step, earnings, dispute };
 }

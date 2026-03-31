@@ -17,6 +17,7 @@ import { orderModel } from '../models/ordering/order.js';
 import { orderItemModel } from '../models/ordering/orderItem.js';
 import { orderReviewModel } from '../models/ordering/orderReview.js';
 import { cartModel } from '../models/ordering/cart.js';
+import { customerCreditModel } from '../models/ordering/customerCredit.js';
 import { addressModel } from '../models/identity/address.js';
 import { productModel } from '../models/catalog/product.js';
 import { sellerModel, isOpenForOrders } from '../models/catalog/seller.js';
@@ -55,7 +56,9 @@ export function ordersController({ env, dbs }) {
 
   async function quote(req, res) {
     const { cart, policy, promise } = await prepare(req.user.userId, req.body.addressId);
-    res.json({ ...cart, promise, codEnabled: policy.config.codEnabled, creditPaise: 0, paymentModes: policy.config.codEnabled ? ['COD'] : [] });
+    // the oldest usable credit from a resolved complaint, applied to a pay-on-delivery order
+    const [credit] = await customerCreditModel.listUsable(dbs.ordering, req.user.userId);
+    res.json({ ...cart, promise, codEnabled: policy.config.codEnabled, creditPaise: credit?.amount_paise ?? 0, paymentModes: policy.config.codEnabled ? ['COD'] : [] });
   }
 
   async function replay(customerId, idemKey) {
@@ -90,6 +93,8 @@ export function ordersController({ env, dbs }) {
     const items = cart.items.map((i) => ({ productId: i.productId, title: fresh.get(i.productId).title, unitPricePaise: fresh.get(i.productId).price_paise, qty: i.qty }));
     const subtotal = items.reduce((s, i) => s + i.unitPricePaise * i.qty, 0);
     const fee = policy.config.deliveryFeePaise;
+    const [credit] = await customerCreditModel.listUsable(dbs.ordering, customerId);
+    const creditPaise = credit ? Math.min(credit.amount_paise, subtotal) : 0;
     const now = new Date();
     let orderId;
     try {
@@ -101,7 +106,8 @@ export function ordersController({ env, dbs }) {
           temp_class: cart.tempClass,
           subtotal_paise: subtotal,
           delivery_fee_paise: fee,
-          total_paise: subtotal + fee,
+          credit_paise: creditPaise,
+          total_paise: subtotal + fee - creditPaise,
           payment_mode: 'COD',
           address_text: address.line.slice(0, 255),
           drop_lat: drop.lat,
@@ -117,6 +123,8 @@ export function ordersController({ env, dbs }) {
           promise_hi_min: promise.window[1],
         });
         await orderItemModel.createMany(trx, id, items);
+        // spent with the order, or not at all (a second checkout racing for it fails here)
+        if (credit && !(await customerCreditModel.use(trx, credit.id, id))) throw new AppError(409, 'CREDIT_USED', 'Your credit was just used on another order. Check out again.');
         await trx('order_events').insert({ order_id: id, from_status: null, to_status: 'PLACED', actor_id: customerId, actor_role: 'customer', at: now });
         await notifySeller(dbs, trx, { id, seller_id: seller.id }, 'shop.order_new', `New order #${id}: accept it within 2 minutes.`);
         await cartModel.clear(trx, customerId);

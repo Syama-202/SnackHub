@@ -16,9 +16,11 @@ const RiderEarnings = () => {
     dispatch(fetchEarnings());
   }, [dispatch]);
 
+  const [reason, setReason] = useState('');
   const dispute = async (e) => {
     try {
-      await dispatch(disputeEarning({ id: e.id, reason: 'Traffic diversion near the drop (demo)' })).unwrap();
+      await dispatch(disputeEarning({ id: e.id, reason: isDemoSession() ? 'Traffic diversion near the drop (demo)' : reason.trim() })).unwrap();
+      setReason('');
       dispatch(addToast({ type: 'success', title: 'Dispute sent', message: 'An admin will review the order timeline.' }));
     } catch (err) {
       dispatch(addToast({ type: 'error', title: 'Cannot dispute', message: err.message }));
@@ -38,8 +40,7 @@ const RiderEarnings = () => {
         {!earningsLoaded && <Skeleton className="h-28" />}
         {earnings.map((e) => {
           const i = e.inputs;
-          // disputes reach an admin in the demo; for real accounts they come with the admin tools
-          const canDispute = isDemoSession() && e.penaltyPaise > 0 && e.status === 'OK' && Date.now() - e.createdAt < 48 * 3600000;
+          const canDispute = e.penaltyPaise > 0 && e.status === 'OK' && Date.now() - e.createdAt < 48 * 3600000;
           return (
             <Card key={e.id} className="p-4">
               <button className="flex w-full items-center justify-between text-left" onClick={() => setOpen(open === e.id ? null : e.id)} aria-expanded={open === e.id}>
@@ -63,10 +64,21 @@ const RiderEarnings = () => {
                     <dt className="font-bold">Net</dt><dd className="text-right font-bold">{rupeesExact(e.netPaise)}</dd>
                   </dl>
                   <p className="mt-3 rounded-xl bg-grey-50 p-3 text-xs leading-relaxed text-grey-600">
-                    Late by {Math.max(0, i.lateMin).toFixed(0)} min − shop delay {i.sellerDelayMin.toFixed(0)} − customer delay {i.customerDelayMin} − grace {i.graceMin} = <b>{i.riderLateMin.toFixed(0)} min</b> × {rupeesExact(i.ratePaisePerMin)}/min, capped at {rupeesExact(i.capPaise)} · policy v{i.policyVersion}
+                    {i ? (
+                      <>Late by {Math.max(0, i.lateMin).toFixed(0)} min − shop delay {i.sellerDelayMin.toFixed(0)} − customer delay {i.customerDelayMin} − grace {i.graceMin} = <b>{i.riderLateMin.toFixed(0)} min</b> × {rupeesExact(i.ratePaisePerMin)}/min, capped at {rupeesExact(i.capPaise)} · policy v{i.policyVersion}</>
+                    ) : (
+                      <>Lateness that was yours: <b>{e.lateMin ?? 0} min</b> (after the shop’s delay of {e.sellerDelayMin ?? 0} min and the grace minutes)</>
+                    )}
                   </p>
-                  {canDispute && <Button size="sm" variant="outline" className="mt-3" onClick={() => dispute(e)}>Dispute this cut</Button>}
-                  {e.penaltyPaise > 0 && !canDispute && e.status === 'OK' && <p className="mt-2 text-xs text-grey-600">{isDemoSession() ? 'Disputes close 48 hours after delivery.' : 'To question a cut, contact SnackHub support within 48 hours of the delivery.'}</p>}
+                  {e.status === 'DISPUTED' && <p className="mt-2 text-xs text-grey-600">Disputed: {e.disputeReason ?? 'waiting for an admin'}.</p>}
+                  {e.status === 'ADJUSTED' && <p className="mt-2 text-xs text-emerald-700">Given back {rupeesExact(e.adjustmentPaise ?? e.penaltyPaise)}{e.resolutionReason ? `: ${e.resolutionReason}` : ''}.</p>}
+                  {canDispute && !isDemoSession() && (
+                    <label className="mt-3 block text-xs font-bold">What happened?
+                      <input value={reason} onChange={(ev) => setReason(ev.target.value)} maxLength={300} placeholder="Road closed near the drop" className="mt-1 h-10 w-full rounded-xl border border-grey-800/15 px-3 text-sm font-normal" />
+                    </label>
+                  )}
+                  {canDispute && <Button size="sm" variant="outline" className="mt-3" disabled={!isDemoSession() && reason.trim().length < 5} onClick={() => dispute(e)}>Dispute this cut</Button>}
+                  {e.penaltyPaise > 0 && !canDispute && e.status === 'OK' && <p className="mt-2 text-xs text-grey-600">Disputes close 48 hours after delivery.</p>}
                 </div>
               )}
             </Card>

@@ -18,9 +18,9 @@ const fail = (status, code, message, details) =>
 const ok = (data, status = 200) => HttpResponse.json(data, { status });
 
 // --- auth: demo tokens look like demo.<role>.<userId>[.<mfaAt>]. A real account holds the
-// backend's JWT, and its cart, orders, addresses, inbox and consoles pass through to the
-// backend. Complaints, credits and payments are still answered here for everyone; for a real
-// token this only reads its user id and role, so it finds nothing of theirs.
+// backend's JWT, and everything it does passes through to the backend (cart, orders,
+// complaints, credits, inbox, the consoles, a real admin's pages). Only online payment is
+// still answered here, for the demo; a real account pays on delivery.
 const isDemoToken = (request) => (request.headers.get('authorization') || '').startsWith('Bearer demo.');
 function who(request) {
   const h = request.headers.get('authorization') || '';
@@ -309,6 +309,7 @@ export const handlers = [
     return ok({ ok: true });
   })),
   http.get(`${API}/me/credits`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     return ok(db.credits.filter((c) => c.customerId === g.u.userId));
@@ -517,6 +518,7 @@ export const handlers = [
     return ok({ ok: true });
   })),
   http.post(`${API}/orders/:id/complaints`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
     const o = db.orders.find((x) => x.id === Number(params.id));
@@ -855,7 +857,6 @@ export const handlers = [
   })),
   http.get(`${API}/rider/earnings`, withDb(({ request, db }) => {
     if (!isDemoToken(request)) return passthrough();
-    if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
     if (g.res) return g.res;
     const user = db.users.find((u) => u.id === g.u.userId);
@@ -876,6 +877,7 @@ export const handlers = [
 
   // ---------- admin (private host, MFA)
   http.get(`${API}/admin/metrics/sla`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request);
     if (g.res) return g.res;
     const done = db.orders.filter((o) => o.status === 'DELIVERED');
@@ -895,27 +897,32 @@ export const handlers = [
     });
   })),
   http.get(`${API}/admin/orders`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request);
     if (g.res) return g.res;
     return ok(db.orders.slice().sort((a, b) => b.placedAt - a.placedAt).slice(0, 60).map((o) => ({ ...orderView(db, o, 'admin'), track: trackState(db, o), emergency: o.emergency || null, cashMismatch: Boolean(o.cashMismatch), collectedPaise: o.collectedPaise ?? null })));
   })),
   http.get(`${API}/admin/riders`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request);
     if (g.res) return g.res;
     return ok(db.riders);
   })),
   http.get(`${API}/admin/sellers`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request);
     if (g.res) return g.res;
     return ok(db.sellers);
   })),
   // Applications live in MySQL for a real admin session (backend); the demo admin sees the mock's
   http.get(`${API}/admin/complaints`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request);
     if (g.res) return g.res;
     return ok(db.complaints.slice().sort((a, b) => b.createdAt - a.createdAt));
   })),
   http.post(`${API}/admin/complaints/:id/decide`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request, { stepUp: true });
     if (g.res) return g.res;
     const c = db.complaints.find((x) => x.id === Number(params.id));
@@ -939,11 +946,13 @@ export const handlers = [
     return ok(c);
   })),
   http.get(`${API}/admin/fines`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request);
     if (g.res) return g.res;
     return ok(db.fines);
   })),
   http.post(`${API}/admin/fines/:id/reverse`, withDb(({ request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request, { stepUp: true });
     if (g.res) return g.res;
     const f = db.fines.find((x) => x.id === Number(params.id));
@@ -953,11 +962,13 @@ export const handlers = [
     return ok(f);
   })),
   http.get(`${API}/admin/policy`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request);
     if (g.res) return g.res;
     return ok({ current: db.policy, history: db.policyHistory });
   })),
   http.put(`${API}/admin/policy`, withDb(({ body, request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request, { stepUp: true });
     if (g.res) return g.res;
     const b = body;
@@ -969,11 +980,13 @@ export const handlers = [
     return ok(db.policy);
   })),
   http.get(`${API}/admin/earnings`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request);
     if (g.res) return g.res;
     return ok(db.earnings);
   })),
   http.post(`${API}/admin/earnings/:id/resolve`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request, { stepUp: true });
     if (g.res) return g.res;
     const e = db.earnings.find((x) => x.id === Number(params.id));
@@ -984,6 +997,7 @@ export const handlers = [
     return ok(e);
   })),
   http.get(`${API}/admin/reconciliation`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
     const g = adminGuard(request);
     if (g.res) return g.res;
     return ok(db.orders.filter((o) => o.paymentMode === 'COD' && o.status === 'DELIVERED').map((o) => ({ orderId: o.id, totalPaise: o.totalPaise, collectedPaise: o.collectedPaise ?? o.totalPaise, mismatch: Boolean(o.cashMismatch), riderId: o.riderId })));

@@ -21,3 +21,19 @@ export function uploadOne(req, res, next) {
     next(new AppError(400, 'UPLOAD_INVALID', 'The upload could not be read'));
   });
 }
+
+// Up to three complaint photos in "photos"; none is fine (the controller decides if any are needed).
+const photoParser = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_UPLOAD_BYTES, files: 3, fields: 12, fieldSize: 600, parts: 16, fieldNameSize: 40 },
+}).array('photos', 3);
+
+export function uploadPhotos(req, res, next) {
+  photoParser(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === 'LIMIT_FILE_SIZE') return next(new AppError(413, 'FILE_TOO_LARGE', 'Each photo must be smaller than 5 MB'));
+    if (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE') return next(new AppError(422, 'TOO_MANY_PHOTOS', 'Add at most 3 photos'));
+    if (err instanceof multer.MulterError) return next(new AppError(422, 'UPLOAD_INVALID', 'Send the photos in the "photos" field'));
+    next(new AppError(400, 'UPLOAD_INVALID', 'The upload could not be read'));
+  });
+}

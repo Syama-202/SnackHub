@@ -30,7 +30,7 @@ export const store = configureStore({
     onboarding: onboardingReducer,
   },
   // an upload's File object rides in the thunk's arguments; it never enters the state
-  middleware: (getDefault) => getDefault({ serializableCheck: { ignoredActionPaths: ['meta.arg.file'] } }),
+  middleware: (getDefault) => getDefault({ serializableCheck: { ignoredActionPaths: ['meta.arg.file', 'meta.arg.files'] } }),
 });
 
 export default store;

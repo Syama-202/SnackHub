@@ -15,7 +15,7 @@ export const PUBLIC_PORTALS = ['customer', 'seller', 'rider'];
 export const STAFF_ROLES = ['reviewer', 'admin'];
 
 export const ROLE_PERMISSIONS = {
-  customer: ['profile.self', 'addresses.self', 'cart.self', 'orders.self', 'payments.self', 'security.self', 'notifications.self'],
+  customer: ['profile.self', 'addresses.self', 'cart.self', 'orders.self', 'complaints.self', 'credits.self', 'payments.self', 'security.self', 'notifications.self'],
   seller: [
     'profile.self',
     'security.self',
@@ -30,7 +30,7 @@ export const ROLE_PERMISSIONS = {
     'seller.orders.accept',
     'seller.settlements.receive',
   ],
-  rider: ['profile.self', 'security.self', 'notifications.self', 'rider.onboarding', 'rider.profile.self', 'rider.availability', 'rider.location.write', 'rider.deliveries.read', 'rider.deliveries.accept', 'rider.earnings.read'],
+  rider: ['profile.self', 'security.self', 'notifications.self', 'rider.onboarding', 'rider.profile.self', 'rider.availability', 'rider.location.write', 'rider.deliveries.read', 'rider.deliveries.accept', 'rider.earnings.read', 'rider.earnings.dispute'],
   // the verification team: reads applications and documents, reviews them, decides
   reviewer: ['security.self', 'verification.read', 'verification.documents.read', 'verification.review', 'verification.decide'],
   admin: [
@@ -45,6 +45,12 @@ export const ROLE_PERMISSIONS = {
     'users.suspend',
     'users.mfa.reset',
     'audit.read',
+    'operations.read',
+    'complaints.read',
+    'complaints.decide',
+    'fines.reverse',
+    'earnings.resolve',
+    'policy.write',
   ],
 };
 

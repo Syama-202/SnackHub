@@ -14,17 +14,20 @@ export const fetchComplaints = get('complaints', '/admin/complaints');
 export const fetchFines = get('fines', '/admin/fines');
 export const fetchPolicy = get('policy', '/admin/policy');
 export const fetchAudit = get('audit', '/admin/audit');
+export const fetchEarningsAdmin = get('earnings', '/admin/earnings');
 
 export const decideComplaint = apiThunk('admin/decideComplaint', async ({ id, ...body }, { apiFetch }) => apiFetch(`/admin/complaints/${id}/decide`, { method: 'POST', body }));
-export const reverseFine = apiThunk('admin/reverseFine', async (id, { apiFetch }) => apiFetch(`/admin/fines/${id}/reverse`, { method: 'POST' }));
+export const reverseFine = apiThunk('admin/reverseFine', async ({ id, reason }, { apiFetch }) => apiFetch(`/admin/fines/${id}/reverse`, { method: 'POST', body: { reason } }));
+// a rider's dispute: give the lateness cut back (reverse) or keep it, always with a reason
+export const resolveEarning = apiThunk('admin/resolveEarning', async ({ id, reverse, reason }, { apiFetch }) => apiFetch(`/admin/earnings/${id}/resolve`, { method: 'POST', body: { reverse, reason } }));
 export const savePolicy = apiThunk('admin/savePolicy', async (changes, { apiFetch }) => apiFetch('/admin/policy', { method: 'PUT', body: changes }));
 
-const fetchers = [fetchSla, fetchAdminOrders, fetchAdminRiders, fetchAdminSellers, fetchReconciliation, fetchComplaints, fetchFines, fetchPolicy, fetchAudit];
+const fetchers = [fetchSla, fetchAdminOrders, fetchAdminRiders, fetchAdminSellers, fetchReconciliation, fetchComplaints, fetchFines, fetchPolicy, fetchAudit, fetchEarningsAdmin];
 const replaceIn = (list, item) => (list || []).map((x) => (x.id === item.id ? item : x));
 
 const adminSlice = createSlice({
   name: 'admin',
-  initialState: { sla: null, orders: [], riders: [], sellers: [], reconciliation: [], complaints: [], fines: [], policy: null, audit: [] },
+  initialState: { sla: null, orders: [], riders: [], sellers: [], reconciliation: [], complaints: [], fines: [], policy: null, audit: [], earnings: [] },
   reducers: {},
   extraReducers: (builder) => {
     fetchers.forEach((f) =>
@@ -38,6 +41,9 @@ const adminSlice = createSlice({
       })
       .addCase(reverseFine.fulfilled, (state, action) => {
         state.fines = replaceIn(state.fines, action.payload);
+      })
+      .addCase(resolveEarning.fulfilled, (state, action) => {
+        state.earnings = replaceIn(state.earnings, action.payload);
       });
   },
 });

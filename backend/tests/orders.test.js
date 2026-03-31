@@ -3,7 +3,10 @@
 // and the clocks. Times are moved in the database instead of waiting.
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openHarness, beginTest, request, bearer } from './helpers/app.js';
-import { readySeller, readyRider, staffToken, approveAll, refOf } from './helpers/onboarding.js';
+import { readySeller, staffToken } from './helpers/onboarding.js';
+import * as H from './helpers/orders.js';
+
+const { SHOP, HOME, api, key, lerp, placeOrder } = H;
 import { runOrderTimers } from '../src/jobs/orderTimers.js';
 
 const h = await openHarness();
@@ -11,17 +14,6 @@ if (h.skip) console.warn(`order tests skipped: ${h.skip}`);
 afterAll(() => h.close?.());
 
 // the shop in the onboarding helper stands at 16.3001, 80.4501 (Guntur), radius 3 km
-const SHOP = { lat: 16.3001, lng: 80.4501 };
-const HOME = { lat: 16.3051, lng: 80.4551 }; // about 750 m away
-const api = (t, token) => ({
-  get: (path) => request(t.app).get(`/api/v1${path}`).set(bearer(token)),
-  post: (path, body = {}, headers = {}) => request(t.app).post(`/api/v1${path}`).set(headers).set(bearer(token)).send(body),
-  put: (path, body = {}) => request(t.app).put(`/api/v1${path}`).set(bearer(token)).send(body),
-  patch: (path, body = {}) => request(t.app).patch(`/api/v1${path}`).set(bearer(token)).send(body),
-  del: (path) => request(t.app).delete(`/api/v1${path}`).set(bearer(token)),
-});
-const key = () => `test-${Math.random().toString(36).slice(2, 12)}`;
-const lerp = (a, b, k) => ({ lat: a.lat + (b.lat - a.lat) * k, lng: a.lng + (b.lng - a.lng) * k });
 
 describe.skipIf(h.skip)('the order flow', () => {
   let t;
@@ -31,49 +23,12 @@ describe.skipIf(h.skip)('the order flow', () => {
     staff = await staffToken(t, 'reviewer');
   });
   afterEach(() => t.end());
+  const openShop = (o) => H.openShop(t, staff, o);
+  const onlineRider = (at) => H.onlineRider(t, staff, at);
+  const ping = (rider, at, seconds) => H.ping(t, rider, at, seconds);
+  const customerAt = (point) => H.customerAt(t, point);
 
   /** An approved shop with one listed snack and stock. */
-  async function openShop({ stock = 5, temp = 'AMBIENT', price = 6000 } = {}) {
-    const s = await readySeller(t);
-    await approveAll(t, staff.token, await refOf(t, s.token, 'seller'));
-    const seller = api(t, s.token);
-    const p = (await seller.post('/seller/products', { title: `Test chakli ${Math.random().toString(36).slice(2, 6)} (demo)`, category: 'namkeen', servingTemp: temp, prepMinutes: 4, pricePaise: price, weight: '200 g', shape: 'spiral' }).expect(201)).body;
-    expect(p).toMatchObject({ active: false, stock: 0, art: { shape: 'spiral' } });
-    if (stock) await seller.patch(`/seller/products/${p.id}/stock`, { delta: stock, reason: 'new batch' }).expect(200);
-    await seller.patch(`/seller/products/${p.id}`, { active: true }).expect(200);
-    const shop = await t.trx.catalog('sellers').where({ user_id: s.user.id }).first();
-    return { ...s, api: seller, shop, product: { ...p, active: true, stock } };
-  }
-
-  /** An approved rider, online, at a point. */
-  async function onlineRider(at = SHOP) {
-    const r = await readyRider(t);
-    await approveAll(t, staff.token, await refOf(t, r.token, 'rider'));
-    const rider = api(t, r.token);
-    await rider.put('/rider/status', { status: 'ONLINE' }).expect(200);
-    await rider.post('/rider/location', at).expect(200);
-    const row = await t.trx.dispatch('riders').where({ user_id: r.user.id }).first();
-    return { ...r, api: rider, row };
-  }
-
-  /** A ping as if `seconds` had passed since the last one, so the speed check sees a real ride. */
-  async function ping(rider, at, seconds = 60) {
-    await t.trx.dispatch('riders').where({ id: rider.row.id }).update({ last_seen_at: new Date(Date.now() - seconds * 1000) });
-    return rider.api.post('/rider/location', at);
-  }
-
-  async function customerAt(point = HOME) {
-    const u = await t.makeUser({ roles: ['customer'] });
-    const token = t.tokenFor(u, 'customer', { mfa: false });
-    const c = api(t, token);
-    const address = (await c.post('/me/addresses', { label: 'Home', line: 'Flat 2, 4-5 Arundelpet, Guntur (demo)', cityId: 'guntur', ...point }).expect(201)).body;
-    return { user: u, token, api: c, address };
-  }
-
-  async function placeOrder(c, shop, qty = 2) {
-    await c.api.put('/cart', { productId: shop.product.id, qty }).expect(200);
-    return (await c.api.post('/orders', { addressId: c.address.id, paymentMode: 'COD' }, { 'Idempotency-Key': key() }).expect(201)).body.order;
-  }
 
   const stockOf = async (productId) => (await t.trx.catalog('stock').where({ product_id: productId }).first()).qty;
   const orderRow = (id) => t.trx.ordering('orders').where({ id }).first();

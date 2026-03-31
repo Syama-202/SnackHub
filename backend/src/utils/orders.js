@@ -74,6 +74,8 @@ export async function closeOrder(dbs, order, to, { role, actorId = null, reason,
   const done = await move(dbs, order, to, { role, actorId, set: { cancel_reason: reason, closed_at: new Date() }, notify });
   if (!done) return false;
   if (order.order_key) await stockHoldModel.returnToShelf(dbs.catalog, order.order_key);
+  // credit spent on an order that will not arrive goes back to the customer
+  if (order.credit_paise) await dbs.ordering('customer_credits').where({ used_order_id: order.id }).update({ used_order_id: null });
   await assignmentModel.expireOthers(dbs.dispatch, order.id);
   await refreshRiderStatus(dbs, order.rider_id);
   return true;
@@ -114,7 +116,7 @@ export async function viewOrders(dbs, orders, viewer) {
       items: items.filter((i) => i.order_id === o.id).map((i) => ({ productId: i.product_id, title: i.title, unitPricePaise: i.unit_price_paise, qty: i.qty })),
       subtotalPaise: o.subtotal_paise,
       deliveryFeePaise: o.delivery_fee_paise,
-      creditPaise: 0,
+      creditPaise: o.credit_paise ?? 0,
       totalPaise: o.total_paise,
       paymentMode: o.payment_mode,
       paymentStatus: o.payment_mode === 'COD' ? (o.collected_paise != null ? 'COD_COLLECTED' : 'COD_PENDING') : 'CAPTURED',

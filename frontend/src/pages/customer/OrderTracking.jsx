@@ -8,7 +8,6 @@ import { rupees } from '@shared/domain/money';
 import { addToast } from '../../store/slices/toast';
 import { cancelOrder, fetchOrders, fetchOtp, reviewOrder } from '../../store/slices/order';
 import { Button, Card, Icon, Pill, EmptyState, Spinner, cx } from '../../components/ui';
-import { isDemoSession } from '../../store/slices/auth';
 
 const OrderTracking = () => {
   const { id } = useParams();
@@ -195,11 +194,7 @@ function DeliveredPanel({ order }) {
         ))}
       </div>
       {sent && <p className="mt-2 text-sm font-semibold text-emerald-700">Thanks. Ratings feed the shop’s quality score.</p>}
-      {isDemoSession() ? (
-        <Link to={`/orders/${order.id}/report`} className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-red-text"><Icon name="flag" className="h-4 w-4" /> Report a problem</Link>
-      ) : (
-        <p className="mt-4 text-sm text-grey-600">Something wrong with the order? Contact SnackHub support; reporting it here is coming soon.</p>
-      )}
+      <Link to={`/orders/${order.id}/report`} className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-red-text"><Icon name="flag" className="h-4 w-4" /> Report a problem</Link>
     </Card>
   );
 }
