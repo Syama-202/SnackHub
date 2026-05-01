@@ -226,8 +226,6 @@ export function requirementsFor(role, rows, { type = null, state = null } = {}) 
 
 // ---- document lifecycle
 
-// PENDING: uploaded, waiting for a reviewer. SUPERSEDED: a newer version replaced it.
-export const DOC_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'SUPERSEDED'];
 // reminders go out this many days before a document expires
 export const EXPIRY_WARN_DAYS = 30;
 export const EXPIRY_REMIND_AT = [30, 7, 1];

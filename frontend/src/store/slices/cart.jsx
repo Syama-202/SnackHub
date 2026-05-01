@@ -86,5 +86,4 @@ export const updateQuantity = (product, qty, { replace = false } = {}) => async 
   }
 };
 export const selectCartCount = (state) => state.cart.items.reduce((s, i) => s + i.qty, 0);
-export const selectQtyOf = (id) => (state) => state.cart.items.find((i) => i.productId === id)?.qty || 0;
 export default cartSlice.reducer;

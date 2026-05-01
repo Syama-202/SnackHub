@@ -8,7 +8,6 @@ const SIGNATURES = [
   { mime: 'image/webp', test: (b) => b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP' },
 ];
 
-export const ALLOWED_MIME = SIGNATURES.map((s) => s.mime);
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const ACTIVE_PDF = /\/(JavaScript|JS|Launch|EmbeddedFile|OpenAction\s*<<[^>]*\/S\s*\/JavaScript)\b/;
 

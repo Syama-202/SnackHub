@@ -10,8 +10,6 @@
  */
 export const ROLES = ['customer', 'seller', 'rider', 'reviewer', 'admin'];
 
-// portals a person can sign up or sign in through; reviewer and admin use the admin console
-export const PUBLIC_PORTALS = ['customer', 'seller', 'rider'];
 export const STAFF_ROLES = ['reviewer', 'admin'];
 
 export const ROLE_PERMISSIONS = {
@@ -53,10 +51,6 @@ export const ROLE_PERMISSIONS = {
     'policy.write',
   ],
 };
-
-// business actions that also need an approved application and valid documents. Going
-// offline never does; going online is checked by the availability route itself.
-export const VERIFIED_ONLY = ['seller.products.publish', 'seller.orders.accept', 'seller.settlements.receive', 'rider.deliveries.accept'];
 
 export const can = (role, permission) => Boolean(ROLE_PERMISSIONS[role]?.includes(permission));
 

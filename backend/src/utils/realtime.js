@@ -7,8 +7,6 @@
 // rooms for those whose role grants the permission. Nobody can ask to join a room.
 import { randomUUID } from 'node:crypto';
 
-export const TOPICS = ['order', 'position', 'offer', 'notification', 'shop', 'rider', 'complaint', 'earning'];
-
 // staff rooms and the permission that admits a socket to each
 export const STAFF_ROOMS = { ops: 'operations.read', complaints: 'complaints.read' };
 

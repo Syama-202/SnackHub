@@ -6,7 +6,7 @@ import pino from 'pino';
 import { openHarness, beginTest, request, bearer, WEB } from './helpers/app.js';
 import { createApp } from '../src/app.js';
 import { createRedis, closeRedis } from '../src/utils/redis.js';
-import { createLimiter, memoryCounter, redisCounter } from '../src/utils/rateLimit.js';
+import { createLimiter, redisCounter } from '../src/utils/rateLimit.js';
 
 const h = await openHarness();
 if (h.skip) console.warn(`rate limit tests skipped: ${h.skip}`);

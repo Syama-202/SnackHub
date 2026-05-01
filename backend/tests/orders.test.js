@@ -2,7 +2,7 @@
 // pay-on-delivery checkout, the seller's board, rider offers, GPS pings, the delivery code
 // and the clocks. Times are moved in the database instead of waiting.
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { openHarness, beginTest, request, bearer } from './helpers/app.js';
+import { openHarness, beginTest } from './helpers/app.js';
 import { readySeller, staffToken } from './helpers/onboarding.js';
 import * as H from './helpers/orders.js';
 

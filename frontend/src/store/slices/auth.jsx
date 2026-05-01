@@ -238,6 +238,4 @@ const authSlice = createSlice({
 });
 
 export const { clearError, tokenReplaced, mfaCancelled, recoveryCodesSeen, sessionUpgraded } = authSlice.actions;
-export const selectUser = (state) => state.auth.user;
-export const selectRole = (state) => state.auth.user?.role;
 export default authSlice.reducer;

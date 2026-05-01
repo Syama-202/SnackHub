@@ -14,7 +14,6 @@ export const STATUSES = ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'ACTION_REQUIRED'
 export const EDITABLE = ['DRAFT', 'ACTION_REQUIRED'];
 // in the reviewers' queue
 export const OPEN_FOR_REVIEW = ['SUBMITTED', 'UNDER_REVIEW'];
-export const IN_PROGRESS = ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'ACTION_REQUIRED'];
 
 // a queue item older than this is overdue
 export const OVERDUE_HOURS = 48;
