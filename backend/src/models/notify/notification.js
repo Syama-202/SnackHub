@@ -10,6 +10,9 @@ const forPortal = (portal) => (q) => {
   else if (portal) q.whereNot('type', 'like', 'shop.%').whereNot('type', 'like', 'delivery.%');
 };
 
+/** The portal whose inbox shows a message of this type. */
+export const portalOfType = (type) => Object.keys(PREFIX).find((p) => type.startsWith(PREFIX[p])) ?? 'customer';
+
 export const notificationModel = {
   /** Returns false when this notification was already sent. */
   create: (db, { userId, orderId = null, type, body }) =>

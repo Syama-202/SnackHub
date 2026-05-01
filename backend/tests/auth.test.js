@@ -68,7 +68,8 @@ describe.skipIf(!migrator)('Google sign-in', () => {
     expect(res.status).toBe(200);
     expect(res.body.user).toMatchObject({ email: p.email, role: 'customer' });
     const claims = verifyAccessToken(env, res.body.accessToken);
-    expect(claims).toEqual({ userId: res.body.user.id, role: 'customer', mfaAt: null, amr: ['google'] });
+    expect(claims).toEqual({ userId: res.body.user.id, role: 'customer', mfaAt: null, amr: ['google'], exp: expect.any(Number) });
+    expect(claims.exp - Date.now()).toBeGreaterThan(14 * 60_000);
     const cookie = cookieFrom(res);
     expect(cookie).toMatch(/HttpOnly/i);
     expect(cookie).toMatch(/SameSite=Strict/i);

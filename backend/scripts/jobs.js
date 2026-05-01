@@ -11,10 +11,19 @@ import { createSms } from '../src/utils/sms.js';
 import { createOutboxRelay } from '../src/jobs/outboxRelay.js';
 import { runDocumentExpiry } from '../src/jobs/documentExpiry.js';
 import { runOrderTimers } from '../src/jobs/orderTimers.js';
+import { Emitter } from '@socket.io/redis-emitter';
+import { createRedis, closeRedis } from '../src/utils/redis.js';
+import { realtime } from '../src/utils/realtime.js';
 
 const env = loadEnv();
 const logger = createLogger(env);
 const dbs = moduleDbs(env);
+// live hints from this worker reach the apps through the API's Socket.IO servers (Redis)
+const redis = createRedis(env, logger, { name: 'jobs', queue: true });
+if (redis) {
+  const emitter = new Emitter(redis);
+  realtime.use({ send: (rooms, event) => emitter.to(rooms).emit('change', event), kick: (room) => emitter.in(room).disconnectSockets(true) });
+}
 try {
   const expiry = await runDocumentExpiry({ env, dbs, logger });
   const timers = await runOrderTimers({ dbs, logger });
@@ -28,4 +37,5 @@ try {
   process.exitCode = 1;
 } finally {
   await closeAll(dbs);
+  await closeRedis(redis);
 }

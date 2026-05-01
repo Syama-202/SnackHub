@@ -50,9 +50,20 @@ const RiderToday = () => {
   useEffect(() => {
     dispatch(fetchRiderProfile());
   }, [dispatch]);
-  usePolling(() => dispatch(fetchActiveDelivery()), 3000);
-  // Offers arrive over Socket.io in the real app; polled here
-  usePolling(() => dispatch(fetchOffers()), 3000, Boolean(online) && !active);
+  usePolling(() => dispatch(fetchActiveDelivery()), 3000, true, 'order');
+  // a live hint fetches a new offer at once; polling covers a dropped connection
+  usePolling(() => dispatch(fetchOffers()), 3000, Boolean(online) && !active, 'offer');
+
+  // a new offer: a toast and a short buzz, since its 20 seconds are already running
+  const offerIds = useRef(null);
+  useEffect(() => {
+    const ids = new Set(offers.map((o) => o.id));
+    if (offerIds.current && offers.some((o) => !offerIds.current.has(o.id))) {
+      dispatch(addToast({ type: 'sun', title: 'New delivery offer', message: 'Accept within 20 seconds.' }));
+      navigator.vibrate?.(200);
+    }
+    offerIds.current = ids;
+  }, [offers, dispatch]);
 
   const toggle = async () => {
     try {

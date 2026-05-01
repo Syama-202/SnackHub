@@ -42,6 +42,14 @@ npm run seed
 
 Creates every table, then loads the demo data. Both are safe to run again.
 
+```bash
+npm run redis:up
+```
+
+Starts SnackHub's own Redis in Docker on `127.0.0.1:6380` (6380, so it never meets another
+project's Redis on 6379), with its data kept on disk. The backend uses it for rate limits and
+live updates; without it everything still works, each process on its own.
+
 ## Accounts, sign-up and verification
 
 Each public role has its own sign-up and sign-in page, and a token from one portal never opens
@@ -214,6 +222,35 @@ goes through `canTransition()`, and each step puts a message in the person's inb
 - The clocks (shop timeout, offer expiry, finding a rider) run every 5 seconds in the API
   (`RUN_JOBS`), or once per `npm run jobs`.
 
+## Live updates and rate limits
+
+Every page that follows something live listens on Socket.IO (`/api/v1/socket`, same origin
+through the dev proxy). A new order reaches the seller's board and the admin's live board,
+an offer reaches the rider, and a status change, the rider moving or a new message reaches the
+customer, all within a fraction of a second. The socket carries hints only, `{ id, topic,
+orderId }`; the page then reads the change over the normal REST route, so no order details,
+address or delivery code ever travel on it.
+
+- A connection needs the same signed access token as the API, an active account and role,
+  two-step sign-in where the role needs it, and the admin host for the staff rooms. Rooms come
+  from the token alone (one per person and portal, plus `ops` and `complaints` for staff with
+  those permissions); a request to join any other room is ignored, and a client that keeps
+  sending is dropped. A socket closes when its token expires or the account is suspended.
+- The app reconnects by itself (after a refresh of the token when the server closed it), and
+  ignores an event it has already seen. While the socket is down every page polls at its
+  usual pace; while it is up, polling slows to a 30-second safety net. Demo sessions have no
+  socket and keep polling the mock.
+- Every route has a rate limit, counted in Redis so all API processes share it: per address
+  for public reads, sign-in and sign-up, per account for everything behind a token, with the
+  tightest limits on sign-in, codes, checkout, cancelling and admin decisions, and a cap on all
+  `/api/v1` requests per address (`RATE_LIMIT_IP_PER_MIN`, 600 a minute). Sign-in also counts
+  per email, so a new IP address does not reset the tries on an account. Keys are hashed, so no
+  email or address is stored. A refused request gets `429 RATE_LIMITED` with `Retry-After`,
+  the same seconds in `error.details.retryAfter`, and `RateLimit-*` headers.
+- If Redis goes away, requests never wait on it: each process keeps counting on its own and
+  live updates reach the sockets on that process, until Redis is back. Production refuses to
+  start without `REDIS_URL`.
+
 ## How the code is organised
 
 ```
@@ -227,9 +264,10 @@ backend/
                    verification, adminUsers, files, me, catalog, health
     routes/        URL to controller, one file per area (zod-checked input); index.js mounts them all
     middleware/    auth (roles, permissions, fresh MFA), rate limits, uploads, logging, errors
-    utils/         passwords, keys, tokens, sessions, secondFactor, storage, fileCheck, mailer, ...
+    utils/         passwords, keys, tokens, sessions, secondFactor, storage, fileCheck, mailer,
+                   redis, rateLimit (shared counters), realtime (live hints), ...
     jobs/          outboxRelay.js (emails, texts, inbox), orderTimers.js, documentExpiry.js
-    app.js, server.js
+    app.js, server.js, socket.js (Socket.IO on the API server)
   scripts/         migrate.js, seed.js, local-db-init.js, create-admin.js, jobs.js
   storage/         private uploads and development emails (git-ignored)
   tests/
@@ -243,8 +281,8 @@ frontend/
                    landing/ (one file per section: Hero, Regions, Bestsellers, Delivery, Moods, Stories, ...)
     routes/        Guards.jsx (sign-in and role checks)
     store/         index.jsx, apiThunk.jsx, slices/ (auth.jsx, cart.jsx, order.jsx, ...)
-    services/      api.jsx
-    hooks/         index.jsx (motion, visibility, polling), useCatalog.jsx, useTracking.jsx
+    services/      api.jsx, realtime.jsx (the live-update socket)
+    hooks/         index.jsx (motion, visibility, polling with live topics, useRealtime), useCatalog.jsx, useTracking.jsx
     utils/  constants/  assets/ (ready.json)  styles/  mocks/  admin/ (App.jsx, store.jsx, pages/)
 shared/            domain/ (business rules: permissions, verification, documents, eligibility, passwords, ...), seed/ (demo data)
 ```
@@ -257,12 +295,13 @@ From the repository root:
 | --- | --- |
 | `npm run dev:frontend` | Frontend on http://localhost:5180 (accounts, onboarding and the catalog from the backend; the demo parts from the mock) |
 | `npm run dev:admin` | Admin console on http://localhost:5181 |
-| `npm run dev:backend` | Backend on http://localhost:4000 (`/health`, `/ready`), with the email relay and the expiry job |
+| `npm run dev:backend` | Backend on http://localhost:4000 (`/health`, `/ready`, live updates on `/api/v1/socket`), with the email relay and the expiry job |
+| `npm run redis:up` / `npm run redis:down` | Start or stop SnackHub's Redis (Docker, 127.0.0.1:6380) |
 | `npm run create-admin -- --email you@gmail.com` | Make an admin (or `--role reviewer`) and print a one-time enrolment link |
 | `npm run jobs` | One pass of the expiry job and the email relay, for a scheduler when `RUN_JOBS=false` |
 | `npm run migrate` / `npm run migrate:down` | Apply every migration / undo all of them |
 | `npm run seed` | Reload the demo data (same result every time) |
-| `npm test` | Backend tests against MySQL: accounts, MFA, roles and permissions, onboarding and uploads, verification, expiry, constraints, catalog |
+| `npm test` | Backend tests against MySQL (and Redis, when it runs): accounts, MFA, roles and permissions, onboarding and uploads, verification, expiry, constraints, catalog, orders, complaints, live updates, rate limits |
 | `npm run build` | Production build of the frontend and the admin console |
 
 ## Database rules worth knowing
@@ -283,11 +322,12 @@ From the repository root:
   documents (`/seller/onboarding`, `/rider/onboarding`), the verification console
   (`/admin/verification`, `/admin/documents`, `/admin/requirements`, `/admin/users`,
   `/admin/audit`), the customer order flow, complaints, credit, fines, rider pay disputes, the
-  delivery policy and the live operations board (see "Ordering" above). Online payment is not
+  delivery policy and the live operations board (see "Ordering" above), with live updates over
+  Socket.IO and shared rate limits in Redis (see "Live updates and rate limits"). Online payment is not
   built (pay on delivery only), so it stays in the demo. Passkeys are not built yet.
 - The demo catalogue has 201 snacks in 28 cities, most of them from the Telugu states, Tamil
   Nadu, Karnataka, Kerala and Maharashtra (`shared/seed/regional.js`).
 - Every shop is a shop, a street stall (a cart, bandi or kadai) or a home kitchen (`catalog.sellers.kind`):
   24 demo street stalls and 8 demo home kitchens, all fictional, with badges and filters on the site.
-- 27 of 201 snacks have their own AI image so far; the rest show a drawing until theirs is made
+- 34 of 201 snacks have their own AI image so far; the rest show a drawing until theirs is made
   (`npm --prefix frontend run assets:generate` makes more each day on the free Hugging Face quota).

@@ -27,7 +27,8 @@ services:
   redis:
     image: redis:7.4
     command: ['redis-server', '--appendonly', 'yes']
-    ports: ['127.0.0.1:6379:6379']
+    # 6380 on the host so it does not clash with another project's Redis on 6379
+    ports: ['127.0.0.1:6380:6379']
     volumes: ['redis:/data']
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']

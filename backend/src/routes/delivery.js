@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
-import { createLimiter } from '../utils/rateLimit.js';
 import { deliveryController } from '../controllers/delivery.js';
 import { validateBody, validateParams } from '../middleware/validate.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
-import { rateLimit } from '../middleware/rateLimit.js';
+import { limit, byUser } from '../middleware/rateLimit.js';
 
 const id = z.coerce.number().int().positive();
 const status = z.object({ status: z.enum(['ONLINE', 'OFFLINE']) }).strict();
@@ -26,7 +25,7 @@ export function deliveryRoutes(deps) {
   const auth = requireAuth(deps.env);
   const c = deliveryController(deps);
   const can = (permission) => [auth, requirePermission(deps, permission)];
-  const perRider = (name, max) => rateLimit(createLimiter({ windowMs: 60_000, max }), (req) => `${name}:${req.user.userId}`);
+  const perRider = (name, max) => limit(deps, `rider.${name}`, { minutes: 1, max }, byUser);
 
   router.get('/rider/me', ...can('rider.profile.self'), wrap(c.me));
   router.put('/rider/status', ...can('rider.availability'), perRider('status', 30), validateBody(status), wrap(c.setStatus));

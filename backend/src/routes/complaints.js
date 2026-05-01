@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
-import { createLimiter } from '../utils/rateLimit.js';
 import { complaintsController } from '../controllers/complaints.js';
 import { validateBody, validateParams } from '../middleware/validate.js';
 import { requireAuth, requirePermission, requireFreshMfa, adminHostOnly } from '../middleware/auth.js';
-import { rateLimit } from '../middleware/rateLimit.js';
+import { limit, byUser } from '../middleware/rateLimit.js';
 import { uploadPhotos } from '../middleware/upload.js';
 import { COMPLAINT_TYPES } from '../../../shared/domain/triage.js';
 
@@ -37,15 +36,16 @@ export function complaintsRoutes(deps) {
   const router = Router();
   const auth = requireAuth(deps.env);
   const c = complaintsController(deps);
-  const reports = rateLimit(createLimiter({ windowMs: 60 * 60_000, max: 10 }), (req) => `complaint:${req.user.userId}`, 'Too many reports in an hour. Try again later.');
+  const reports = limit(deps, 'complaints.report', { minutes: 60, max: 10 }, byUser, 'Too many reports in an hour. Try again later.');
+  const decisions = limit(deps, 'admin.decisions', { minutes: 1, max: 60 }, byUser);
   const staff = (permission) => [adminHostOnly(deps.env), auth, requirePermission(deps, permission), requireFreshMfa(8 * 60)];
   const stepUp = requireFreshMfa(5);
 
   router.post('/orders/:id/complaints', auth, requirePermission(deps, 'complaints.self'), reports, validateParams(idParams), uploadPhotos, validateBody(report), wrap(c.create));
   router.get('/me/credits', auth, requirePermission(deps, 'credits.self'), wrap(c.credits));
   router.get('/admin/complaints', ...staff('complaints.read'), wrap(c.queue));
-  router.post('/admin/complaints/:id/decide', ...staff('complaints.decide'), stepUp, validateParams(idParams), validateBody(decision), wrap(c.decide));
+  router.post('/admin/complaints/:id/decide', ...staff('complaints.decide'), decisions, stepUp, validateParams(idParams), validateBody(decision), wrap(c.decide));
   router.get('/admin/fines', ...staff('complaints.read'), wrap(c.fines));
-  router.post('/admin/fines/:id/reverse', ...staff('fines.reverse'), stepUp, validateParams(idParams), validateBody(reasonOnly), wrap(c.reverseFine));
+  router.post('/admin/fines/:id/reverse', ...staff('fines.reverse'), decisions, stepUp, validateParams(idParams), validateBody(reasonOnly), wrap(c.reverseFine));
   return router;
 }

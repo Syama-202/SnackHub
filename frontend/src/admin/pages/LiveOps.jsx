@@ -24,10 +24,10 @@ const LiveOps = () => {
   const { sla: m, orders, riders, sellers, reconciliation: recon } = useSelector((state) => state.admin);
   const [city, setCity] = useState('guntur');
 
-  usePolling(() => dispatch(fetchSla()), 10000);
-  usePolling(() => dispatch(fetchAdminOrders()), 5000);
-  usePolling(() => dispatch(fetchAdminRiders()), 5000);
-  usePolling(() => dispatch(fetchReconciliation()), 15000);
+  usePolling(() => dispatch(fetchSla()), 10000, true, 'order');
+  usePolling(() => dispatch(fetchAdminOrders()), 5000, true, 'order');
+  usePolling(() => dispatch(fetchAdminRiders()), 5000, true, ['rider', 'position']);
+  usePolling(() => dispatch(fetchReconciliation()), 15000, true, 'order');
   usePolling(() => dispatch(fetchAdminSellers()), 30000);
 
   const live = orders.filter((o) => isActive(o.status));

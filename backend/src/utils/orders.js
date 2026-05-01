@@ -13,6 +13,7 @@ import { stockHoldModel } from '../models/catalog/stockHold.js';
 import { sellerModel } from '../models/catalog/seller.js';
 import { riderModel } from '../models/dispatch/rider.js';
 import { assignmentModel } from '../models/dispatch/assignment.js';
+import { realtime } from './realtime.js';
 import { DEFAULT_POLICY, tempRules } from '../../../shared/domain/policy.js';
 import { distanceM, clamp } from '../../../shared/domain/geo.js';
 
@@ -42,16 +43,36 @@ export const inbox = (trx, { userId, orderId, type, body }) => outboxModel.addOn
  * someone else moved it first (the caller saw a stale status).
  */
 export async function move(dbs, order, to, { role, actorId = null, set = {}, notify = [] }) {
-  return dbs.ordering.transaction(async (trx) => {
-    const done = await orderModel.transition(trx, order.id, { from: order.status, to, actorId, role, set });
-    if (!done) return false;
+  const done = await dbs.ordering.transaction(async (trx) => {
+    const moved = await orderModel.transition(trx, order.id, { from: order.status, to, actorId, role, set });
+    if (!moved) return false;
     for (const n of notify) await inbox(trx, { orderId: order.id, ...n });
     return true;
   });
+  // after the commit, so an app that reads straight away sees the new status
+  if (done) announceOrder(dbs, order.id);
+  return done;
 }
 
 const sellerUserOf = async (dbs, order) => (await sellerModel.findById(dbs.catalog, order.seller_id))?.user_id ?? null;
 const riderUserOf = async (dbs, order) => (order.rider_id ? ((await riderModel.findById(dbs.dispatch, order.rider_id))?.user_id ?? null) : null);
+
+/**
+ * Live hint that an order changed (utils/realtime.js): to its customer, its shop, its rider
+ * and the operations room, each in their own portal. Reads the order again, so a rider
+ * assigned a moment ago is included. Best effort and never awaited by the flow.
+ */
+export async function announceOrder(dbs, orderId, topic = 'order') {
+  if (!realtime.active) return;
+  try {
+    const order = await orderModel.findById(dbs.ordering, orderId);
+    if (!order) return;
+    const [seller, rider] = await Promise.all([sellerUserOf(dbs, order), riderUserOf(dbs, order)]);
+    realtime.publish([{ userId: order.customer_id, role: 'customer' }, { userId: seller, role: 'seller' }, { userId: rider, role: 'rider' }, 'ops'], topic, { orderId });
+  } catch {
+    // the apps still poll
+  }
+}
 
 /** A rider with deliveries left stays BUSY; with none, back to ONLINE (never forced online from OFFLINE). */
 export async function refreshRiderStatus(dbs, riderId) {
@@ -60,7 +81,10 @@ export async function refreshRiderStatus(dbs, riderId) {
   if (!rider || rider.status === 'OFFLINE') return;
   const active = await orderModel.listActiveForRider(dbs.ordering, riderId);
   const next = active.length ? 'BUSY' : 'ONLINE';
-  if (rider.status !== next) await riderModel.setStatus(dbs.dispatch, riderId, next);
+  if (rider.status !== next) {
+    await riderModel.setStatus(dbs.dispatch, riderId, next);
+    realtime.publish(['ops'], 'rider');
+  }
 }
 
 /**
@@ -77,8 +101,20 @@ export async function closeOrder(dbs, order, to, { role, actorId = null, reason,
   // credit spent on an order that will not arrive goes back to the customer
   if (order.credit_paise) await dbs.ordering('customer_credits').where({ used_order_id: order.id }).update({ used_order_id: null });
   await assignmentModel.expireOthers(dbs.dispatch, order.id);
+  announceOffers(dbs, order.id);
   await refreshRiderStatus(dbs, order.rider_id);
   return true;
+}
+
+/** Live hint to every rider who was offered this order: their offer list changed. */
+export async function announceOffers(dbs, orderId) {
+  if (!realtime.active) return;
+  try {
+    const users = await dbs.dispatch('assignments').join('riders', 'riders.id', 'assignments.rider_id').where('assignments.order_id', orderId).distinct('riders.user_id');
+    realtime.publish(users.map((u) => ({ userId: u.user_id, role: 'rider' })), 'offer', { orderId });
+  } catch {
+    // as above
+  }
 }
 
 export const notifySeller = async (dbs, trx, order, type, body) => {

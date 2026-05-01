@@ -16,6 +16,7 @@ import { refreshTokenModel } from '../models/identity/refreshToken.js';
 import { mfaChallengeModel } from '../models/identity/mfaChallenge.js';
 import { auditLogModel } from '../models/identity/auditLog.js';
 import { STAFF_ROLES } from '../../../shared/domain/permissions.js';
+import { realtime } from '../utils/realtime.js';
 
 export function adminUsersController({ env, dbs }) {
   const db = dbs.identity;
@@ -55,6 +56,8 @@ export function adminUsersController({ env, dbs }) {
       await auditLogModel.append(trx, { actorId: req.user.userId, action: `user.${status === 'suspended' ? 'suspend' : 'reactivate'}`, target: `user:${user.id}`, before: { status: user.status }, after: { status, reason: req.body.reason } });
       await queueEmail(env, trx, { template: status === 'suspended' ? 'account_suspended' : 'account_reactivated', to: user.email, data: { name: user.name, reason: req.body.reason } });
     });
+    // live sockets close too; a reactivated person simply signs in again
+    if (status === 'suspended') realtime.kick(user.id);
     res.json({ id: user.id, status });
   };
 
@@ -68,6 +71,8 @@ export function adminUsersController({ env, dbs }) {
       await userRoleModel.setStatus(trx, user.id, role, status, req.body.reason);
       await auditLogModel.append(trx, { actorId: req.user.userId, action: `role.${status === 'suspended' ? 'suspend' : 'reactivate'}`, target: `user:${user.id}`, before: { role, status: m.status }, after: { role, status, reason: req.body.reason } });
     });
+    // every live socket of the person closes; the ones for other roles reconnect and pass the checks again
+    if (status === 'suspended') realtime.kick(user.id);
     res.json({ id: user.id, role, status });
   };
 

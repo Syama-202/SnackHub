@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
-import { createLimiter } from '../utils/rateLimit.js';
 import { onboardingController } from '../controllers/onboarding.js';
 import { validateBody, validateParams } from '../middleware/validate.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
-import { rateLimit } from '../middleware/rateLimit.js';
+import { limit, byUser } from '../middleware/rateLimit.js';
 import { uploadOne } from '../middleware/upload.js';
 import { fields } from './auth.js';
 import { BUSINESS_TYPES, DELIVERY_MODES, MOTOR_MODES, STATES, docTypesFor } from '../../../shared/domain/documents.js';
@@ -93,20 +92,20 @@ const empty = z.object({}).strict();
 export function onboardingRoutes(deps) {
   const router = Router();
   const auth = requireAuth(deps.env);
-  const uploads = createLimiter({ windowMs: 60 * 60_000, max: 40 });
-  const perUser = rateLimit(uploads, (req) => `upload:${req.user.userId}`, 'Too many uploads in an hour. Try again later.');
+  const perUser = limit(deps, 'onboarding.uploads', { minutes: 60, max: 40 }, byUser, 'Too many uploads in an hour. Try again later.');
+  const changes = limit(deps, 'onboarding.changes', { minutes: 15, max: 60 }, byUser);
 
   for (const kind of ['seller', 'rider']) {
     const c = onboardingController(deps, kind);
     const me = [auth, requirePermission(deps, `${kind}.onboarding`)];
     router.get(`/${kind}/onboarding`, ...me, wrap(c.show));
-    router.put(`/${kind}/onboarding/profile`, ...me, validateBody(kind === 'seller' ? sellerProfile : riderProfile), wrap(c.saveProfile));
-    if (kind === 'rider') router.put('/rider/onboarding/vehicle', ...me, validateBody(riderVehicle), wrap(c.saveVehicle));
+    router.put(`/${kind}/onboarding/profile`, ...me, changes, validateBody(kind === 'seller' ? sellerProfile : riderProfile), wrap(c.saveProfile));
+    if (kind === 'rider') router.put('/rider/onboarding/vehicle', ...me, changes, validateBody(riderVehicle), wrap(c.saveVehicle));
     router.post(`/${kind}/onboarding/documents`, ...me, perUser, uploadOne, validateBody(uploadFields(kind)), wrap(c.upload));
-    router.delete(`/${kind}/onboarding/documents/:id`, ...me, validateParams(idParams), wrap(c.removeDocument));
-    router.post(`/${kind}/onboarding/documents/:id/link`, ...me, validateParams(idParams), wrap(c.documentLink));
-    router.post(`/${kind}/onboarding/submit`, ...me, validateBody(empty), wrap(c.submit));
-    router.post(`/${kind}/onboarding/restart`, ...me, validateBody(empty), wrap(c.restart));
+    router.delete(`/${kind}/onboarding/documents/:id`, ...me, changes, validateParams(idParams), wrap(c.removeDocument));
+    router.post(`/${kind}/onboarding/documents/:id/link`, ...me, changes, validateParams(idParams), wrap(c.documentLink));
+    router.post(`/${kind}/onboarding/submit`, ...me, changes, validateBody(empty), wrap(c.submit));
+    router.post(`/${kind}/onboarding/restart`, ...me, changes, validateBody(empty), wrap(c.restart));
     router.get(`/${kind}/eligibility`, ...me, wrap(c.eligibility));
   }
 

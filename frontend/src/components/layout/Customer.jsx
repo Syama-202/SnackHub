@@ -50,8 +50,8 @@ export default function CustomerLayout() {
   }, [isCustomer, addressesLoaded, addresses, addressId, dispatch]);
 
   // Order list drives the always-visible rider lane; notifications drive the bell
-  usePolling(() => dispatch(fetchOrders()), 15000, isCustomer);
-  usePolling(() => dispatch(fetchNotifications()), 15000, isCustomer);
+  usePolling(() => dispatch(fetchOrders()), 15000, isCustomer, 'order');
+  usePolling(() => dispatch(fetchNotifications()), 15000, isCustomer, 'notification');
 
   return (
     <>

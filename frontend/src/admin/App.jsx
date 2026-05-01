@@ -20,6 +20,8 @@ import Complaints from './pages/Complaints';
 import PolicyEditor from './pages/PolicyEditor';
 import AuditLog from './pages/AuditLog';
 import Enrol from './pages/Enrol';
+import { useRealtime } from '../hooks';
+import ErrorBoundary from '../components/ui/ErrorBoundary';
 
 const AdminCtx = createContext(null);
 export const useAdmin = () => useContext(AdminCtx);
@@ -45,6 +47,8 @@ const AdminApp = () => {
   useEffect(() => {
     dispatch(restoreSession());
   }, [dispatch]);
+  // the operations and complaints rooms, on the admin host only
+  useRealtime();
 
   // Step-up: an action that rejects with MFA_REQUIRED asks for the code again, then retries.
   // `action` returns a promise, usually dispatch(thunk(arg)).unwrap(). Resolves with its
@@ -113,23 +117,26 @@ const AdminApp = () => {
               ))}
             </nav>
             <main className="page py-4 lg:py-8">
-              <Routes>
-                <Route index element={user.role === 'admin' ? <LiveOps /> : <Verification />} />
-                <Route path="verification" element={<Verification />} />
-                <Route path="expiring" element={<Expiring />} />
-                {user.role === 'admin' && (
-                  <>
-                    <Route path="requirements" element={<Requirements />} />
-                    <Route path="users" element={<Users />} />
-                    <Route path="complaints" element={<Complaints />} />
-                    <Route path="policy" element={<PolicyEditor />} />
-                    <Route path="audit" element={<AuditLog />} />
-                  </>
-                )}
-                {/* the old approvals page is now the verification queue */}
-                <Route path="approvals" element={<Navigate to="/verification" replace />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+              {/* a crashed page keeps the console and its navigation around it */}
+              <ErrorBoundary resetKey={pathname}>
+                <Routes>
+                  <Route index element={user.role === 'admin' ? <LiveOps /> : <Verification />} />
+                  <Route path="verification" element={<Verification />} />
+                  <Route path="expiring" element={<Expiring />} />
+                  {user.role === 'admin' && (
+                    <>
+                      <Route path="requirements" element={<Requirements />} />
+                      <Route path="users" element={<Users />} />
+                      <Route path="complaints" element={<Complaints />} />
+                      <Route path="policy" element={<PolicyEditor />} />
+                      <Route path="audit" element={<AuditLog />} />
+                    </>
+                  )}
+                  {/* the old approvals page is now the verification queue */}
+                  <Route path="approvals" element={<Navigate to="/verification" replace />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </ErrorBoundary>
             </main>
           </div>
         </div>

@@ -2,7 +2,8 @@
 // per order (the database refuses a second), GPS pings checked for impossible jumps, and the
 // two distances that unlock the delivery: the code shows at 500 m, the door at 150 m.
 import { AppError } from './AppError.js';
-import { inbox, move, policyOf, refreshRiderStatus } from './orders.js';
+import { inbox, move, policyOf, refreshRiderStatus, announceOrder, announceOffers } from './orders.js';
+import { realtime } from './realtime.js';
 import { orderModel, NEEDS_RIDER } from '../models/ordering/order.js';
 import { assignmentModel } from '../models/dispatch/assignment.js';
 import { riderModel } from '../models/dispatch/rider.js';
@@ -35,7 +36,10 @@ export async function offerNext(dbs, order) {
     { policy, temp: order.temp_class, activeById: new Map([...loads].map(([id, l]) => [id, l.active])), declinesById: declines, exclude: [...asked, ...carryingHot] },
   );
   if (!ranked.length) return null;
-  return assignmentModel.offer(dbs.dispatch, order.id, ranked[0].rider.id);
+  const offer = await assignmentModel.offer(dbs.dispatch, order.id, ranked[0].rider.id);
+  // the chosen rider hears at once; the offer itself is read over REST
+  if (offer) realtime.publish([{ userId: riders.find((r) => r.id === ranked[0].rider.id)?.user_id, role: 'rider' }], 'offer', { orderId: order.id });
+  return offer;
 }
 
 /** The rider takes the order. Exactly one rider wins; everyone else is told it is gone. */
@@ -60,6 +64,8 @@ export async function acceptOffer(dbs, rider, offerId) {
   }
   await assignmentModel.expireOthers(dbs.dispatch, order.id);
   await refreshRiderStatus(dbs, rider.id);
+  announceOffers(dbs, order.id);
+  announceOrder(dbs, order.id);
   return order.id;
 }
 
@@ -67,6 +73,7 @@ export async function declineOffer(dbs, rider, offerId) {
   const offer = await assignmentModel.findForRider(dbs.dispatch, offerId, rider.id);
   if (!offer || offer.status !== 'OFFERED') throw new AppError(410, 'OFFER_GONE', 'This offer expired or went to another rider');
   await assignmentModel.decline(dbs.dispatch, offer.id, rider.id);
+  announceOffers(dbs, offer.order_id);
   const order = await orderModel.findById(dbs.ordering, offer.order_id);
   if (order) await offerNext(dbs, order);
 }
@@ -85,6 +92,8 @@ export async function recordPosition(dbs, rider, at) {
   }
   await riderModel.setPosition(dbs.dispatch, rider.id, at);
   const active = await orderModel.listActiveForRider(dbs.ordering, rider.id);
+  // the customers on the way see the rider move; operations sees every rider
+  realtime.publish([...active.filter((o) => ['PICKED_UP', 'ON_THE_WAY', 'ARRIVED'].includes(o.status)).map((o) => ({ userId: o.customer_id, role: 'customer' })), 'ops'], 'position');
   const writeTrail = now - (lastTrailAt.get(rider.id) ?? 0) >= TRAIL_MIN_INTERVAL_MS;
   if (writeTrail) lastTrailAt.set(rider.id, now);
   for (const order of active) {
@@ -115,6 +124,7 @@ export async function expireOffers(dbs) {
     if (policy && Date.now() - new Date(offer.offered_at).getTime() < policy.offerTimeoutSec * 1000) continue;
     if (!(await assignmentModel.expire(dbs.dispatch, offer.id))) continue;
     moved += 1;
+    announceOffers(dbs, offer.order_id);
     if (order) await offerNext(dbs, await orderModel.findById(dbs.ordering, order.id));
   }
   return moved;

@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
-import { createLimiter } from '../utils/rateLimit.js';
 import { shopController } from '../controllers/shop.js';
 import { validateBody, validateParams } from '../middleware/validate.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
-import { rateLimit } from '../middleware/rateLimit.js';
+import { limit, byUser } from '../middleware/rateLimit.js';
 import { CATEGORIES, SHAPES, STOCK_REASONS, MIN_PRICE_PAISE, MAX_PRICE_PAISE, MAX_STOCK } from '../../../shared/domain/menu.js';
 
 const id = z.coerce.number().int().positive();
@@ -48,14 +47,18 @@ export function shopRoutes(deps) {
   const auth = requireAuth(deps.env);
   const c = shopController(deps);
   const can = (permission) => [auth, requirePermission(deps, permission)];
-  const edits = rateLimit(createLimiter({ windowMs: 60_000, max: 120 }), (req) => `shop:${req.user.userId}`);
+  // per seller: order actions, new snacks (rarely more than a few an hour), and menu and stock edits
+  const actions = limit(deps, 'seller.orders', { minutes: 1, max: 60 }, byUser);
+  const creates = limit(deps, 'seller.products.create', { minutes: 60, max: 30 }, byUser, 'Too many new snacks in an hour. Try again later.');
+  const edits = limit(deps, 'seller.products.edit', { minutes: 1, max: 120 }, byUser);
+  const shopEdits = limit(deps, 'seller.shop', { minutes: 1, max: 30 }, byUser);
 
   router.get('/seller/shop', ...can('seller.shop.manage'), wrap(c.shop));
-  router.patch('/seller/shop', ...can('seller.shop.manage'), edits, validateBody(settings), wrap(c.updateShop));
+  router.patch('/seller/shop', ...can('seller.shop.manage'), shopEdits, validateBody(settings), wrap(c.updateShop));
   router.get('/seller/orders', ...can('seller.orders.read'), wrap(c.orders));
-  router.post('/seller/orders/:id/:action', ...can('seller.orders.accept'), edits, validateParams(orderAction), validateBody(z.object({}).strict()), wrap(c.orderAction));
+  router.post('/seller/orders/:id/:action', ...can('seller.orders.accept'), actions, validateParams(orderAction), validateBody(z.object({}).strict()), wrap(c.orderAction));
   router.get('/seller/products', ...can('seller.products.read'), wrap(c.products));
-  router.post('/seller/products', ...can('seller.products.write'), edits, validateBody(newProduct), wrap(c.createProduct));
+  router.post('/seller/products', ...can('seller.products.write'), creates, validateBody(newProduct), wrap(c.createProduct));
   router.patch('/seller/products/:id', ...can('seller.products.write'), edits, validateParams(idParams), validateBody(productChanges), wrap(c.updateProduct));
   router.patch('/seller/products/:id/stock', ...can('seller.products.write'), edits, validateParams(idParams), validateBody(stock), wrap(c.adjustStock));
   return router;

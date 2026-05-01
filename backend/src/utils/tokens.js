@@ -27,11 +27,11 @@ export function signAccessToken(env, user, { role, mfaAt, amr } = {}) {
   });
 }
 
-/** Returns { userId, role, mfaAt, amr }; throws if the token is invalid, expired or for another audience. */
+/** Returns { userId, role, mfaAt, amr, exp } (exp in ms); throws if the token is invalid, expired or for another audience. */
 export function verifyAccessToken(env, token) {
   const p = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'], issuer: ISSUER, audience: AUDIENCE });
   if (!/^\d+$/.test(String(p.sub)) || typeof p.role !== 'string') throw new Error('Malformed token');
-  return { userId: Number(p.sub), role: p.role, mfaAt: p.mfa_at ? p.mfa_at * 1000 : null, amr: Array.isArray(p.amr) ? p.amr : [] };
+  return { userId: Number(p.sub), role: p.role, mfaAt: p.mfa_at ? p.mfa_at * 1000 : null, amr: Array.isArray(p.amr) ? p.amr : [], exp: p.exp * 1000 };
 }
 
 export const newRefreshToken = () => randomBytes(32).toString('base64url');

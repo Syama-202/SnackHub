@@ -75,6 +75,14 @@ const server = database.extend({
   CLAMAV_PORT: z.coerce.number().int().positive().default(3310),
   // the outbox relay and the daily document-expiry job run inside the API process
   RUN_JOBS: bool.optional(),
+
+  // Redis (doc 13): shared rate-limit counters and the Socket.IO adapter, so several API
+  // processes count and broadcast together. Unset: redis://127.0.0.1:6380 in development
+  // (npm run redis:up), off in tests; production must set it. While Redis is unreachable each
+  // process counts on its own and live events reach only its own sockets.
+  REDIS_URL: z.string().regex(/^rediss?:\/\/\S+$/).or(z.literal('')).optional(),
+  // every /api/v1 request from one IP address, per minute, on top of the per-route limits
+  RATE_LIMIT_IP_PER_MIN: z.coerce.number().int().min(60).max(100_000).default(600),
 });
 
 function parse(schema, source) {
@@ -89,9 +97,13 @@ function parse(schema, source) {
 /** Settings for the database only (migrations, seed, tests). */
 export const loadDbEnv = (source = process.env) => Object.freeze(parse(database, source));
 
+const REDIS_DEFAULT = { development: 'redis://127.0.0.1:6380', test: '' };
+
 /** Every setting the server needs. */
 export function loadEnv(source = process.env) {
-  const env = parse(server, source);
+  const parsed = parse(server, source);
+  if (!parsed.REDIS_URL && parsed.NODE_ENV === 'production') throw new Error('Invalid or missing settings: REDIS_URL. See backend/.env.example.');
+  const env = { ...parsed, REDIS_URL: parsed.REDIS_URL ?? REDIS_DEFAULT[parsed.NODE_ENV] };
   if (env.SMS_PROVIDER === 'dev-mail' && env.NODE_ENV === 'production') throw new Error('Invalid settings: SMS_PROVIDER=dev-mail is for development only.');
   // saved emails hold sign-in links, so production never writes them to disk
   if (env.MAIL_TRANSPORT === 'file' && env.NODE_ENV === 'production') throw new Error('Invalid settings: MAIL_TRANSPORT=file is for development only.');

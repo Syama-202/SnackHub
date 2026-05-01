@@ -5,6 +5,7 @@ import { verificationController } from '../controllers/verification.js';
 import { adminUsersController } from '../controllers/adminUsers.js';
 import { validateBody, validateParams, validateQuery } from '../middleware/validate.js';
 import { requireAuth, requirePermission, requireFreshMfa, adminHostOnly } from '../middleware/auth.js';
+import { limit, byUser } from '../middleware/rateLimit.js';
 import { STATUSES, ACTIONS, CHECKS } from '../../../shared/domain/verification.js';
 import { ROLES } from '../../../shared/domain/permissions.js';
 
@@ -55,25 +56,29 @@ export function verificationRoutes(deps) {
   // second factor in the last 8 hours; decisions need one in the last 5 minutes (doc 16.3)
   const staff = (permission) => [adminHostOnly(deps.env), requireAuth(deps.env), requirePermission(deps, permission), requireFreshMfa(8 * 60)];
   const stepUp = requireFreshMfa(5);
+  // one counter per staff member for every decision; opening private documents is tighter
+  const decisions = limit(deps, 'admin.decisions', { minutes: 1, max: 60 }, byUser);
+  const documents = limit(deps, 'admin.documents', { minutes: 15, max: 120 }, byUser);
+  const numbers = limit(deps, 'admin.document-numbers', { minutes: 60, max: 30 }, byUser, 'Too many document numbers shown in an hour. Try again later.');
   const decisionStepUp = (req, res, next) => (req.params.action === 'start-review' ? next() : stepUp(req, res, next));
 
   router.get('/admin/verification/item/:ref', ...staff('verification.read'), validateParams(itemParams), wrap(v.detail));
-  router.post('/admin/verification/item/:ref/check', ...staff('verification.review'), validateParams(itemParams), validateBody(checkBody), wrap(v.check));
-  router.post('/admin/verification/item/:ref/:action', ...staff('verification.decide'), validateParams(actionParams), decisionStepUp, validateBody(reasonBody), wrap(v.decide));
+  router.post('/admin/verification/item/:ref/check', ...staff('verification.review'), decisions, validateParams(itemParams), validateBody(checkBody), wrap(v.check));
+  router.post('/admin/verification/item/:ref/:action', ...staff('verification.decide'), decisions, validateParams(actionParams), decisionStepUp, validateBody(reasonBody), wrap(v.decide));
   router.get('/admin/verification/:kind', ...staff('verification.read'), validateParams(kindParams), validateQuery(queueQuery), wrap(v.queue));
-  router.post('/admin/documents/:ref/review', ...staff('verification.review'), validateParams(docParams), validateBody(reviewBody), wrap(v.reviewDocument));
-  router.post('/admin/documents/:ref/link', ...staff('verification.documents.read'), validateParams(docParams), wrap(v.documentLink));
-  router.post('/admin/documents/:ref/number', ...staff('verification.documents.read'), stepUp, validateParams(docParams), wrap(v.revealNumber));
+  router.post('/admin/documents/:ref/review', ...staff('verification.review'), decisions, validateParams(docParams), validateBody(reviewBody), wrap(v.reviewDocument));
+  router.post('/admin/documents/:ref/link', ...staff('verification.documents.read'), documents, validateParams(docParams), wrap(v.documentLink));
+  router.post('/admin/documents/:ref/number', ...staff('verification.documents.read'), numbers, stepUp, validateParams(docParams), wrap(v.revealNumber));
   router.get('/admin/expiring', ...staff('verification.read'), wrap(v.expiring));
   router.get('/admin/requirements/:kind', ...staff('verification.read'), validateParams(kindParams), wrap(v.requirements));
-  router.put('/admin/requirements/:kind', ...staff('verification.requirements.write'), stepUp, validateParams(kindParams), validateBody(requirementsBody), wrap(v.saveRequirements));
+  router.put('/admin/requirements/:kind', ...staff('verification.requirements.write'), decisions, stepUp, validateParams(kindParams), validateBody(requirementsBody), wrap(v.saveRequirements));
 
   router.get('/admin/users', ...staff('users.read'), validateQuery(usersQuery), wrap(u.list));
-  router.post('/admin/users/:id/suspend', ...staff('users.suspend'), stepUp, validateParams(userParams), validateBody(mustReason), wrap(u.suspend));
-  router.post('/admin/users/:id/reactivate', ...staff('users.suspend'), stepUp, validateParams(userParams), validateBody(mustReason), wrap(u.reactivate));
-  router.post('/admin/users/:id/roles/:role/suspend', ...staff('users.suspend'), stepUp, validateParams(userRoleParams), validateBody(mustReason), wrap(u.suspendRole));
-  router.post('/admin/users/:id/roles/:role/reactivate', ...staff('users.suspend'), stepUp, validateParams(userRoleParams), validateBody(mustReason), wrap(u.reactivateRole));
-  router.post('/admin/users/:id/mfa-reset', ...staff('users.mfa.reset'), stepUp, validateParams(userParams), validateBody(mustReason), wrap(u.mfaReset));
+  router.post('/admin/users/:id/suspend', ...staff('users.suspend'), decisions, stepUp, validateParams(userParams), validateBody(mustReason), wrap(u.suspend));
+  router.post('/admin/users/:id/reactivate', ...staff('users.suspend'), decisions, stepUp, validateParams(userParams), validateBody(mustReason), wrap(u.reactivate));
+  router.post('/admin/users/:id/roles/:role/suspend', ...staff('users.suspend'), decisions, stepUp, validateParams(userRoleParams), validateBody(mustReason), wrap(u.suspendRole));
+  router.post('/admin/users/:id/roles/:role/reactivate', ...staff('users.suspend'), decisions, stepUp, validateParams(userRoleParams), validateBody(mustReason), wrap(u.reactivateRole));
+  router.post('/admin/users/:id/mfa-reset', ...staff('users.mfa.reset'), decisions, stepUp, validateParams(userParams), validateBody(mustReason), wrap(u.mfaReset));
   router.get('/admin/audit', ...staff('audit.read'), validateQuery(auditQuery), wrap(u.audit));
   return router;
 }

@@ -248,6 +248,21 @@ describe.skipIf(h.skip)('the order flow', () => {
       await s.api.post(`/seller/orders/${order.id}/accept`).expect(409);
     });
 
+    it('the same action sent twice at once happens once: accept, and cancel', async () => {
+      const s = await openShop();
+      const c = await customerAt();
+      const order = await placeOrder(c, s, 1);
+      const accepts = await Promise.all([s.api.post(`/seller/orders/${order.id}/accept`), s.api.post(`/seller/orders/${order.id}/accept`)]);
+      expect(accepts.map((r) => r.status).sort()).toEqual([200, 409]);
+      expect(await t.trx.ordering('order_events').where({ order_id: order.id, to_status: 'ACCEPTED' }).count({ n: '*' }).first()).toEqual({ n: 1 });
+
+      const other = await placeOrder(c, s, 1);
+      const cancels = await Promise.all([c.api.post(`/orders/${other.id}/cancel`), c.api.post(`/orders/${other.id}/cancel`)]);
+      expect(cancels.map((r) => r.status).sort()).toEqual([200, 409]);
+      expect(await t.trx.ordering('order_events').where({ order_id: other.id, to_status: 'CANCELLED' }).count({ n: '*' }).first()).toEqual({ n: 1 });
+      expect(await stockOf(s.product.id)).toBe(4);
+    });
+
     it('an offer nobody answers in 20 seconds goes to the next rider; a decline does at once', async () => {
       const s = await openShop();
       const c = await customerAt();

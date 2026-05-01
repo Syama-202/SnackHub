@@ -11,7 +11,7 @@
 //   POST /orders/:id/review    one rating after delivery
 import { AppError } from '../utils/AppError.js';
 import { cartView } from './cart.js';
-import { closeOrder, codeForCustomer, currentPolicy, notifySeller, policyOf, trackState, viewOrder, viewOrders } from '../utils/orders.js';
+import { announceOrder, closeOrder, codeForCustomer, currentPolicy, notifySeller, policyOf, trackState, viewOrder, viewOrders } from '../utils/orders.js';
 import { deliveryCode, deliveryCodeHash, orderKeyFor } from '../utils/deliveryCode.js';
 import { orderModel } from '../models/ordering/order.js';
 import { orderItemModel } from '../models/ordering/orderItem.js';
@@ -140,6 +140,8 @@ export function ordersController({ env, dbs }) {
       throw err;
     }
     await stockHoldModel.commit(dbs.catalog, orderKey);
+    // the shop's board hears about it at once
+    announceOrder(dbs, orderId);
     res.status(201).json({ order: await viewOrder(dbs, await orderModel.findById(dbs.ordering, orderId), 'customer') });
   }
 

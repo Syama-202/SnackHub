@@ -6,7 +6,8 @@
 import { open } from '../utils/keys.js';
 import { render } from '../utils/emails.js';
 import { outboxModel } from '../models/outbox.js';
-import { notificationModel } from '../models/notify/notification.js';
+import { notificationModel, portalOfType } from '../models/notify/notification.js';
+import { realtime } from '../utils/realtime.js';
 
 const MODULES = ['identity', 'catalog', 'dispatch', 'ordering'];
 
@@ -24,7 +25,9 @@ export function createOutboxRelay({ env, dbs, mailer, sms, logger }) {
     const name = `${p.template ?? row.type}-${module}-${row.id}`;
     if (row.type === 'notify.inbox') {
       // the unique (order, type, person) key makes a second delivery of the same row harmless
-      await notificationModel.create(dbs.notify, { userId: p.userId, orderId: p.orderId ?? null, type: p.type, body: p.body });
+      const created = await notificationModel.create(dbs.notify, { userId: p.userId, orderId: p.orderId ?? null, type: p.type, body: p.body });
+      // the bell (and the seller's and rider's boards) refresh at once; a re-delivery says nothing
+      if (created) realtime.publish([{ userId: p.userId, role: portalOfType(p.type) }], 'notification', { orderId: p.orderId });
       return;
     }
     if (row.type === 'admin.alert') {

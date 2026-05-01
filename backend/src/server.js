@@ -7,17 +7,26 @@ import { createSms } from './utils/sms.js';
 import { createOutboxRelay } from './jobs/outboxRelay.js';
 import { runDocumentExpiry } from './jobs/documentExpiry.js';
 import { createOrderTimers } from './jobs/orderTimers.js';
+import { createRedis, closeRedis } from './utils/redis.js';
+import { redisCounter, memoryCounter } from './utils/rateLimit.js';
+import { createSocketServer } from './socket.js';
 
 const env = loadEnv();
 const logger = createLogger(env);
 const dbs = moduleDbs(env);
 const mailer = createMailer(env);
 const sms = createSms(env, mailer);
-const app = createApp({ env, logger, dbs, mailer, sms });
+// shared rate-limit counters and Socket.IO rooms; without REDIS_URL each process works alone
+const redis = createRedis(env, logger);
+const rateStore = redis ? redisCounter(redis, { logger }) : memoryCounter();
+if (!redis) logger.warn('REDIS_URL is empty: rate limits and live updates are per process');
+const app = createApp({ env, logger, dbs, mailer, sms, redis, rateStore });
 
 const server = app.listen(env.PORT, '127.0.0.1', () =>
-  logger.info({ port: env.PORT, mail: mailer.kind, ...(mailer.kind === 'file' ? { mailDir: mailer.dir } : {}), sms: sms.enabled }, 'api listening'),
+  logger.info({ port: env.PORT, mail: mailer.kind, ...(mailer.kind === 'file' ? { mailDir: mailer.dir } : {}), sms: sms.enabled, redis: Boolean(redis) }, 'api listening'),
 );
+// live updates on the same port, at /api/v1/socket
+const sockets = createSocketServer(server, { env, dbs, logger, redis, rateStore });
 
 // background work in the same process: emails, texts and inbox messages every few seconds,
 // the order clocks (shop accept timeout, rider offers) every five, document expiry every six
@@ -39,11 +48,12 @@ async function shutdown(signal) {
   relay.stop();
   orderTimers.stop();
   clearInterval(expiryTimer);
-  server.close(async () => {
-    await closeAll(dbs);
-    process.exit(0);
-  });
   setTimeout(() => process.exit(1), 10_000).unref();
+  // closing Socket.IO closes the HTTP server as well
+  await sockets.close();
+  await closeAll(dbs);
+  await closeRedis(redis);
+  process.exit(0);
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

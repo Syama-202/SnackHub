@@ -34,6 +34,6 @@ export default defineConfig({
   ],
   // the host header stays localhost:5181, which is on the backend's ADMIN_HOSTS list, and the
   // admin refresh cookie works because the API is on the same origin
-  server: { port: 5181, strictPort: true, fs: { allow: ['..'] }, proxy: Object.fromEntries(['admin', 'auth', 'me', 'files'].map((p) => [`/api/v1/${p}`, backend])) },
+  server: { port: 5181, strictPort: true, fs: { allow: ['..'] }, proxy: { ...Object.fromEntries(['admin', 'auth', 'me', 'files'].map((p) => [`/api/v1/${p}`, backend])), '/api/v1/socket': { target: backend, ws: true } } },
   build: { outDir: 'dist-admin', rollupOptions: { input: 'admin.html', output: { manualChunks: vendorChunks } } },
 });

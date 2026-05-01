@@ -26,10 +26,20 @@ describe('mail settings', () => {
   it('development saves files unless SMTP is set; production never writes them', () => {
     expect(loadEnv({ ...BASE, NODE_ENV: 'development' })).toMatchObject({ MAIL_TRANSPORT: 'file', SMS_PROVIDER: 'dev-mail' });
     expect(loadEnv({ ...BASE, NODE_ENV: 'development', SMTP_HOST: 'smtp.example.test' }).MAIL_TRANSPORT).toBe('smtp');
-    expect(loadEnv({ ...BASE, NODE_ENV: 'production' })).toMatchObject({ MAIL_TRANSPORT: 'off', SMS_PROVIDER: '' });
-    expect(() => loadEnv({ ...BASE, NODE_ENV: 'production', MAIL_TRANSPORT: 'file' })).toThrow(/development only/);
-    expect(() => loadEnv({ ...BASE, NODE_ENV: 'production', SMS_PROVIDER: 'dev-mail' })).toThrow(/development only/);
-    expect(() => loadEnv({ ...BASE, NODE_ENV: 'production', MAIL_TRANSPORT: 'smtp' })).toThrow(/SMTP_HOST/);
+    expect(loadEnv({ ...BASE, NODE_ENV: 'production', REDIS_URL: 'redis://redis.internal:6379' })).toMatchObject({ MAIL_TRANSPORT: 'off', SMS_PROVIDER: '' });
+    expect(() => loadEnv({ ...BASE, NODE_ENV: 'production', REDIS_URL: 'redis://redis.internal:6379', MAIL_TRANSPORT: 'file' })).toThrow(/development only/);
+    expect(() => loadEnv({ ...BASE, NODE_ENV: 'production', REDIS_URL: 'redis://redis.internal:6379', SMS_PROVIDER: 'dev-mail' })).toThrow(/development only/);
+    expect(() => loadEnv({ ...BASE, NODE_ENV: 'production', REDIS_URL: 'redis://redis.internal:6379', MAIL_TRANSPORT: 'smtp' })).toThrow(/SMTP_HOST/);
+  });
+});
+
+describe('redis settings', () => {
+  it('defaults to the local container in development, is off in tests and required in production', () => {
+    expect(loadEnv({ ...BASE, NODE_ENV: 'development' }).REDIS_URL).toBe('redis://127.0.0.1:6380');
+    expect(loadEnv({ ...BASE, NODE_ENV: 'test' }).REDIS_URL).toBe('');
+    expect(() => loadEnv({ ...BASE, NODE_ENV: 'production' })).toThrow(/REDIS_URL/);
+    expect(() => loadEnv({ ...BASE, NODE_ENV: 'production', REDIS_URL: '' })).toThrow(/REDIS_URL/);
+    expect(() => loadEnv({ ...BASE, REDIS_URL: 'http://not-redis' })).toThrow(/REDIS_URL/);
   });
 });
 

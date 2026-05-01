@@ -3,8 +3,10 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { Provider, useDispatch } from 'react-redux';
 import store from './store';
 import { restoreSession } from './store/slices/auth';
+import { useRealtime } from './hooks';
 import CustomerLayout from './components/layout/Customer';
 import { PageFallback, RequireRole } from './routes/Guards';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 // The landing page is the first screen most visitors see, so it ships in the entry bundle
 import Home from './pages/customer/Home';
 
@@ -38,6 +40,8 @@ function SessionBootstrap() {
   useEffect(() => {
     dispatch(restoreSession());
   }, [dispatch]);
+  // live updates for whichever portal is signed in (customer, seller or rider)
+  useRealtime();
   return null;
 }
 
@@ -50,40 +54,44 @@ function ScrollToTop() {
 }
 
 function AppRoutes() {
+  // a crash shows a way back instead of a blank screen; another page starts fresh
+  const { pathname } = useLocation();
   return (
-    <Suspense fallback={<PageFallback />}>
-      <Routes>
-        {/* The layout stays mounted; only the page area transitions */}
-        <Route element={<CustomerLayout />}>
-          <Route index element={<Home />} />
-          <Route path="shop" element={<ProductList />} />
-          <Route path="shop/:sellerId" element={<ShopDetail />} />
-          <Route path="checkout" element={<RequireRole role="customer"><Checkout /></RequireRole>} />
-          <Route path="orders" element={<RequireRole role="customer"><OrderHistory /></RequireRole>} />
-          <Route path="orders/:id" element={<RequireRole role="customer"><OrderTracking /></RequireRole>} />
-          <Route path="orders/:id/report" element={<RequireRole role="customer"><ReportProblem /></RequireRole>} />
-          <Route path="account" element={<RequireRole role="customer"><Profile /></RequireRole>} />
-          <Route path="notifications" element={<RequireRole role="customer"><Notifications /></RequireRole>} />
-          {/* one sign-up and one sign-in per portal; /signin?as=seller still lands on the right one */}
-          <Route path="join" element={<Join />} />
-          <Route path="signin" element={<Join />} />
-          {['customer', 'seller', 'rider'].map((portal) => [
-            <Route key={`${portal}-in`} path={`${portal}/signin`} element={<SignIn portal={portal} />} />,
-            <Route key={`${portal}-up`} path={`${portal}/signup`} element={<SignUp portal={portal} />} />,
-          ])}
-          <Route path="verify-email" element={<VerifyEmail />} />
-          <Route path="forgot-password" element={<ForgotPassword />} />
-          <Route path="reset-password" element={<ResetPassword />} />
-          <Route path="account/security" element={<RequireRole role={['customer', 'seller', 'rider']}><Security /></RequireRole>} />
-          <Route path="seller/onboarding" element={<RequireRole role="seller"><SellerOnboarding /></RequireRole>} />
-          <Route path="rider/onboarding" element={<RequireRole role="rider"><RiderOnboarding /></RequireRole>} />
-          <Route path="design" element={<DesignSystem />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-        <Route path="seller/*" element={<RequireRole role="seller"><SellerConsole /></RequireRole>} />
-        <Route path="rider/*" element={<RequireRole role="rider"><RiderConsole /></RequireRole>} />
-      </Routes>
-    </Suspense>
+    <ErrorBoundary resetKey={pathname}>
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
+          {/* The layout stays mounted; only the page area transitions */}
+          <Route element={<CustomerLayout />}>
+            <Route index element={<Home />} />
+            <Route path="shop" element={<ProductList />} />
+            <Route path="shop/:sellerId" element={<ShopDetail />} />
+            <Route path="checkout" element={<RequireRole role="customer"><Checkout /></RequireRole>} />
+            <Route path="orders" element={<RequireRole role="customer"><OrderHistory /></RequireRole>} />
+            <Route path="orders/:id" element={<RequireRole role="customer"><OrderTracking /></RequireRole>} />
+            <Route path="orders/:id/report" element={<RequireRole role="customer"><ReportProblem /></RequireRole>} />
+            <Route path="account" element={<RequireRole role="customer"><Profile /></RequireRole>} />
+            <Route path="notifications" element={<RequireRole role="customer"><Notifications /></RequireRole>} />
+            {/* one sign-up and one sign-in per portal; /signin?as=seller still lands on the right one */}
+            <Route path="join" element={<Join />} />
+            <Route path="signin" element={<Join />} />
+            {['customer', 'seller', 'rider'].map((portal) => [
+              <Route key={`${portal}-in`} path={`${portal}/signin`} element={<SignIn portal={portal} />} />,
+              <Route key={`${portal}-up`} path={`${portal}/signup`} element={<SignUp portal={portal} />} />,
+            ])}
+            <Route path="verify-email" element={<VerifyEmail />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
+            <Route path="account/security" element={<RequireRole role={['customer', 'seller', 'rider']}><Security /></RequireRole>} />
+            <Route path="seller/onboarding" element={<RequireRole role="seller"><SellerOnboarding /></RequireRole>} />
+            <Route path="rider/onboarding" element={<RequireRole role="rider"><RiderOnboarding /></RequireRole>} />
+            <Route path="design" element={<DesignSystem />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+          <Route path="seller/*" element={<RequireRole role="seller"><SellerConsole /></RequireRole>} />
+          <Route path="rider/*" element={<RequireRole role="rider"><RiderConsole /></RequireRole>} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 

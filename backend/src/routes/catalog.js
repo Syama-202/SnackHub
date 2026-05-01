@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
 import { catalogController } from '../controllers/catalog.js';
 import { validateQuery, validateParams } from '../middleware/validate.js';
+import { limit, byIp } from '../middleware/rateLimit.js';
 
 // a delivery point inside India
 const num = () => z.coerce.number({ error: 'Must be a number' });
@@ -20,10 +21,13 @@ const idParams = z.object({ id: z.coerce.number().int().positive() });
 export function catalogRoutes(deps) {
   const c = catalogController(deps);
   const router = Router();
-  router.get('/cities', wrap(c.cities));
-  router.get('/sellers', validateQuery(sellersQuery), wrap(c.sellers));
-  router.get('/sellers/:id', validateParams(idParams), validateQuery(shopQuery), wrap(c.seller));
-  router.get('/products', validateQuery(nearQuery), wrap(c.products));
-  router.get('/search', validateQuery(searchQuery), wrap(c.search));
+  // per address: browsing pages, and a tighter one for search, which costs the most
+  const browse = limit(deps, 'catalog.browse.ip', { minutes: 1, max: 120 }, byIp);
+  const search = limit(deps, 'catalog.search.ip', { minutes: 1, max: 60 }, byIp, 'Too many searches. Wait a moment and try again.');
+  router.get('/cities', browse, wrap(c.cities));
+  router.get('/sellers', browse, validateQuery(sellersQuery), wrap(c.sellers));
+  router.get('/sellers/:id', browse, validateParams(idParams), validateQuery(shopQuery), wrap(c.seller));
+  router.get('/products', browse, validateQuery(nearQuery), wrap(c.products));
+  router.get('/search', search, validateQuery(searchQuery), wrap(c.search));
   return router;
 }

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useSelector } from 'react-redux';
+import { onTopics, realtimeStatus, startRealtime, stopRealtime, subscribeStatus } from '../services/realtime';
 
 const rmQuery = typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 
@@ -120,18 +122,26 @@ export function useNow(intervalMs = 1000) {
 
 const HIDDEN_POLL_MS = 30_000;
 const MAX_BACKOFF_MS = 60_000;
+// with live updates on, polling is only the safety net for a missed hint
+const LIVE_POLL_MS = 30_000;
 const failed = (r) => r?.meta?.requestStatus === 'rejected';
 
 /**
  * Run `callback` now and then `ms` after each run finishes while enabled. A run that
  * returns a promise (a dispatched thunk) is awaited, so slow requests never pile up;
  * a rejected thunk doubles the wait up to a minute. Offline ticks are skipped, a hidden
- * tab polls every 30 s and refreshes as soon as it is shown again. Stands in for socket
- * pushes until Socket.io is wired (Phase 3).
+ * tab polls every 30 s and refreshes as soon as it is shown again.
+ *
+ * `topics` ('order', ['offer'], ...) ties it to live updates (services/realtime): a hint on
+ * one of them runs it at once, and while the socket is live the poll slows to every 30 s.
+ * Hints arriving during a run are folded into one more run, never a second request at once.
  */
-export function usePolling(callback, ms, enabled = true) {
+export function usePolling(callback, ms, enabled = true, topics = null) {
   const saved = useRef(callback);
   const visible = useDocumentVisible();
+  const status = useRealtimeStatus();
+  const topicKey = topics ? [].concat(topics).join(',') : '';
+  const live = Boolean(topicKey) && status === 'live';
   useEffect(() => {
     saved.current = callback;
   });
@@ -139,8 +149,17 @@ export function usePolling(callback, ms, enabled = true) {
     if (!enabled) return;
     let timer;
     let stopped = false;
-    let wait = ms;
+    let running = false;
+    let again = false;
+    const base = live ? Math.max(ms, LIVE_POLL_MS) : ms;
+    let wait = base;
     const run = async () => {
+      clearTimeout(timer);
+      if (running) {
+        again = true;
+        return;
+      }
+      running = true;
       if (navigator.onLine !== false) {
         let ok = true;
         try {
@@ -148,16 +167,44 @@ export function usePolling(callback, ms, enabled = true) {
         } catch {
           ok = false;
         }
-        wait = ok ? ms : Math.min(wait * 2, MAX_BACKOFF_MS);
+        wait = ok ? base : Math.min(wait * 2, MAX_BACKOFF_MS);
       }
-      if (!stopped) timer = setTimeout(run, visible ? wait : Math.max(wait, HIDDEN_POLL_MS));
+      running = false;
+      if (stopped) return;
+      if (again) {
+        again = false;
+        return run();
+      }
+      timer = setTimeout(run, visible ? wait : Math.max(wait, HIDDEN_POLL_MS));
     };
     run();
+    const off = topicKey ? onTopics(topicKey.split(','), run) : null;
     return () => {
       stopped = true;
       clearTimeout(timer);
+      off?.();
     };
-  }, [ms, enabled, visible]);
+  }, [ms, enabled, visible, live, topicKey]);
+}
+
+/** 'off', 'connecting', 'live' or 'down': the live-update socket (services/realtime). */
+export function useRealtimeStatus() {
+  return useSyncExternalStore(subscribeStatus, realtimeStatus, () => 'off');
+}
+
+/**
+ * Keeps the live-update socket open for the signed-in real account (once, at the app root);
+ * closes it on sign-out or when another account signs in. Demo sessions have none.
+ */
+export function useRealtime() {
+  const token = useSelector((state) => state.auth.accessToken);
+  const who = useSelector((state) => (state.auth.user ? `${state.auth.user.id}:${state.auth.user.role}` : ''));
+  const real = Boolean(token) && !String(token).startsWith('demo.');
+  useEffect(() => {
+    if (!real || !who) return undefined;
+    startRealtime();
+    return stopRealtime;
+  }, [real, who]);
 }
 
 export function useDocumentVisible() {

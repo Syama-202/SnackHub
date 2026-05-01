@@ -14,6 +14,7 @@
 import { AppError } from '../utils/AppError.js';
 import { loadApplicant, eligibilityOf } from '../utils/applicants.js';
 import { inbox, move, policyOf, refreshRiderStatus, trackState, viewOrder } from '../utils/orders.js';
+import { realtime } from '../utils/realtime.js';
 import { acceptOffer, declineOffer, recordPosition, riderDistanceTo } from '../utils/dispatch.js';
 import { deliveryCodeMatches } from '../utils/deliveryCode.js';
 import { orderModel } from '../models/ordering/order.js';
@@ -79,6 +80,7 @@ export function deliveryController({ env, dbs }) {
     if (status === 'OFFLINE') await assignmentModel.listOpenForRider(dbs.dispatch, rider.id).then((open) => Promise.all(open.map((o) => assignmentModel.expire(dbs.dispatch, o.id))));
     await refreshRiderStatus(dbs, rider.id);
     await audit(userId, 'rider.availability', `rider:${rider.id}`, { status: rider.status }, { status });
+    realtime.publish(['ops'], 'rider');
     res.json(meView(await riderModel.findById(dbs.dispatch, rider.id)));
   }
 
@@ -228,6 +230,7 @@ export function deliveryController({ env, dbs }) {
     const n = await dbs.dispatch('rider_earnings').where({ id: e.id, status: 'OK' }).update({ status: 'DISPUTED', dispute_reason: req.body.reason, disputed_at: new Date() });
     if (!n) throw new AppError(409, 'ALREADY_DISPUTED', 'This pay row was already disputed');
     await audit(req.user.userId, 'earning.dispute', `earning:${e.id}`, null, { reason: req.body.reason });
+    realtime.publish(['complaints'], 'earning', { orderId: e.order_id });
     res.json(earningView(await dbs.dispatch('rider_earnings').where({ id: e.id }).first()));
   }
 

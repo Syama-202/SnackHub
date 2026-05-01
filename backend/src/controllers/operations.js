@@ -10,6 +10,7 @@
 //   GET  /admin/policy, PUT /admin/policy  the current version, history, and a new version
 import { AppError } from '../utils/AppError.js';
 import { currentPolicy, inbox, policyOf, trackState, viewOrders } from '../utils/orders.js';
+import { realtime } from '../utils/realtime.js';
 import { WITH_RIDER } from '../models/ordering/order.js';
 import { sellerModel } from '../models/catalog/seller.js';
 import { riderModel } from '../models/dispatch/rider.js';
@@ -127,6 +128,7 @@ export function operationsController({ dbs }) {
     const rider = await riderModel.findById(dbs.dispatch, e.rider_id);
     if (rider) await dbs.ordering.transaction((trx) => inbox(trx, { userId: rider.user_id, orderId: e.order_id, type: 'delivery.dispute_resolved', body: reverse ? `Your dispute on order #${e.order_id} was upheld: the lateness cut was given back. ${reason}` : `Your dispute on order #${e.order_id} was reviewed and the cut stands. ${reason}` }));
     await auditLogModel.append(dbs.identity, { actorId: staffId, action: 'earning.resolve', target: `earning:${e.id}`, before: { status: 'DISPUTED' }, after: { reverse, reason } });
+    realtime.publish([{ userId: rider?.user_id, role: 'rider' }, 'complaints'], 'earning', { orderId: e.order_id });
     res.json(earningView(await dbs.dispatch('rider_earnings').where({ id: e.id }).first()));
   }
 

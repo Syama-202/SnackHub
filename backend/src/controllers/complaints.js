@@ -14,6 +14,7 @@ import { AppError } from '../utils/AppError.js';
 import { inspectUpload } from '../utils/fileCheck.js';
 import { signFileLink } from '../utils/signedUrl.js';
 import { inbox, policyOf } from '../utils/orders.js';
+import { realtime } from '../utils/realtime.js';
 import { orderModel } from '../models/ordering/order.js';
 import { orderItemModel } from '../models/ordering/orderItem.js';
 import { complaintModel } from '../models/ordering/complaint.js';
@@ -151,7 +152,10 @@ export function complaintsController({ env, dbs, storage, scanner }) {
     if (t.safety) {
       await sellerModel.setPaused(dbs.catalog, order.seller_id, true);
       await auditLogModel.append(dbs.identity, { actorId: null, action: 'shop.paused_for_safety', target: `seller:${order.seller_id}`, after: { complaintId: id } });
+      const shop = await sellerModel.findById(dbs.catalog, order.seller_id);
+      realtime.publish([{ userId: shop?.user_id, role: 'seller' }], 'shop');
     }
+    realtime.publish(['complaints'], 'complaint', { orderId: order.id });
     res.status(201).json(await complaintView(await complaintModel.findById(dbs.ordering, id)));
   }
 
@@ -190,6 +194,7 @@ export function complaintsController({ env, dbs, storage, scanner }) {
     });
     if (!done) throw new AppError(409, 'ALREADY_DECIDED', 'This complaint was already decided');
     await auditLogModel.append(dbs.identity, { actorId: staffId, action: 'complaint.decide', target: `complaint:${c.id}`, before: { status: 'IN_REVIEW' }, after: { resolution, creditPaise, riderFine, sellerFine, lateAlreadyCut } });
+    realtime.publish(['complaints'], 'complaint', { orderId: c.order_id });
     res.json(await complaintView(await complaintModel.findById(dbs.ordering, c.id), { viewerId: staffId, withPhotos: true }));
   }
 
@@ -204,6 +209,7 @@ export function complaintsController({ env, dbs, storage, scanner }) {
     const n = await dbs.ordering('fines').where({ id: req.params.id, status: 'APPLIED' }).update({ status: 'REVERSED', reversed_by: staffId, reverse_reason: req.body.reason });
     if (!n) throw new AppError(409, 'NOT_REVERSIBLE', 'Only an applied fine can be reversed');
     await auditLogModel.append(dbs.identity, { actorId: staffId, action: 'fine.reverse', target: `fine:${req.params.id}`, before: { status: 'APPLIED' }, after: { status: 'REVERSED', reason: req.body.reason } });
+    realtime.publish(['complaints'], 'complaint');
     res.json(fineView(await dbs.ordering('fines').where({ id: req.params.id }).first()));
   }
 

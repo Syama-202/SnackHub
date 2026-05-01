@@ -21,9 +21,10 @@ const SellerOrders = () => {
   const { orders, ordersLoaded, shop } = useSelector((state) => state.seller);
   const [sound, setSound] = useState(false);
   const seen = useRef(null);
+  const was = useRef(null);
 
-  usePolling(() => dispatch(fetchSellerOrders()), 4000);
-  usePolling(() => dispatch(fetchShopProfile()), 30000);
+  usePolling(() => dispatch(fetchSellerOrders()), 4000, true, 'order');
+  usePolling(() => dispatch(fetchShopProfile()), 30000, true, 'shop');
 
   // A toast and an optional sound for new orders (doc 11.2: push and a sound alert)
   useEffect(() => {
@@ -37,6 +38,13 @@ const SellerOrders = () => {
       }
     }
     seen.current = ids;
+    // an open order the customer (or the shop clock) closed since the last look
+    const now = new Map(orders.map((o) => [o.id, o.status]));
+    if (was.current) {
+      const closed = orders.find((o) => o.status === 'CANCELLED' && was.current.get(o.id) && was.current.get(o.id) !== 'CANCELLED');
+      if (closed) dispatch(addToast({ type: 'error', title: 'Order cancelled', message: `Order #${closed.id} was cancelled. You do not need to pack it.` }));
+    }
+    was.current = now;
   }, [orders, ordersLoaded, sound, dispatch]);
 
   const simulate = async () => {
