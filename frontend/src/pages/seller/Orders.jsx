@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AnimatePresence, m } from 'motion/react';
-import { fetchSellerOrders, fetchShopProfile, sellerOrderAction, simulateIncomingOrder } from '../../store/slices/seller';
+import { fetchSellerOrders, fetchSellerProducts, fetchShopProfile, sellerOrderAction, simulateIncomingOrder } from '../../store/slices/seller';
 import { addToast } from '../../store/slices/toast';
 import { rupees } from '@shared/domain/money';
 import { useNow, usePolling } from '../../hooks';
 import { isDemoSession } from '../../store/slices/auth';
-import { Button, Card, Pill, TempBadge, Skeleton, cx } from '../../components/ui';
+import { Button, Card, Icon, Pill, TempBadge, Skeleton, cx } from '../../components/ui';
 
 const COLUMNS = [
   { id: 'new', title: 'New', match: ['PLACED'] },
@@ -15,16 +16,32 @@ const COLUMNS = [
 ];
 const DONE = ['PICKED_UP', 'ON_THE_WAY', 'ARRIVED', 'DELIVERED', 'CANCELLED', 'REJECTED'];
 
+/** What a new shop still has to do before a customer can order from it. */
+function firstSteps(shop, products) {
+  const stocked = products.some((p) => p.stock > 0);
+  const listed = products.some((p) => p.active && p.stock > 0);
+  return [
+    { done: products.length > 0, title: 'Add your first snack', body: 'Name, price, weight and how long it takes to make.', to: '/seller/products', cta: 'Add a snack' },
+    { done: stocked, title: 'Put stock on it', body: 'Customers can only buy what you have in stock.', to: '/seller/products', cta: 'Add stock' },
+    { done: listed, title: 'List it for customers', body: 'A new snack starts hidden. List it once it is ready to sell.', to: '/seller/products', cta: 'List a snack' },
+    { done: !shop.paused, title: 'Open the shop', body: 'A paused shop takes no orders.', to: '/seller/shop', cta: 'Open the shop' },
+  ];
+}
+
 /** Board with three columns: New, Packing, Packed (doc 11.2). */
 const SellerOrders = () => {
   const dispatch = useDispatch();
-  const { orders, ordersLoaded, shop } = useSelector((state) => state.seller);
+  const { orders, ordersLoaded, shop, products, productsLoaded } = useSelector((state) => state.seller);
   const [sound, setSound] = useState(false);
   const seen = useRef(null);
   const was = useRef(null);
 
   usePolling(() => dispatch(fetchSellerOrders()), 4000, true, 'order');
   usePolling(() => dispatch(fetchShopProfile()), 30000, true, 'shop');
+  // the menu decides whether customers can order at all (the first-steps card)
+  useEffect(() => {
+    dispatch(fetchSellerProducts());
+  }, [dispatch]);
 
   // A toast and an optional sound for new orders (doc 11.2: push and a sound alert)
   useEffect(() => {
@@ -57,18 +74,21 @@ const SellerOrders = () => {
   };
 
   const done = orders.filter((o) => DONE.includes(o.status)).slice(0, 8);
+  const steps = shop && productsLoaded ? firstSteps(shop, products) : null;
+  const sellable = steps ? steps[2].done : true;
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-3xl font-extrabold">Orders</h1>
-        {shop && <Pill tone={shop.paused ? 'red' : 'green'}>{shop.paused ? 'Shop paused' : 'Taking orders'}</Pill>}
+        {shop && <Pill tone={shop.paused ? 'red' : sellable ? 'green' : 'orange'}>{shop.paused ? 'Shop paused' : sellable ? 'Taking orders' : 'No snacks listed'}</Pill>}
         {shop?.busyExtraMin > 0 && <Pill tone="orange">Busy +{shop.busyExtraMin} min</Pill>}
         {isDemoSession() && <Button size="sm" variant="ghost" className="ml-auto" onClick={simulate}>Simulate an incoming order (demo)</Button>}
         <label className={cx('flex items-center gap-2 text-sm font-bold', !isDemoSession() && 'ml-auto')}>
           <input type="checkbox" checked={sound} onChange={(e) => setSound(e.target.checked)} className="h-4 w-4 accent-orange-deep" /> Sound alert
         </label>
       </div>
+      {steps && steps.some((x) => !x.done) && <FirstSteps steps={steps} />}
       {shop && (
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Orders today" value={shop.stats.ordersToday} />
@@ -189,6 +209,37 @@ function beep() {
   } catch {
     /* audio blocked */
   }
+}
+
+/** Setup card for a shop that cannot sell yet: what is done, and the next thing to do. */
+function FirstSteps({ steps }) {
+  const next = steps.findIndex((x) => !x.done);
+  return (
+    <Card className="mt-4 p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-xl font-extrabold">Get your shop ready</h2>
+        <p className="text-sm font-bold text-grey-600">{steps.filter((x) => x.done).length} of {steps.length} done</p>
+      </div>
+      <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {steps.map((x, i) => (
+          <li key={x.title} className={cx('rounded-2xl border p-4', i === next ? 'border-orange-deep/40 bg-sun/15' : 'border-grey-800/10')}>
+            <div className="flex items-center gap-2">
+              <span className={cx('grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-extrabold', x.done ? 'bg-emerald-600 text-white' : 'bg-grey-800/10 text-grey-800')}>
+                {x.done ? <Icon name="check" className="h-4 w-4" /> : i + 1}
+              </span>
+              <p className={cx('font-bold', x.done && 'text-grey-600 line-through decoration-grey-400')}>{x.title}</p>
+            </div>
+            {!x.done && <p className="mt-2 text-sm text-grey-600">{x.body}</p>}
+            {i === next && (
+              <Link to={x.to} className="mt-3 inline-block">
+                <Button size="sm">{x.cta}</Button>
+              </Link>
+            )}
+          </li>
+        ))}
+      </ol>
+    </Card>
+  );
 }
 
 export default SellerOrders;

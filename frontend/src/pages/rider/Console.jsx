@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import ConsoleLayout from '../../components/layout/Console';
 import RiderApproved from './Approved';
 import { isDemoSession } from '../../store/slices/auth';
+import Notifications from '../common/Notifications';
 import RiderToday from './Today';
 import RiderEarnings from './Earnings';
 
@@ -20,6 +21,7 @@ const RiderConsole = () => {
     <Routes>
       <Route index element={<RiderToday />} />
       <Route path="earnings" element={<RiderEarnings />} />
+      <Route path="notifications" element={<Notifications />} />
       {/* an unknown address inside the console goes back to its first screen */}
       <Route path="*" element={<Navigate to="/rider" replace />} />
     </Routes>

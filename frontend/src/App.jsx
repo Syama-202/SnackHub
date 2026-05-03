@@ -18,7 +18,7 @@ const OrderHistory = lazy(() => import('./pages/customer/OrderHistory'));
 const OrderTracking = lazy(() => import('./pages/customer/OrderTracking'));
 const ReportProblem = lazy(() => import('./pages/customer/ReportProblem'));
 const Profile = lazy(() => import('./pages/customer/Profile'));
-const Notifications = lazy(() => import('./pages/customer/Notifications'));
+const Notifications = lazy(() => import('./pages/common/Notifications'));
 const Join = lazy(() => import('./pages/auth/Join'));
 const SignIn = lazy(() => import('./pages/auth/SignIn'));
 const SignUp = lazy(() => import('./pages/auth/SignUp'));

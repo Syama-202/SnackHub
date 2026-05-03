@@ -11,6 +11,7 @@ import { staffToken, admin } from './helpers/onboarding.js';
 import * as H from './helpers/orders.js';
 import { createSocketServer, SOCKET_PATH } from '../src/socket.js';
 import { memoryCounter } from '../src/utils/rateLimit.js';
+import { createRedis } from '../src/utils/redis.js';
 
 const h = await openHarness();
 if (h.skip) console.warn(`realtime tests skipped: ${h.skip}`);
@@ -261,6 +262,35 @@ describe.skipIf(h.skip)('live updates', () => {
       expect(s.readies).toBe(2);
       const order = await H.placeOrder(c, shop);
       expect(await s.next('order', order.id)).toBeTruthy();
+    });
+
+    it('keeps working on its own when Redis is down from the start', async () => {
+      // a second server whose Redis never answers: the adapter must not crash the process
+      const dead = createRedis({ REDIS_URL: 'redis://127.0.0.1:1' }, null, { name: 'dead' });
+      dead.on('error', () => {});
+      const other = http.createServer(t.app);
+      const alone = createSocketServer(other, { env: h.env, dbs: t.trx, redis: dead, rateStore: memoryCounter() });
+      await new Promise((r) => other.listen(0, '127.0.0.1', r));
+      try {
+        const shop = await H.openShop(t, staff);
+        const c = await H.customerAt(t);
+        const socket = connectClient(`http://127.0.0.1:${other.address().port}`, { path: SOCKET_PATH, auth: { token: shop.token }, transports: ['websocket'], reconnection: false, forceNew: true });
+        const events = [];
+        socket.on('change', (e) => events.push(e));
+        await new Promise((resolve, reject) => {
+          socket.once('ready', resolve);
+          socket.once('connect_error', reject);
+        });
+        // long enough for the client to give up a few times
+        await sleep(2500);
+        const order = await H.placeOrder(c, shop);
+        for (let i = 0; i < 80 && !events.some((e) => e.orderId === order.id); i += 1) await sleep(25);
+        expect(events.some((e) => e.topic === 'order' && e.orderId === order.id)).toBe(true);
+        socket.disconnect();
+      } finally {
+        await alone.close();
+        dead.disconnect();
+      }
     });
 
     it('a notification delivered twice makes one hint; every hint has its own id', async () => {

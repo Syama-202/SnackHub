@@ -9,6 +9,7 @@ import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { verifyAccessToken } from './utils/tokens.js';
 import { createLimiter } from './utils/rateLimit.js';
+import { adapterClients } from './utils/redis.js';
 import { realtime, roomOf, personRoom, STAFF_ROOMS } from './utils/realtime.js';
 import { userModel } from './models/identity/user.js';
 import { userRoleModel } from './models/identity/userRole.js';
@@ -35,15 +36,9 @@ export function createSocketServer(httpServer, { env, dbs, logger, redis = null,
     pingInterval: 20_000,
     pingTimeout: 20_000,
   });
-  let pub = null;
-  let sub = null;
-  if (redis) {
-    // the adapter's own connections queue while Redis restarts; requests never wait on them
-    pub = redis.duplicate({ enableOfflineQueue: true, connectionName: 'snackhub-socket-pub' });
-    sub = redis.duplicate({ enableOfflineQueue: true, connectionName: 'snackhub-socket-sub' });
-    for (const c of [pub, sub]) c.on('error', () => {});
-    io.adapter(createAdapter(pub, sub));
-  }
+  // shared rooms across processes; Redis being down (even at start) never stops the API
+  const clients = redis ? adapterClients(redis) : null;
+  if (clients) io.adapter(createAdapter(clients.pub, clients.sub));
 
   const connections = createLimiter({ name: 'socket.connect.ip', windowMs: 60_000, max: 30, store: rateStore });
 
@@ -100,7 +95,7 @@ export function createSocketServer(httpServer, { env, dbs, logger, redis = null,
     async close() {
       stop();
       await io.close();
-      for (const c of [pub, sub]) if (c) c.disconnect();
+      clients?.close();
     },
   };
 }

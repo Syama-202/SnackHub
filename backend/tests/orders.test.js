@@ -119,6 +119,27 @@ describe.skipIf(h.skip)('the order flow', () => {
     });
   });
 
+  describe('inboxes', () => {
+    it('one person with three roles sees only the messages of each portal there, and reading one portal leaves the others unread', async () => {
+      const u = await t.makeUser({ roles: ['customer', 'seller', 'rider'], mfa: true });
+      const at = new Date();
+      await t.trx.notify('notifications').insert([
+        { user_id: u.id, order_id: null, type: 'order.accepted', body: 'Your order was accepted (demo)', created_at: at },
+        { user_id: u.id, order_id: null, type: 'shop.order_new', body: 'New order (demo)', created_at: at },
+        { user_id: u.id, order_id: null, type: 'delivery.cancelled', body: 'Order cancelled (demo)', created_at: at },
+      ]);
+      const as = (role) => H.api(t, t.tokenFor(u, role));
+      const typesFor = async (role) => (await as(role).get('/me/notifications').expect(200)).body.map((n) => n.type);
+      expect(await typesFor('customer')).toEqual(['order.accepted']);
+      expect(await typesFor('seller')).toEqual(['shop.order_new']);
+      expect(await typesFor('rider')).toEqual(['delivery.cancelled']);
+
+      await as('seller').post('/me/notifications/read').expect(200);
+      const unread = async (role) => (await as(role).get('/me/notifications').expect(200)).body.filter((n) => !n.readAt).length;
+      expect([await unread('customer'), await unread('seller'), await unread('rider')]).toEqual([1, 0, 1]);
+    });
+  });
+
   describe('the shop, the rider and the door', () => {
     it('runs from order to delivery, with the code shown only inside 500 m and entered at the door', async () => {
       const s = await openShop({ stock: 4 });

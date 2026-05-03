@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import ConsoleLayout from '../../components/layout/Console';
 import SellerApproved, { Standing } from './Approved';
 import { isDemoSession } from '../../store/slices/auth';
+import Notifications from '../common/Notifications';
 import SellerOrders from './Orders';
 import SellerProducts from './Products';
 import SellerShop from './Shop';
@@ -24,6 +25,7 @@ const SellerConsole = () => {
       <Route index element={<>{!demo && <Standing compact />}<SellerOrders /></>} />
       <Route path="products" element={<SellerProducts />} />
       <Route path="shop" element={<>{!demo && <Standing />}<SellerShop /></>} />
+      <Route path="notifications" element={<Notifications />} />
       {/* an unknown address inside the console goes back to its first screen */}
       <Route path="*" element={<Navigate to="/seller" replace />} />
     </Routes>

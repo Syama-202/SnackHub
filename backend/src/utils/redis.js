@@ -35,3 +35,36 @@ export async function closeRedis(redis) {
     redis.disconnect();
   }
 }
+
+/**
+ * A client whose publish never rejects: Socket.IO's Redis adapter and emitter do not catch a
+ * failed command, so one would crash the process. Without `queue` a message is dropped while
+ * Redis is away (each process still serves its own sockets); with it, it waits briefly.
+ */
+export function safePublisher(client, { queue = false } = {}) {
+  return new Proxy(client, {
+    get(target, key) {
+      if (key === 'publish') return (...args) => (queue || target.status === 'ready' ? target.publish(...args).catch(() => 0) : Promise.resolve(0));
+      const value = Reflect.get(target, key, target);
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+}
+
+/**
+ * The adapter's own two connections. The subscriber waits for Redis however long it is down
+ * and subscribes again on reconnect; the publisher never fails a request (safePublisher).
+ */
+export function adapterClients(redis) {
+  const sub = redis.duplicate({ enableOfflineQueue: true, maxRetriesPerRequest: null, connectionName: 'snackhub-socket-sub' });
+  const pub = redis.duplicate({ enableOfflineQueue: false, connectionName: 'snackhub-socket-pub' });
+  for (const c of [sub, pub]) c.on('error', () => {});
+  return {
+    sub,
+    pub: safePublisher(pub),
+    close() {
+      sub.disconnect();
+      pub.disconnect();
+    },
+  };
+}

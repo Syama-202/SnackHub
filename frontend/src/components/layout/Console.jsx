@@ -7,15 +7,21 @@ import { Logo, Icon, cx } from '../ui';
 import { logoutUser } from '../../store/slices/auth';
 import { resetSeller } from '../../store/slices/seller';
 import { resetRider } from '../../store/slices/rider';
+import { fetchNotifications, resetNotifications, selectUnreadCount } from '../../store/slices/notification';
+import { usePolling } from '../../hooks';
 
 /** Shared shell for the seller console and the rider app. */
 const ConsoleLayout = ({ title, tabs, children, mobileTabs = false }) => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
+  const unread = useSelector(selectUnreadCount);
+  // the portal's own inbox (shop.* for sellers, delivery.* for riders), live when the socket is up
+  usePolling(() => dispatch(fetchNotifications()), 15000, Boolean(user), 'notification');
   const signOut = () => {
     dispatch(logoutUser());
     dispatch(resetSeller());
     dispatch(resetRider());
+    dispatch(resetNotifications());
   };
   return (
     <div className="min-h-dvh">
@@ -35,7 +41,13 @@ const ConsoleLayout = ({ title, tabs, children, mobileTabs = false }) => {
               </NavLink>
             ))}
           </nav>
-          <button onClick={signOut} aria-label="Sign out" className="ml-auto inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-bold text-grey-600 hover:bg-grey-800/5">
+          {user && (
+            <Link to={`/${user.role}/notifications`} className="relative ml-auto grid h-11 w-11 shrink-0 place-items-center rounded-full hover:bg-grey-800/5" aria-label={`Notifications, ${unread} unread`}>
+              <Icon name="bell" />
+              {unread > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-red-strong ring-2 ring-white" />}
+            </Link>
+          )}
+          <button onClick={signOut} aria-label="Sign out" className={cx(!user && 'ml-auto', 'inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-bold text-grey-600 hover:bg-grey-800/5')}>
             <Icon name="logout" className="h-4 w-4" /> <span className="hidden sm:inline">Sign out</span>
           </button>
         </div>

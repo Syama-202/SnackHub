@@ -12,7 +12,7 @@ import { createOutboxRelay } from '../src/jobs/outboxRelay.js';
 import { runDocumentExpiry } from '../src/jobs/documentExpiry.js';
 import { runOrderTimers } from '../src/jobs/orderTimers.js';
 import { Emitter } from '@socket.io/redis-emitter';
-import { createRedis, closeRedis } from '../src/utils/redis.js';
+import { createRedis, closeRedis, safePublisher } from '../src/utils/redis.js';
 import { realtime } from '../src/utils/realtime.js';
 
 const env = loadEnv();
@@ -21,7 +21,7 @@ const dbs = moduleDbs(env);
 // live hints from this worker reach the apps through the API's Socket.IO servers (Redis)
 const redis = createRedis(env, logger, { name: 'jobs', queue: true });
 if (redis) {
-  const emitter = new Emitter(redis);
+  const emitter = new Emitter(safePublisher(redis, { queue: true }));
   realtime.use({ send: (rooms, event) => emitter.to(rooms).emit('change', event), kick: (room) => emitter.in(room).disconnectSockets(true) });
 }
 try {

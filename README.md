@@ -200,7 +200,10 @@ and rides. The customer's 4-digit delivery code shows only once the rider is wit
 and the rider can enter it only inside 150 m; three wrong codes lock it and alert an admin.
 The rider records the cash collected and the pay for the delivery is written. Every change
 goes through `canTransition()`, and each step puts a message in the person's inbox
-(**Notifications**, never containing the code).
+(**Notifications**, never containing the code). Sellers and riders have their own inbox behind
+the bell in the console, showing only their portal's messages; a new shop sees a "Get your
+shop ready" card on its board (add a snack, stock it, list it, open the shop) until it can
+take orders.
 
 - Prices, fees and the delivery promise are recomputed on the server at checkout; stock is
   held all-or-nothing, and one Idempotency-Key makes one order however often it is sent.
@@ -247,8 +250,9 @@ address or delivery code ever travel on it.
   per email, so a new IP address does not reset the tries on an account. Keys are hashed, so no
   email or address is stored. A refused request gets `429 RATE_LIMITED` with `Retry-After`,
   the same seconds in `error.details.retryAfter`, and `RateLimit-*` headers.
-- If Redis goes away, requests never wait on it: each process keeps counting on its own and
-  live updates reach the sockets on that process, until Redis is back. Production refuses to
+- If Redis goes away, even before the API starts, requests never wait on it and nothing
+  crashes: each process keeps counting on its own and live updates reach the sockets on that
+  process, until Redis is back. Production refuses to
   start without `REDIS_URL`.
 
 ## How the code is organised
@@ -293,6 +297,7 @@ From the repository root:
 
 | Command | Does |
 | --- | --- |
+| `npm run dev` | Everything in one terminal, in order: Redis (when Docker is running), the API, then both sites once the API answers. Use this to avoid `ECONNREFUSED 127.0.0.1:4000`, which means a site is running without the API |
 | `npm run dev:frontend` | Frontend on http://localhost:5180 (accounts, onboarding and the catalog from the backend; the demo parts from the mock) |
 | `npm run dev:admin` | Admin console on http://localhost:5181 |
 | `npm run dev:backend` | Backend on http://localhost:4000 (`/health`, `/ready`, live updates on `/api/v1/socket`), with the email relay and the expiry job |
