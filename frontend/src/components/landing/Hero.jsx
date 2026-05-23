@@ -5,7 +5,10 @@ import { Button, Icon, SplitWords } from '../ui';
 import SnackArt from '../ui/SnackArt';
 import { AssetImage } from '../ui/SnackImage';
 import { useReducedMotion } from '../../hooks';
-import { setAddress } from '../../store/slices/ui';
+import { setAddress, setGuestPoint } from '../../store/slices/ui';
+import { addToast } from '../../store/slices/toast';
+import { cityPoint } from '../../store/slices/profile';
+import { CITIES } from '@shared/domain/cities';
 import { PROMISE_WORDING } from '@shared/domain/promise';
 
 /**
@@ -129,9 +132,14 @@ function HeroCopy() {
   const [place, setPlace] = useState('');
   const go = (e) => {
     e.preventDefault();
-    const hit = addresses.find((a) => place && (a.line.toLowerCase().includes(place.toLowerCase()) || a.cityId.includes(place.toLowerCase())));
+    const q = place.trim().toLowerCase();
+    const hit = q && addresses.find((a) => a.line.toLowerCase().includes(q) || a.cityId?.includes(q));
+    const city = q && CITIES.find((c) => c.name.toLowerCase().startsWith(q) || c.id.startsWith(q));
     if (hit) dispatch(setAddress(hit.id));
+    else if (city) dispatch(setGuestPoint(cityPoint(city)));
+    else if (q) return dispatch(addToast({ type: 'info', title: 'City not found', message: 'Try a city name like Chennai or Pune, or pick one from “Deliver to” at the top.' }));
     navigate('/shop');
+    return undefined;
   };
   return (
     <div className="max-w-xl">
@@ -152,7 +160,7 @@ function HeroCopy() {
         </div>
         <Button size="lg" type="submit">Show snacks near me</Button>
       </form>
-      <p className="mt-2 pl-2 text-xs text-grey-600">{user ? 'Try “Guntur”, “Vijayawada” or “Bengaluru” (demo addresses).' : 'Demo: browsing from Brodipet, Guntur.'}</p>
+      <p className="mt-2 pl-2 text-xs text-grey-600">Type a city, such as Chennai, Pune or Kochi{user ? ', or one of your saved addresses' : ''}. Demo shops in {CITIES.length} cities.</p>
       <div className="mt-6 flex flex-wrap gap-3">
         <Button variant="dark" onClick={() => navigate('/shop')}>Explore snacks <Icon name="arrowRight" className="h-4 w-4" /></Button>
         <Button variant="ghost" onClick={() => document.getElementById('regions')?.scrollIntoView({ behavior: 'smooth' })}>Discover regional flavours</Button>

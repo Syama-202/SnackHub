@@ -8,7 +8,7 @@ import ShopChecks from '../../components/landing/ShopChecks';
 import VariantPicker from '../../components/landing/VariantPicker';
 import Delivery from '../../components/landing/Delivery';
 import Moods from '../../components/landing/Moods';
-import LanePreview from '../../components/landing/LanePreview';
+import TrackPreview from '../../components/landing/TrackPreview';
 import Stories from '../../components/landing/Stories';
 import Offers from '../../components/landing/Offers';
 import OrderNow from '../../components/landing/OrderNow';
@@ -26,7 +26,7 @@ const Home = () => (
     <VariantPicker />
     <Delivery />
     <Moods />
-    <LanePreview />
+    <TrackPreview />
     <Stories />
     <Offers />
     <OrderNow />

@@ -4,6 +4,7 @@ import { useCountUp, usePolling } from '../../hooks';
 import { rupees } from '@shared/domain/money';
 import { STATE_LABEL, isActive } from '@shared/domain/orderStates';
 import { Card, Pill, Icon, Button, cx } from '../../components/ui';
+import { TrackMap } from '../../components/tracking/TrackMap';
 import { tokenReplaced } from '../../store/slices/auth';
 import { fetchAdminOrders, fetchAdminRiders, fetchAdminSellers, fetchReconciliation, fetchSla } from '../../store/slices/admin';
 
@@ -22,7 +23,21 @@ const LiveOps = () => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.accessToken);
   const { sla: m, orders, riders, sellers, reconciliation: recon } = useSelector((state) => state.admin);
-  const [city, setCity] = useState('guntur');
+  const [picked, setPicked] = useState(() => {
+    try {
+      return localStorage.getItem('snackhub.admin.city');
+    } catch {
+      return null;
+    }
+  });
+  const pick = (c) => {
+    setPicked(c);
+    try {
+      localStorage.setItem('snackhub.admin.city', c);
+    } catch {
+      /* storage blocked */
+    }
+  };
 
   usePolling(() => dispatch(fetchSla()), 10000, true, 'order');
   usePolling(() => dispatch(fetchAdminOrders()), 5000, true, 'order');
@@ -31,6 +46,18 @@ const LiveOps = () => {
   usePolling(() => dispatch(fetchAdminSellers()), 30000);
 
   const live = orders.filter((o) => isActive(o.status));
+  const cities = [...new Set(sellers.map((s) => s.cityId))].sort();
+  // open on the city with the most live orders until an admin picks one
+  const perCity = {};
+  for (const o of live) {
+    const c = sellers.find((s) => s.id === o.seller.id)?.cityId;
+    if (c) perCity[c] = (perCity[c] ?? 0) + 1;
+  }
+  const busiest = Object.keys(perCity).sort((x, y) => perCity[y] - perCity[x])[0];
+  // with no live orders: the city with the most riders online, then the most shops
+  const count = (list, c) => list.filter((x) => x.cityId === c).length;
+  const fullest = [...cities].sort((x, y) => count(riders, y) - count(riders, x) || count(sellers, y) - count(sellers, x))[0];
+  const city = (picked && cities.includes(picked) ? picked : null) ?? busiest ?? fullest;
   const alerts = [
     ...orders.filter((o) => o.emergency).map((o) => ({ tone: 'red', text: `Rider emergency on order #${o.id}` })),
     ...orders.filter((o) => o.cashMismatch).map((o) => ({ tone: 'orange', text: `Cash mismatch on #${o.id}: collected ${rupees(o.collectedPaise)} of ${rupees(o.totalPaise)}` })),
@@ -73,12 +100,11 @@ const LiveOps = () => {
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-extrabold">Live map</h2>
-            <select value={city} onChange={(e) => setCity(e.target.value)} className="h-10 rounded-full border border-grey-800/15 px-3 text-sm" aria-label="City">
-              {[...new Set(sellers.map((s) => s.cityId))].map((c) => <option key={c} value={c}>{c}</option>)}
+            <select value={city ?? ''} onChange={(e) => pick(e.target.value)} className="h-10 rounded-full border border-grey-800/15 px-3 text-sm capitalize" aria-label="City">
+              {cities.map((c) => <option key={c} value={c}>{c.replace(/-/g, ' ')}</option>)}
             </select>
           </div>
           <OpsMap city={city} sellers={sellers} riders={riders} orders={live} />
-          <p className="mt-2 text-xs text-grey-600">Schematic map from coordinates. The real console uses MapLibre with a free vector-tile host, not the public OpenStreetMap tile servers.</p>
         </Card>
         <Card className="p-4">
           <h2 className="text-lg font-extrabold">Live orders</h2>
@@ -120,45 +146,27 @@ const LiveOps = () => {
 
 function OpsMap({ city, sellers, riders, orders }) {
   const shops = sellers.filter((s) => s.cityId === city);
-  const rs = riders.filter((r) => r.cityId === city);
+  const rs = riders.filter((r) => r.cityId === city && r.lat != null);
   const os = orders.filter((o) => shops.some((s) => s.id === o.seller.id));
-  const pts = [...shops, ...rs, ...os.map((o) => o.drop)].filter(Boolean);
-  const bounds = useMemo(() => {
-    if (!pts.length) return null;
-    const lats = pts.map((p) => p.lat);
-    const lngs = pts.map((p) => p.lng);
-    const pad = 0.004;
-    return { minLat: Math.min(...lats) - pad, maxLat: Math.max(...lats) + pad, minLng: Math.min(...lngs) - pad, maxLng: Math.max(...lngs) + pad };
-  }, [pts]);
-  if (!bounds) return <div className="mt-3 h-80 rounded-2xl bg-grey-50" />;
-  const W = 600, H = 360;
-  const x = (lng) => ((lng - bounds.minLng) / (bounds.maxLng - bounds.minLng)) * W;
-  const y = (lat) => H - ((lat - bounds.minLat) / (bounds.maxLat - bounds.minLat)) * H;
+  const points = useMemo(
+    () => [
+      ...shops.map((s) => ({ id: `s${s.id}`, kind: 'shop', lat: s.lat, lng: s.lng, muted: !['active', 'probation'].includes(s.status), label: `${s.shopName}${s.status !== 'active' ? ` (${s.status})` : ''}` })),
+      ...rs.map((r) => ({ id: `r${r.id}`, kind: 'rider', lat: r.lat, lng: r.lng, muted: r.status === 'OFFLINE', label: `Rider ${r.name ?? `#${r.id}`}, ${String(r.status).toLowerCase()}` })),
+      ...os.filter((o) => o.drop).map((o) => ({ id: `o${o.id}`, kind: 'drop', lat: o.drop.lat, lng: o.drop.lng, label: `Drop for order #${o.id}` })),
+    ],
+    [shops, rs, os],
+  );
+  const lines = useMemo(() => os.filter((o) => o.drop).map((o) => [o.track?.riderPos ?? o.seller, o.drop]), [os]);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full rounded-2xl bg-[#F7F4EE]" role="img" aria-label={`Map of ${city}: ${shops.length} shops, ${rs.length} riders, ${os.length} active orders`}>
-      {Array.from({ length: 12 }, (_, i) => <line key={`v${i}`} x1={i * 55} y1="0" x2={i * 55} y2={H} stroke="#E9E2D6" />)}
-      {Array.from({ length: 7 }, (_, i) => <line key={`h${i}`} x1="0" y1={i * 60} x2={W} y2={i * 60} stroke="#E9E2D6" />)}
-      {os.map((o) => (
-        <g key={o.id}>
-          <line x1={x(o.seller.lng)} y1={y(o.seller.lat)} x2={x(o.drop.lng)} y2={y(o.drop.lat)} stroke="#FF7A00" strokeDasharray="5 5" strokeWidth="2" />
-          <circle cx={x(o.drop.lng)} cy={y(o.drop.lat)} r="7" fill="#1F2937" />
-          {o.track.riderPos && <circle cx={x(o.track.riderPos.lng)} cy={y(o.track.riderPos.lat)} r="9" fill="#E23744" stroke="#fff" strokeWidth="3" />}
-        </g>
-      ))}
-      {shops.map((s) => (
-        <g key={s.id}>
-          <rect x={x(s.lng) - 8} y={y(s.lat) - 8} width="16" height="16" rx="4" fill={['active', 'probation'].includes(s.status) ? '#FF7A00' : '#9CA3AF'} />
-          <text x={x(s.lng) + 12} y={y(s.lat) + 4} fontSize="11" fontWeight="700" fill="#1F2937">{s.shopName}{s.status !== 'active' ? ` (${s.status})` : ''}</text>
-        </g>
-      ))}
-      {rs.map((r) => <circle key={r.id} cx={x(r.lng)} cy={y(r.lat)} r="5" fill={r.status === 'OFFLINE' ? '#9CA3AF' : '#16A34A'} />)}
-      <g transform={`translate(10 ${H - 70})`} fontSize="11" fill="#1F2937">
-        <rect width="150" height="62" rx="8" fill="#fff" opacity=".9" />
-        <rect x="10" y="10" width="10" height="10" rx="2" fill="#FF7A00" /><text x="26" y="19">Shop</text>
-        <circle cx="15" cy="34" r="5" fill="#16A34A" /><text x="26" y="38">Rider (online)</text>
-        <circle cx="15" cy="51" r="5" fill="#E23744" /><text x="26" y="55">Rider on an order</text>
-      </g>
-    </svg>
+    <div className="mt-3">
+      <TrackMap points={points} lines={lines} height={380} label={`Map of ${city}: ${shops.length} shops, ${rs.length} riders, ${os.length} active orders`} />
+      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-grey-600">
+        <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-orange-deep" /> Shop</li>
+        <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-primary" /> Rider (last GPS fix)</li>
+        <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-grey-900" /> Drop point</li>
+        <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-grey-400" /> Offline or not live</li>
+      </ul>
+    </div>
   );
 }
 

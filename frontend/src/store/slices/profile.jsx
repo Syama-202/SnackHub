@@ -1,5 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { apiThunk } from '../apiThunk';
+import { CITIES } from '@shared/domain/cities';
+import { distanceM } from '@shared/domain/geo';
 
 export const fetchAddresses = apiThunk('profile/fetchAddresses', async (_, { apiFetch }) => apiFetch('/me/addresses'));
 export const addAddress = apiThunk('profile/addAddress', async (address, { apiFetch }) => apiFetch('/me/addresses', { method: 'POST', body: address }));
@@ -35,10 +37,20 @@ const profileSlice = createSlice({
 
 export const { resetProfile } = profileSlice.actions;
 
-// Guests browse from the demo Guntur address
-export const GUEST_POINT = { id: 1, label: 'Guntur (demo)', line: 'Brodipet, Guntur (demo)', lat: 16.3152, lng: 80.4301, cityId: 'guntur' };
+/** A guest browsing point at a city's centre. */
+export const cityPoint = (c) => ({ id: 1, label: c.name, line: `${c.name}, ${c.state} (city centre)`, lat: c.lat, lng: c.lng, cityId: c.id });
 
-/** The selected delivery point. */
-export const selectDeliveryPoint = (state) => state.profile.addresses.find((a) => a.id === state.ui.addressId) || GUEST_POINT;
+/** A guest browsing point at the phone's position, named after the nearest city. */
+export const herePoint = ({ lat, lng }) => {
+  const near = CITIES.reduce((best, c) => (distanceM(c, { lat, lng }) < distanceM(best, { lat, lng }) ? c : best));
+  return { id: 1, label: 'Current location', line: `Your current location, near ${near.name}`, lat, lng, cityId: near.id };
+};
+
+// until a guest picks a city or shares their location, browsing starts at the first demo city
+export const GUEST_POINT = cityPoint(CITIES[0]);
+
+
+/** The selected delivery point: a saved address, else the guest's city or location. */
+export const selectDeliveryPoint = (state) => state.profile.addresses.find((a) => a.id === state.ui.addressId) || state.ui.guestPoint || GUEST_POINT;
 
 export default profileSlice.reducer;

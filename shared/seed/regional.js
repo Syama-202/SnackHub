@@ -175,25 +175,6 @@ Object.assign(MORE_SNACKS, {
   'Gobi Manchurian': S('Gobi Manchurian', { temp: 'HOT', cat: 'fried', shape: 'pile', c: ['#C2402E', '#E0A54B'], spice: 2, w: '1 plate', p: 9000, tags: ['spicy', 'movie'] }),
 });
 
-export const MORE_CITIES = [
-  { id: 'tirupati', name: 'Tirupati', state: 'Andhra Pradesh', lat: 13.6288, lng: 79.4192 },
-  { id: 'kakinada', name: 'Kakinada', state: 'Andhra Pradesh', lat: 16.9891, lng: 82.2475 },
-  { id: 'nellore', name: 'Nellore', state: 'Andhra Pradesh', lat: 14.4426, lng: 79.9865 },
-  { id: 'warangal', name: 'Warangal', state: 'Telangana', lat: 17.9689, lng: 79.5941 },
-  { id: 'madurai', name: 'Madurai', state: 'Tamil Nadu', lat: 9.9252, lng: 78.1198 },
-  { id: 'tirunelveli', name: 'Tirunelveli', state: 'Tamil Nadu', lat: 8.7139, lng: 77.7567 },
-  { id: 'coimbatore', name: 'Coimbatore', state: 'Tamil Nadu', lat: 11.0168, lng: 76.9558 },
-  { id: 'mysuru', name: 'Mysuru', state: 'Karnataka', lat: 12.2958, lng: 76.6394 },
-  { id: 'mangaluru', name: 'Mangaluru', state: 'Karnataka', lat: 12.9141, lng: 74.856 },
-  { id: 'hubballi', name: 'Hubballi', state: 'Karnataka', lat: 15.3647, lng: 75.124 },
-  { id: 'kochi', name: 'Kochi', state: 'Kerala', lat: 9.9312, lng: 76.2673 },
-  { id: 'thiruvananthapuram', name: 'Thiruvananthapuram', state: 'Kerala', lat: 8.5241, lng: 76.9366 },
-  { id: 'kozhikode', name: 'Kozhikode', state: 'Kerala', lat: 11.2588, lng: 75.7804 },
-  { id: 'kolhapur', name: 'Kolhapur', state: 'Maharashtra', lat: 16.705, lng: 74.2433 },
-  { id: 'nashik', name: 'Nashik', state: 'Maharashtra', lat: 19.9975, lng: 73.7898 },
-  { id: 'kurnool', name: 'Kurnool', state: 'Andhra Pradesh', lat: 15.8281, lng: 78.0373 },
-];
-
 // [neighbourhood, signature, offset lat, offset lng, product names], as in seed.js.
 // Cities already in seed.js get their new shops here too, after every original shop.
 export const MORE_SHOPS = {

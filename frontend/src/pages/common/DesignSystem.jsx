@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Button, Card, Pill, Input, Modal, Drawer, CloseButton, QtyControl, SpiceMeter, TempBadge, Price, Skeleton, Logo, Icon, SectionTitle } from '../../components/ui';
 import SnackArt from '../../components/ui/SnackArt';
-import LaneSvg from '../../components/tracking/LaneSvg';
 import { addToast } from '../../store/slices/toast';
 
 const TOKENS = [
@@ -25,8 +24,6 @@ export default function DesignSystem() {
   const [modal, setModal] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [qty, setQty] = useState(0);
-  const [stage, setStage] = useState('ON_THE_WAY');
-  const [progress, setProgress] = useState(0.45);
   const dispatch = useDispatch();
   return (
     <div className="page pt-6">
@@ -120,14 +117,6 @@ export default function DesignSystem() {
       </div>
       <p className="mt-2 text-sm text-grey-600">All of these stop under prefers-reduced-motion.</p>
 
-      <h2 className="mt-12 text-2xl font-extrabold">Rider lane (SVG version)</h2>
-      <div className="mt-4 overflow-hidden rounded-[20px] bg-grey-900"><LaneSvg stage={stage} progress={progress} height={140} /></div>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <select value={stage} onChange={(e) => setStage(e.target.value)} className="h-11 rounded-full border border-grey-800/15 bg-white px-4" aria-label="Stage">
-          {['PLACED', 'ACCEPTED', 'PACKING', 'PACKED', 'PICKED_UP', 'ON_THE_WAY', 'ARRIVED', 'DELIVERED'].map((s) => <option key={s}>{s}</option>)}
-        </select>
-        <label className="flex items-center gap-2 text-sm font-bold">Progress <input type="range" min="0" max="1" step="0.01" value={progress} onChange={(e) => setProgress(Number(e.target.value))} /></label>
-      </div>
 
       <div className="mt-12 flex items-center gap-6"><Logo /><Logo compact /><Icon name="scooter" className="h-8 w-8" /></div>
     </div>

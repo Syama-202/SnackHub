@@ -11,7 +11,8 @@
  *  - One Guntur rider offline -> matching skips offline riders
  */
 
-import { MORE_SNACKS, MORE_CITIES, MORE_SHOPS, LOCAL_SHOPS } from './regional.js';
+import { MORE_SNACKS, MORE_SHOPS, LOCAL_SHOPS } from './regional.js';
+import { BASE_CITIES, CITIES } from '../domain/cities.js';
 
 // art: shape + two colours for the illustrative SnackArt component
 const S = (title, o) => ({ title, ...o });
@@ -72,24 +73,8 @@ const BASE_SNACKS = {
   'Bikaneri Bhujia': S('Bikaneri Bhujia', { temp: 'AMBIENT', cat: 'namkeen', shape: 'pile', c: ['#E2B866', '#C08A3E'], spice: 2, w: '250 g', p: 10000, tags: ['crunch', 'movie'] }),
 };
 
-const BASE_CITIES = [
-  { id: 'guntur', name: 'Guntur', state: 'Andhra Pradesh', lat: 16.3067, lng: 80.4365 },
-  { id: 'vijayawada', name: 'Vijayawada', state: 'Andhra Pradesh', lat: 16.5062, lng: 80.648 },
-  { id: 'visakhapatnam', name: 'Visakhapatnam', state: 'Andhra Pradesh', lat: 17.6868, lng: 83.2185 },
-  { id: 'hyderabad', name: 'Hyderabad', state: 'Telangana', lat: 17.385, lng: 78.4867 },
-  { id: 'bengaluru', name: 'Bengaluru', state: 'Karnataka', lat: 12.9716, lng: 77.5946 },
-  { id: 'chennai', name: 'Chennai', state: 'Tamil Nadu', lat: 13.0827, lng: 80.2707 },
-  { id: 'mumbai', name: 'Mumbai', state: 'Maharashtra', lat: 19.076, lng: 72.8777 },
-  { id: 'delhi', name: 'Delhi', state: 'Delhi', lat: 28.6139, lng: 77.209 },
-  { id: 'kolkata', name: 'Kolkata', state: 'West Bengal', lat: 22.5726, lng: 88.3639 },
-  { id: 'jaipur', name: 'Jaipur', state: 'Rajasthan', lat: 26.9124, lng: 75.7873 },
-  { id: 'ahmedabad', name: 'Ahmedabad', state: 'Gujarat', lat: 23.0225, lng: 72.5714 },
-  { id: 'pune', name: 'Pune', state: 'Maharashtra', lat: 18.5204, lng: 73.8567 },
-];
-
-// The original cities first, so every id they have stays the same; regional.js adds the
-// Telugu states, Tamil Nadu, Karnataka, Kerala and Maharashtra cities after them.
-export const CITIES = [...BASE_CITIES, ...MORE_CITIES];
+// the city list lives in shared/domain/cities.js; re-exported for the seed's users
+export { CITIES };
 const SNACKS = { ...BASE_SNACKS, ...MORE_SNACKS };
 
 // [neighbourhood, signature, offset lat, offset lng, product names, kind]

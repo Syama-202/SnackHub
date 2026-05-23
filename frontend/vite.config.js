@@ -43,7 +43,9 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    // vendor split only (vite.chunks.js); three.js and GSAP stay in their lazy chunks
+    // vendor split only (vite.chunks.js); MapLibre and GSAP stay in their lazy chunks
     rollupOptions: { input: 'index.html', output: { manualChunks: vendorChunks } },
+    // MapLibre is one 1 MB chunk (290 kB gzipped), loaded only when a map is on screen
+    chunkSizeWarningLimit: 1100,
   },
 });

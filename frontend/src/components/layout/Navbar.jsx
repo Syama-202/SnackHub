@@ -5,9 +5,11 @@ import { Logo, Icon, cx } from '../ui';
 import SnackImage from '../ui/SnackImage';
 import { rupees } from '@shared/domain/money';
 import { logoutUser } from '../../store/slices/auth';
-import { openCart, setAddress } from '../../store/slices/ui';
+import { openCart, setAddress, setGuestPoint } from '../../store/slices/ui';
+import { addToast } from '../../store/slices/toast';
 import { searchProducts } from '../../store/slices/products';
-import { selectDeliveryPoint } from '../../store/slices/profile';
+import { selectDeliveryPoint, cityPoint, herePoint } from '../../store/slices/profile';
+import { CITIES } from '@shared/domain/cities';
 import { selectCartCount } from '../../store/slices/cart';
 import { selectUnreadCount } from '../../store/slices/notification';
 
@@ -87,11 +89,33 @@ function LocationSelector() {
   const point = useSelector(selectDeliveryPoint);
   const addresses = useSelector((state) => state.profile.addresses);
   const isCustomer = useSelector((state) => state.auth.user?.role === 'customer');
+  const [locating, setLocating] = useState(false);
   const ref = useRef(null);
   useOutside(ref, () => setOpen(false));
+  const pickList = isCustomer && addresses.length > 0;
+  const choose = (pt) => {
+    dispatch(setGuestPoint(pt));
+    setOpen(false);
+  };
+  const locate = () => {
+    if (!('geolocation' in navigator)) return dispatch(addToast({ type: 'error', title: 'Location not available', message: 'This browser cannot share a location. Pick your city instead.' }));
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setLocating(false);
+        choose(herePoint({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6) }));
+      },
+      () => {
+        setLocating(false);
+        dispatch(addToast({ type: 'error', title: 'No location', message: 'Allow location for SnackHub, or pick your city.' }));
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 },
+    );
+    return undefined;
+  };
   return (
     <div className="relative min-w-0 flex-1 md:flex-none" ref={ref}>
-      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="listbox" className="flex h-11 min-w-0 items-center gap-1.5 rounded-xl px-2 text-left transition hover:bg-grey-800/5">
+      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup={pickList ? 'listbox' : 'dialog'} className="flex h-11 min-w-0 items-center gap-1.5 rounded-xl px-2 text-left transition hover:bg-grey-800/5">
         <Icon name="pin" className="h-5 w-5 shrink-0 text-orange-text" />
         <span className="min-w-0">
           <span className="block text-[0.6875rem] font-extrabold uppercase leading-none tracking-wide text-orange-text">Deliver to</span>
@@ -100,8 +124,8 @@ function LocationSelector() {
         <Icon name="chevronDown" className="h-4 w-4 shrink-0" />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-grey-800/10 bg-white p-2 shadow-2xl" role="listbox" aria-label="Delivery address">
-          {isCustomer && addresses.length ? (
+        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-grey-800/10 bg-white p-2 shadow-2xl" role={pickList ? 'listbox' : 'dialog'} aria-label="Delivery address">
+          {pickList ? (
             addresses.map((a) => (
               <button
                 key={a.id}
@@ -121,8 +145,28 @@ function LocationSelector() {
               </button>
             ))
           ) : (
-            <div className="p-3 text-sm text-grey-600">
-              Browsing from <b className="text-grey-800">Brodipet, Guntur</b> (demo). <Link to="/customer/signin" className="font-bold text-orange-text underline">Sign in</Link> to pick a saved address.
+            <div className="space-y-3 p-2 text-sm">
+              <button type="button" onClick={locate} disabled={locating} className="flex h-11 w-full items-center gap-2 rounded-xl bg-grey-50 px-3 font-bold hover:bg-sun/20 disabled:opacity-60">
+                <Icon name="pin" className="h-4 w-4 text-orange-text" /> {locating ? 'Finding you…' : 'Use my current location'}
+              </button>
+              <label className="block">
+                <span className="mb-1 block font-bold">Or pick a city</span>
+                <select
+                  value={CITIES.some((c) => c.id === point.cityId && point.label === c.name) ? point.cityId : ''}
+                  onChange={(e) => choose(cityPoint(CITIES.find((c) => c.id === e.target.value)))}
+                  className="h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3"
+                >
+                  <option value="" disabled>Choose a city</option>
+                  {[...new Set(CITIES.map((c) => c.state))].sort().map((st) => (
+                    <optgroup key={st} label={st}>
+                      {CITIES.filter((c) => c.state === st).sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </label>
+              <p className="text-xs text-grey-600">
+                You see shops that deliver to this point. {isCustomer ? <Link to="/account" onClick={() => setOpen(false)} className="font-bold text-orange-text underline">Save an address</Link> : <Link to="/customer/signin" className="font-bold text-orange-text underline">Sign in</Link>} to order to your door.
+              </p>
             </div>
           )}
           {isCustomer && <Link to="/account" onClick={() => setOpen(false)} className="mt-1 block rounded-xl px-3 py-2 text-sm font-bold text-orange-text hover:bg-grey-50">Manage addresses</Link>}

@@ -8,6 +8,7 @@ import { setAddress } from '../../store/slices/ui';
 import { addToast } from '../../store/slices/toast';
 import { isDemoSession } from '../../store/slices/auth';
 import { rupees } from '@shared/domain/money';
+import { CITIES, cityById } from '@shared/domain/cities';
 import { Link } from 'react-router-dom';
 import { Button, Card, Input, Icon, Pill } from '../../components/ui';
 
@@ -15,16 +16,8 @@ import { Button, Card, Input, Icon, Pill } from '../../components/ui';
 const AddressSchema = z.object({
   label: z.string().trim().min(2, 'Give it a short name, like Home').max(30),
   line: z.string().trim().min(8, 'Add the street and area').max(255),
-  city: z.enum(['guntur', 'vijayawada', 'bengaluru', 'hyderabad', 'chennai']),
+  city: z.string().refine((id) => Boolean(cityById(id)), 'Pick a city'),
 });
-
-const CITY_PIN = {
-  guntur: { lat: 16.3121, lng: 80.4392 },
-  vijayawada: { lat: 16.5101, lng: 80.6431 },
-  bengaluru: { lat: 12.9692, lng: 77.5981 },
-  hyderabad: { lat: 17.3871, lng: 78.4826 },
-  chennai: { lat: 13.0801, lng: 80.2735 },
-};
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -36,7 +29,7 @@ const Profile = () => {
   const [pin, setPin] = useState(null);
   const [locating, setLocating] = useState(false);
   const demo = isDemoSession();
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(AddressSchema), defaultValues: { city: 'guntur' } });
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(AddressSchema), defaultValues: { city: '' } });
 
   useEffect(() => {
     dispatch(fetchCredits());
@@ -71,7 +64,8 @@ const Profile = () => {
 
   const onSubmit = async (v) => {
     try {
-      const at = pin ? { lat: pin.lat, lng: pin.lng } : CITY_PIN[v.city];
+      const c = cityById(v.city);
+      const at = pin ? { lat: pin.lat, lng: pin.lng } : { lat: c.lat, lng: c.lng };
       await dispatch(addAddress({ label: v.label, line: demo ? `${v.line} (demo)` : v.line, cityId: v.city, ...at })).unwrap();
       dispatch(addToast({ type: 'success', title: 'Address saved' }));
       reset();
@@ -117,9 +111,11 @@ const Profile = () => {
               <Input label="Label" placeholder="Home" {...register('label')} error={errors.label?.message} />
               <label className="block">
                 <span className="mb-1.5 block text-sm font-bold">City</span>
-                <select {...register('city')} className="h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3">
-                  {Object.keys(CITY_PIN).map((c) => <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>)}
+                <select {...register('city')} className="h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3" aria-invalid={Boolean(errors.city)}>
+                  <option value="">Choose a city</option>
+                  {[...CITIES].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}, {c.state}</option>)}
                 </select>
+                {errors.city && <span className="mt-1 block text-sm font-semibold text-red-text">{errors.city.message}</span>}
               </label>
               <Input className="sm:col-span-2" label="Street and area" placeholder="House no., street, area" {...register('line')} error={errors.line?.message} />
               <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-grey-50 p-3 text-sm sm:col-span-2">

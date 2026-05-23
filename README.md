@@ -211,8 +211,14 @@ take orders.
   against the account in the token.
 - The seeded demo shops and riders take no real orders; the one-tap demo account keeps the
   simulated shop, rider and online payment in the browser.
-- Riders share their phone's location while online. On a development build (and in the
-  demo) the rider app also has a "Simulate drive" button for testing without moving.
+- Riders share their phone's location while online, and the customer, the rider and the
+  admin console follow it on a real map (MapLibre with free OpenFreeMap tiles from
+  OpenStreetMap data, no key): shop, drop point and the rider's last GPS fix, with a straight
+  dashed line for the leg left (direct distance, not a road route). Only the one-tap demo
+  has a "Simulate drive" button; to test a real rider account on a computer, set a location
+  in Chrome DevTools > More tools > Sensors and change it as the rider "moves".
+- Shops span 28 demo cities. Guests pick a city or share their location from "Deliver to"
+  (kept in this browser); signed-in customers order to any saved address.
 - Problems after delivery: the customer reports within 2 hours (food, with 1 to 3 photos) or
   24 hours (anything else), once per kind. The order's own timeline is attached as evidence
   and the shared triage rules decide: a confident, small, safe case is resolved at once with

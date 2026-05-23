@@ -42,7 +42,7 @@ export default function Footer() {
         <div className="page flex flex-col items-center justify-between gap-3 py-6 text-sm text-[#FFF3E0]/60 md:flex-row">
           <p className="font-display text-xl font-bold text-[#FFF3E0]">Made for cravings. Inspired by India.</p>
           <p>
-            hello@snackhub.example · Guntur, Andhra Pradesh (placeholder) · <span className="underline-offset-2">Privacy</span> · <span>Terms</span>
+            hello@snackhub.example · India (placeholder address) · <span className="underline-offset-2">Privacy</span> · <span>Terms</span>
           </p>
         </div>
       </div>

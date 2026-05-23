@@ -9,7 +9,7 @@ import { deliveryPromise } from '../../../shared/domain/promise.js';
 import { distanceM } from '../../../shared/domain/geo.js';
 import { rankSearch, searchTerm } from '../../../shared/domain/search.js';
 import { DEFAULT_POLICY } from '../../../shared/domain/policy.js';
-import { CITIES } from '../../../shared/seed/seed.js';
+import { CITIES } from '../../../shared/domain/cities.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const avg = (xs) => (xs.length ? +(xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(1) : null);

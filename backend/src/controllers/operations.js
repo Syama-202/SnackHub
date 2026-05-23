@@ -15,7 +15,7 @@ import { WITH_RIDER } from '../models/ordering/order.js';
 import { sellerModel } from '../models/catalog/seller.js';
 import { riderModel } from '../models/dispatch/rider.js';
 import { auditLogModel } from '../models/identity/auditLog.js';
-import { CITIES } from '../../../shared/seed/seed.js';
+import { CITIES } from '../../../shared/domain/cities.js';
 import { DEFAULT_POLICY } from '../../../shared/domain/policy.js';
 
 const ms = (d) => (d ? new Date(d).getTime() : null);

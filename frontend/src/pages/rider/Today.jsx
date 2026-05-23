@@ -7,17 +7,23 @@ import { distanceM } from '@shared/domain/geo';
 import { useNow, usePolling } from '../../hooks';
 import { isDemoSession } from '../../store/slices/auth';
 import { Button, Card, Pill, Icon, TempBadge, Modal, CloseButton, cx } from '../../components/ui';
-import LaneSvg from '../../components/tracking/LaneSvg';
+import { OrderMap } from '../../components/tracking/TrackMap';
 
 // a real rider's phone shares its position while online, at most every 5 seconds
 const GPS_EVERY_MS = 5000;
-// the simulated drive is for the demo, and for testing a real account on a development build
-const canSimulate = () => isDemoSession() || import.meta.env.DEV;
+// the demo has no phone behind it, so its drive is simulated; a real account only ever sends
+// the phone's own GPS (to test one on a computer, set a location in the browser's sensor tools)
+const canSimulate = () => isDemoSession();
 let simulating = false;
 
 /** Real GPS for a real account (watchPosition); the server checks every ping. */
-function useRiderGps(enabled) {
+function useRiderGps(enabled, delivering) {
   const dispatch = useDispatch();
+  // during a delivery each accepted fix also refreshes the distance, ETA and code lock shown here
+  const busy = useRef(delivering);
+  useEffect(() => {
+    busy.current = delivering;
+  }, [delivering]);
   const [state, setState] = useState('off'); // off | on | denied | unavailable
   useEffect(() => {
     if (!enabled || !('geolocation' in navigator)) {
@@ -30,7 +36,10 @@ function useRiderGps(enabled) {
         setState('on');
         if (simulating || Date.now() - last < GPS_EVERY_MS) return;
         last = Date.now();
-        dispatch(sendLocation({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), accuracyM: Math.round(p.coords.accuracy) }));
+        dispatch(sendLocation({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), accuracyM: Math.round(p.coords.accuracy) }))
+          .unwrap()
+          .then(() => busy.current && dispatch(fetchActiveDelivery()))
+          .catch(() => {});
       },
       (err) => setState(err.code === err.PERMISSION_DENIED ? 'denied' : 'unavailable'),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
@@ -45,7 +54,7 @@ const RiderToday = () => {
   const { me, offers, active } = useSelector((state) => state.rider);
   const online = me && me.status !== 'OFFLINE';
   const demo = isDemoSession();
-  const gps = useRiderGps(Boolean(online) && !demo);
+  const gps = useRiderGps(Boolean(online) && !demo, Boolean(active));
 
   useEffect(() => {
     dispatch(fetchRiderProfile());
@@ -172,7 +181,7 @@ function ActiveDelivery({ o }) {
     }
   };
 
-  // Simulated GPS: one ping a second toward the next stop (real app: watchPosition every 5 s)
+  // Demo only: one simulated ping a second toward the next stop (a real phone uses watchPosition)
   useEffect(() => {
     simulating = driving;
     if (!driving) return;
@@ -204,7 +213,9 @@ function ActiveDelivery({ o }) {
             <span className="font-bold">Order #{o.id} · {o.status.replace(/_/g, ' ').toLowerCase()}</span>
             <TempBadge temp={o.tempClass} />
           </div>
-          <LaneSvg stage={o.status} progress={t.progress} height={90} />
+        </div>
+        <div className="bg-grey-900 p-3">
+          <OrderMap track={t} shopName={o.seller.shopName} dropLabel="Drop point" height={260} />
         </div>
         <div className="p-4">
           <p className="font-extrabold">{pickedUp ? 'Deliver to' : 'Collect from'}: {pickedUp ? o.addressText : o.seller.shopName}</p>
@@ -213,7 +224,7 @@ function ActiveDelivery({ o }) {
           <div className="mt-3 flex flex-wrap gap-2">
             <a href={mapsUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1 rounded-full bg-grey-50 px-4 text-sm font-bold"><Icon name="map" className="h-4 w-4" /> Navigate</a>
             {canSimulate() && (!pickedUp || o.status === 'ON_THE_WAY') && (
-              <Button size="sm" variant={driving ? 'dark' : 'ghost'} onClick={() => setDriving((d) => !d)}>{driving ? 'Stop simulated drive' : isDemoSession() ? 'Simulate drive (demo GPS)' : 'Simulate drive (test GPS, development only)'}</Button>
+              <Button size="sm" variant={driving ? 'dark' : 'ghost'} onClick={() => setDriving((d) => !d)}>{driving ? 'Stop simulated drive' : 'Simulate drive (demo GPS)'}</Button>
             )}
           </div>
         </div>

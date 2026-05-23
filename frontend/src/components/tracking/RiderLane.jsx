@@ -1,13 +1,9 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { isActive, STATE_LABEL } from '@shared/domain/orderStates';
-import { hasWebGL, prefersLite, useDocumentVisible, useReducedMotion } from '../../hooks';
 import { useTracking, useStageToasts } from '../../hooks/useTracking';
-import LaneSvg from './LaneSvg';
 import { Icon, cx } from '../ui';
-
-const LaneScene = lazy(() => import('./LaneScene'));
 
 /** Text for the aria-live line, e.g. "Rider is 12 minutes away". */
 export function laneStatus(t) {
@@ -18,26 +14,9 @@ export function laneStatus(t) {
   return STATE_LABEL[t.stage];
 }
 
-export function Lane({ track, height = 96, forceSvg = false }) {
-  const reduced = useReducedMotion();
-  const visible = useDocumentVisible();
-  const use3d = !forceSvg && !reduced && hasWebGL() && !prefersLite();
-  if (!track) return null;
-  return use3d ? (
-    <div style={{ height }}>
-      <Suspense fallback={<LaneSvg stage={track.stage} progress={track.progress} height={height} />}>
-        {/* Rendering pauses while the tab is hidden */}
-        <LaneScene stage={track.stage} progress={track.progress} active={visible} />
-      </Suspense>
-    </div>
-  ) : (
-    <LaneSvg stage={track.stage} progress={track.progress} height={height} />
-  );
-}
-
 /**
- * Fixed strip at the bottom of every customer page while an order is active
- * (doc 22.5). Scrolling never moves the rider; only the server's location does.
+ * Fixed strip at the bottom of every customer page while an order is active (doc 22.5): the
+ * rider's distance and ETA from their last GPS position, and a link to the live map.
  */
 export default function RiderLane() {
   // The order list is kept fresh by CustomerLayout
@@ -61,14 +40,14 @@ export default function RiderLane() {
   }, [active, lingering, track]);
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--lane-h', show ? '120px' : '0px');
+    document.documentElement.style.setProperty('--lane-h', show ? '64px' : '0px');
     return () => document.documentElement.style.setProperty('--lane-h', '0px');
   }, [show]);
 
   if (!show) return null;
   return (
     <div className="safe-bottom fixed inset-x-0 bottom-0 z-40 bg-grey-900 shadow-lane">
-      <div className="page flex items-center gap-3 pt-2 text-white">
+      <div className="page flex h-16 items-center gap-3 text-white">
         <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sun opacity-75" />
           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-sun" />
@@ -79,10 +58,6 @@ export default function RiderLane() {
         <Link to={`/orders/${id}`} className={cx('inline-flex h-9 items-center gap-1 rounded-full bg-primary px-3 text-sm font-extrabold text-grey-800')}>
           Track <Icon name="arrowRight" className="h-4 w-4" />
         </Link>
-      </div>
-      <div className="mx-auto max-w-(--page-max) overflow-hidden">
-        {/* One canvas per page: the landing hero already has one, so use the SVG lane there */}
-        <Lane track={track} height={76} forceSvg={pathname === '/'} />
       </div>
     </div>
   );

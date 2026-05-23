@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTracking } from '../../hooks/useTracking';
-import { Lane, laneStatus } from '../../components/tracking/RiderLane';
+import { laneStatus } from '../../components/tracking/RiderLane';
+import { OrderMap } from '../../components/tracking/TrackMap';
 import { TIMELINE, STATE_LABEL, customerCanCancel } from '@shared/domain/orderStates';
 import { rupees } from '@shared/domain/money';
 import { addToast } from '../../store/slices/toast';
@@ -41,7 +42,11 @@ const OrderTracking = () => {
           <p className="font-bold" aria-live="polite">{laneStatus(t)}</p>
           {t.simulated && <span className="rounded-full bg-sun px-2 py-0.5 text-[0.6875rem] font-extrabold uppercase text-grey-800">Simulated feed</span>}
         </div>
-        {!['CANCELLED', 'REJECTED', 'PENDING_PAYMENT'].includes(o.status) && <Lane track={t} height={170} />}
+        {!['CANCELLED', 'REJECTED', 'PENDING_PAYMENT'].includes(o.status) && (
+          <div className="p-3 pt-3">
+            <OrderMap track={t} shopName={o.seller?.shopName} dropLabel="Your delivery address" height={320} />
+          </div>
+        )}
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.3fr_1fr]">
