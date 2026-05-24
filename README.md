@@ -219,6 +219,13 @@ take orders.
   in Chrome DevTools > More tools > Sensors and change it as the rider "moves".
 - Shops span 28 demo cities. Guests pick a city or share their location from "Deliver to"
   (kept in this browser); signed-in customers order to any saved address.
+- Saved addresses (up to 10): home, hostel, college, office or a named place, with flat,
+  floor, landmark and instructions for the rider, and one default that checkout picks first.
+  The pin is set by place search (OpenStreetMap Nominatim through the API, one request a
+  second, set GEOCODER_URL for production), the phone's location, or dragging it on the map.
+  Each order keeps its own copy of the address, and a database trigger stops it changing,
+  so editing or deleting a saved address never moves an order. Riders see the area before
+  pickup and the door, floor and instructions after.
 - Problems after delivery: the customer reports within 2 hours (food, with 1 to 3 photos) or
   24 hours (anything else), once per kind. The order's own timeline is attached as evidence
   and the shared triage rules decide: a confident, small, safe case is resolved at once with

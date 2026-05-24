@@ -256,10 +256,10 @@ export function buildSeed() {
   }
 
   const addresses = [
-    { id: 1, label: 'Home', line: '12-4-7, Brodipet 4th Lane, Guntur (demo)', cityId: 'guntur', lat: 16.3152, lng: 80.4301 },
-    { id: 2, label: 'Work', line: 'Plot 22, Arundelpet Main Rd, Guntur (demo)', cityId: 'guntur', lat: 16.2985, lng: 80.4452 },
-    { id: 3, label: 'Parents', line: 'Benz Circle, Vijayawada (demo)', cityId: 'vijayawada', lat: 16.4995, lng: 80.6561 },
-    { id: 4, label: 'Hostel', line: 'Basavanagudi, Bengaluru (demo)', cityId: 'bengaluru', lat: 12.9801, lng: 77.5899 },
+    { id: 1, kind: 'HOME', label: 'Home', house: '12-4-7', floor: '1', line: 'Brodipet 4th Lane, Guntur (demo)', landmark: 'Opposite the temple', instructions: 'Ring the bell twice (demo)', cityId: 'guntur', lat: 16.3152, lng: 80.4301, isDefault: true },
+    { id: 2, kind: 'OFFICE', label: 'Office', house: 'Plot 22', line: 'Arundelpet Main Rd, Guntur (demo)', landmark: 'Next to the bank', cityId: 'guntur', lat: 16.2985, lng: 80.4452 },
+    { id: 3, kind: 'OTHER', label: 'Parents', line: 'Benz Circle, Vijayawada (demo)', cityId: 'vijayawada', lat: 16.4995, lng: 80.6561 },
+    { id: 4, kind: 'HOSTEL', label: 'Hostel', house: 'Room 214, Block B', floor: '2', line: 'Basavanagudi, Bengaluru (demo)', instructions: 'Leave it at the warden desk (demo)', cityId: 'bengaluru', lat: 12.9801, lng: 77.5899 },
   ];
 
   return {

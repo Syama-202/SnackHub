@@ -220,6 +220,7 @@ function ActiveDelivery({ o }) {
         <div className="p-4">
           <p className="font-extrabold">{pickedUp ? 'Deliver to' : 'Collect from'}: {pickedUp ? o.addressText : o.seller.shopName}</p>
           <p className="text-sm text-grey-600">{pickedUp ? `${(t.distanceM / 1000).toFixed(2)} km to drop · about ${t.etaMin} min` : 'Head to the shop'}</p>
+          {pickedUp && o.addressDetail?.instructions && <p className="mt-2 rounded-xl bg-sun/20 p-2 text-sm"><b>Customer's note:</b> {o.addressDetail.instructions}</p>}
           {o.hotHoldWarning && <p className="mt-2 rounded-xl bg-red/10 p-2 text-sm font-bold text-red-text">Packed over 10 minutes ago. Ask the shop to re-pack hot items.</p>}
           <div className="mt-3 flex flex-wrap gap-2">
             <a href={mapsUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1 rounded-full bg-grey-50 px-4 text-sm font-bold"><Icon name="map" className="h-4 w-4" /> Navigate</a>

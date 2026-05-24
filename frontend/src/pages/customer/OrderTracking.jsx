@@ -75,7 +75,8 @@ const OrderTracking = () => {
               <Pill tone={o.paymentStatus === 'CAPTURED' || o.paymentStatus === 'COD_COLLECTED' ? 'green' : 'grey'}>{paymentLabel(o)}</Pill>
               <Pill tone={o.tempClass === 'HOT' ? 'red' : 'orange'}>{o.tempClass === 'HOT' ? 'Hot order' : 'Sweet and dry order'}</Pill>
             </div>
-            <p className="mt-3 text-sm text-grey-600"><Icon name="pin" className="mr-1 inline h-4 w-4" />{o.addressText}</p>
+            <p className="mt-3 text-sm text-grey-600"><Icon name="pin" className="mr-1 inline h-4 w-4" />{o.addressDetail?.label ? <b className="text-grey-800">{o.addressDetail.label}: </b> : null}{o.addressText}</p>
+            {o.addressDetail?.instructions && <p className="mt-1 text-sm text-grey-600">For the rider: {o.addressDetail.instructions}</p>}
             {o.rider && <p className="mt-2 text-sm text-grey-600"><Icon name="scooter" className="mr-1 inline h-4 w-4" />{[o.rider.name, o.rider.vehicle, o.rider.rating != null && `★ ${o.rider.rating}`].filter(Boolean).join(' · ')}</p>}
           </Card>
           <CancelBox order={o} />

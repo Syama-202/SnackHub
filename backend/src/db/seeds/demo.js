@@ -81,7 +81,7 @@ export function seedRows(data = buildSeed()) {
   return {
     users: allUsers.map(({ role: _r, ...u }) => ({ ...u, email_verified_at: VERIFIED_AT })),
     userRoles: allUsers.map((u) => ({ user_id: u.id, role: u.role, status: 'active', status_reason: null, granted_at: VERIFIED_AT })),
-    addresses: data.addresses.map((a) => ({ id: a.id, user_id: 1, label: a.label, line: a.line, city: cityName[a.cityId], lat: a.lat, lng: a.lng })),
+    addresses: data.addresses.map((a) => ({ id: a.id, user_id: 1, kind: a.kind, label: a.label, line: a.line, house: a.house ?? null, floor: a.floor ?? null, landmark: a.landmark ?? null, instructions: a.instructions ?? null, city: cityName[a.cityId], lat: a.lat, lng: a.lng, is_default: Boolean(a.isDefault) })),
     sellers: data.sellers.map((s) => ({
       id: s.id,
       user_id: s.userId,

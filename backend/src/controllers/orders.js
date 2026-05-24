@@ -10,8 +10,9 @@
 //   POST /orders/:id/cancel    free until the shop has packed it
 //   POST /orders/:id/review    one rating after delivery
 import { AppError } from '../utils/AppError.js';
+import { addressSummary } from '../../../shared/domain/addresses.js';
 import { cartView } from './cart.js';
-import { announceOrder, closeOrder, codeForCustomer, currentPolicy, notifySeller, policyOf, trackState, viewOrder, viewOrders } from '../utils/orders.js';
+import { addressDetail, announceOrder, closeOrder, codeForCustomer, currentPolicy, notifySeller, policyOf, trackState, viewOrder, viewOrders } from '../utils/orders.js';
 import { deliveryCode, deliveryCodeHash, orderKeyFor } from '../utils/deliveryCode.js';
 import { orderModel } from '../models/ordering/order.js';
 import { orderItemModel } from '../models/ordering/orderItem.js';
@@ -109,7 +110,9 @@ export function ordersController({ env, dbs }) {
           credit_paise: creditPaise,
           total_paise: subtotal + fee - creditPaise,
           payment_mode: 'COD',
-          address_text: address.line.slice(0, 255),
+          // the address as it is now; later edits to the saved address never reach this order
+          address_text: addressSummary(address).slice(0, 255),
+          address_detail: JSON.stringify(addressDetail(address)),
           drop_lat: drop.lat,
           drop_lng: drop.lng,
           distance_m: Math.round(promise.distanceKm * 1000),

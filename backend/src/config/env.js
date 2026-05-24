@@ -83,6 +83,14 @@ const server = database.extend({
   REDIS_URL: z.string().regex(/^rediss?:\/\/\S+$/).or(z.literal('')).optional(),
   // every /api/v1 request from one IP address, per minute, on top of the per-route limits
   RATE_LIMIT_IP_PER_MIN: z.coerce.number().int().min(60).max(100_000).default(600),
+
+  // Place search for the address pin (utils/geocoder.js): a Nominatim-compatible server.
+  // Unset: the public OpenStreetMap Nominatim in development, off in tests and production
+  // (its policy allows light use only; production should name its own server). The contact,
+  // an email or URL, goes in the User-Agent as that policy asks.
+  GEOCODER_URL: z.string().url().or(z.literal('')).optional(),
+  GEOCODER_CONTACT: z.string().max(120).default(''),
+
 });
 
 function parse(schema, source) {
@@ -119,5 +127,6 @@ export function loadEnv(source = process.env) {
     SMTP_HOST: env.SMTP_HOST ?? '',
     MAIL_TRANSPORT: env.MAIL_TRANSPORT ?? (env.SMTP_HOST ? 'smtp' : dev ? 'file' : 'off'),
     SMS_PROVIDER: env.SMS_PROVIDER ?? (dev ? 'dev-mail' : ''),
+    GEOCODER_URL: env.GEOCODER_URL ?? (dev ? 'https://nominatim.openstreetmap.org' : ''),
   });
 }

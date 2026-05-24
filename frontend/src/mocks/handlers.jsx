@@ -7,6 +7,8 @@ import { canTransition } from '@shared/domain/orderStates';
 import { triage, canAutoResolve } from '@shared/domain/triage';
 import { rankSearch, searchTerm } from '@shared/domain/search';
 import { computeEarning } from '@shared/domain/penalty';
+import { KIND_LABEL, addressSummary } from '@shared/domain/addresses';
+import { CITIES } from '@shared/domain/cities';
 
 const API = '/api/v1';
 let reqSeq = 1;
@@ -165,11 +167,26 @@ function orderView(db, o, viewer = 'customer') {
     otpRevealed: Boolean(o.otpRevealed), otpLocked: Boolean(o.otpLocked),
   };
   // Seller and rider never see the customer's address details beyond what the job needs
-  if (viewer === 'customer' || viewer === 'admin') v.addressText = o.addressText;
-  if (viewer === 'rider') v.addressText = o.addressText.replace(/^[^,]+,\s*/, '');
+  if (viewer === 'customer' || viewer === 'admin') {
+    v.addressText = o.addressText;
+    v.addressDetail = o.addressDetail ?? null;
+  }
+  if (viewer === 'rider') {
+    const atDoor = ['PICKED_UP', 'ON_THE_WAY', 'ARRIVED', 'DELIVERED'].includes(o.status);
+    v.addressText = atDoor ? o.addressText : (o.addressDetail?.line ?? o.addressText).replace(/^[^,]+,\s*/, '');
+    v.addressDetail = atDoor ? o.addressDetail ?? null : null;
+  }
   if (viewer !== 'seller') v.drop = o.drop;
   return v;
 }
+
+// demo addresses: one default, listed first, and an order's own copy of the address
+const makeDefault = (db, id) => db.addresses.forEach((a) => (a.isDefault = a.id === id));
+const sortAddresses = (list) => [...list].sort((a, b) => Number(b.isDefault) - Number(a.isDefault) || a.id - b.id);
+const addressCopy = (a) => ({
+  addressText: addressSummary(a),
+  addressDetail: { kind: a.kind ?? 'HOME', label: a.label, house: a.house ?? null, floor: a.floor ?? null, line: a.line, landmark: a.landmark ?? null, instructions: a.instructions ?? null },
+});
 
 export const handlers = [
   // ---------- platform
@@ -194,7 +211,7 @@ export const handlers = [
     const order = {
       id: nextId(db, 'order'), customerId: 1, sellerId: seller.id, riderId: null, status: 'PLACED', tempClass: cartTempClass(prods), items,
       subtotalPaise: sub, deliveryFeePaise: db.policy.deliveryFeePaise, creditPaise: 0, totalPaise: sub + db.policy.deliveryFeePaise,
-      paymentMode: 'COD', paymentStatus: 'COD_PENDING', addressText: addr.line, drop: { lat: addr.lat, lng: addr.lng }, distanceM: Math.round(promise.distanceKm * 1000),
+      paymentMode: 'COD', paymentStatus: 'COD_PENDING', ...addressCopy(addr), drop: { lat: addr.lat, lng: addr.lng }, distanceM: Math.round(promise.distanceKm * 1000),
       policyVersion: db.policy.version, placedAt: now, promisedAt: now + promise.window[1] * 60000, promiseWindow: promise.window,
       simSeller: false, simRider: false, otpAttempts: 0, otpLocked: false,
     };
@@ -277,22 +294,48 @@ export const handlers = [
     if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
-    return ok(db.addresses);
+    return ok(sortAddresses(db.addresses));
   })),
   http.post(`${API}/me/addresses`, withDb(({ body, request, db }) => {
     if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
-    const b = body;
-    const a = { id: Math.max(0, ...db.addresses.map((x) => x.id)) + 1, ...b };
+    if (db.addresses.length >= 10) return fail(409, 'TOO_MANY_ADDRESSES', 'Keep up to 10 addresses; delete one first');
+    const { isDefault, ...b } = body;
+    const a = { id: Math.max(0, ...db.addresses.map((x) => x.id)) + 1, kind: 'HOME', house: null, floor: null, landmark: null, instructions: null, ...b, isDefault: false };
+    a.label = a.label ?? KIND_LABEL[a.kind];
     db.addresses.push(a);
+    if (isDefault || db.addresses.length === 1) makeDefault(db, a.id);
     return ok(a, 201);
+  })),
+  http.patch(`${API}/me/addresses/:id`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = guard(request, ['customer']);
+    if (g.res) return g.res;
+    const a = db.addresses.find((x) => x.id === Number(params.id));
+    if (!a) return fail(404, 'NOT_FOUND', 'Address not found');
+    const { isDefault, ...changes } = body;
+    Object.assign(a, changes);
+    if (isDefault) makeDefault(db, a.id);
+    return ok(sortAddresses(db.addresses));
+  })),
+  // the demo has no place server: it finds the demo cities by name
+  http.post(`${API}/me/places/search`, withDb(({ body, request }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const q = String(body.q || '').toLowerCase();
+    return ok(CITIES.filter((c) => c.name.toLowerCase().includes(q) || q.includes(c.name.toLowerCase())).slice(0, 5).map((c) => ({ name: `${c.name} (demo)`, line: `${c.name} centre, ${c.state} (demo)`, lat: c.lat, lng: c.lng })));
+  })),
+  http.post(`${API}/me/places/reverse`, withDb(({ request }) => {
+    if (!isDemoToken(request)) return passthrough();
+    return ok(null);
   })),
   http.delete(`${API}/me/addresses/:id`, withDb(({ request, params, db }) => {
     if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);
     if (g.res) return g.res;
+    const gone = db.addresses.find((a) => a.id === Number(params.id));
     db.addresses = db.addresses.filter((a) => a.id !== Number(params.id));
+    if (gone?.isDefault && db.addresses.length) makeDefault(db, [...db.addresses].sort((x, y) => x.id - y.id)[0].id);
     return ok({ deleted: true });
   })),
   http.get(`${API}/me/notifications`, withDb(({ request, db }) => {
@@ -454,7 +497,7 @@ export const handlers = [
       status: body.paymentMode === 'ONLINE' ? 'PENDING_PAYMENT' : 'PLACED', tempClass: cart.tempClass, items,
       subtotalPaise: subtotal, deliveryFeePaise: db.policy.deliveryFeePaise, creditPaise, totalPaise: subtotal + db.policy.deliveryFeePaise - creditPaise,
       paymentMode: body.paymentMode, paymentStatus: body.paymentMode === 'ONLINE' ? 'CREATED' : 'COD_PENDING',
-      addressText: addr.line, drop: { lat: addr.lat, lng: addr.lng }, distanceM: Math.round(promise.distanceKm * 1000),
+      ...addressCopy(addr), drop: { lat: addr.lat, lng: addr.lng }, distanceM: Math.round(promise.distanceKm * 1000),
       policyVersion: db.policy.version, placedAt: now, promisedAt: now + promise.window[1] * 60000, promiseWindow: promise.window,
       simSeller: body.simulate !== false, simRider: body.simulate !== false, otpAttempts: 0, otpLocked: false, holdExpiresAt: now + (body.paymentMode === 'ONLINE' ? 10 : 2) * 60000,
     };

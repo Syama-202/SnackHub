@@ -1,78 +1,47 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { addAddress, deleteAddress, fetchCredits } from '../../store/slices/profile';
+import { deleteAddress, fetchCredits, updateAddress } from '../../store/slices/profile';
 import { setAddress } from '../../store/slices/ui';
 import { addToast } from '../../store/slices/toast';
 import { isDemoSession } from '../../store/slices/auth';
 import { rupees } from '@shared/domain/money';
-import { CITIES, cityById } from '@shared/domain/cities';
+import { KIND_LABEL, addressSummary } from '@shared/domain/addresses';
 import { Link } from 'react-router-dom';
-import { Button, Card, Input, Icon, Pill } from '../../components/ui';
-
-// Same shape the backend validates with zod (doc 5.1: shared schemas where possible)
-const AddressSchema = z.object({
-  label: z.string().trim().min(2, 'Give it a short name, like Home').max(30),
-  line: z.string().trim().min(8, 'Add the street and area').max(255),
-  city: z.string().refine((id) => Boolean(cityById(id)), 'Pick a city'),
-});
+import { Button, Card, Icon, Modal, CloseButton, Pill } from '../../components/ui';
+import AddressForm, { KIND_ICON } from '../../components/address/Form';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
   const { addresses, credits } = useSelector((state) => state.profile);
   const selectedId = useSelector((state) => state.ui.addressId);
-  const [adding, setAdding] = useState(false);
-  // the exact pin from the phone's location; without it the address uses the city centre
-  const [pin, setPin] = useState(null);
-  const [locating, setLocating] = useState(false);
+  // null: closed; 'new': adding; an address: editing it
+  const [editing, setEditing] = useState(null);
+  const [confirming, setConfirming] = useState(null);
   const demo = isDemoSession();
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(AddressSchema), defaultValues: { city: '' } });
 
   useEffect(() => {
     dispatch(fetchCredits());
   }, [dispatch]);
 
-  const remove = async (id) => {
+  const remove = async (a) => {
     try {
-      await dispatch(deleteAddress(id)).unwrap();
-      const next = addresses.find((a) => a.id !== id);
-      if (id === selectedId && next) dispatch(setAddress(next.id));
+      await dispatch(deleteAddress(a.id)).unwrap();
+      if (a.id === selectedId) dispatch(setAddress(addresses.find((x) => x.id !== a.id)?.id ?? 0));
+      dispatch(addToast({ type: 'success', title: 'Address deleted', message: 'Orders already placed keep their address.' }));
     } catch (e) {
       dispatch(addToast({ type: 'error', title: 'Address not deleted', message: e.message }));
+    } finally {
+      setConfirming(null);
     }
   };
 
-  const locate = () => {
-    if (!('geolocation' in navigator)) return dispatch(addToast({ type: 'error', title: 'Location not available', message: 'This browser cannot share a location.' }));
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (p) => {
-        setLocating(false);
-        setPin({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), accuracyM: Math.round(p.coords.accuracy) });
-      },
-      () => {
-        setLocating(false);
-        dispatch(addToast({ type: 'error', title: 'No location', message: 'Allow location for SnackHub, or save the address with the city centre pin.' }));
-      },
-      { enableHighAccuracy: true, timeout: 15000 },
-    );
-    return undefined;
-  };
-
-  const onSubmit = async (v) => {
+  const makeDefault = async (a) => {
     try {
-      const c = cityById(v.city);
-      const at = pin ? { lat: pin.lat, lng: pin.lng } : { lat: c.lat, lng: c.lng };
-      await dispatch(addAddress({ label: v.label, line: demo ? `${v.line} (demo)` : v.line, cityId: v.city, ...at })).unwrap();
-      dispatch(addToast({ type: 'success', title: 'Address saved' }));
-      reset();
-      setPin(null);
-      setAdding(false);
+      await dispatch(updateAddress({ id: a.id, isDefault: true })).unwrap();
+      dispatch(addToast({ type: 'success', title: `${a.label} is now your default` }));
     } catch (e) {
-      dispatch(addToast({ type: 'error', title: 'Address not saved', message: e.message }));
+      dispatch(addToast({ type: 'error', title: 'Not changed', message: e.message }));
     }
   };
 
@@ -88,49 +57,73 @@ const Profile = () => {
         </div>
       </Card>
 
-      <section className="mt-8">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-extrabold">Addresses</h2>
-          {!adding && <Button size="sm" variant="ghost" onClick={() => setAdding(true)}><Icon name="plus" className="h-4 w-4" /> Add address</Button>}
+      <section className="mt-8" aria-labelledby="addresses-h">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="addresses-h" className="text-2xl font-extrabold">Addresses</h2>
+          <Button size="sm" variant="ghost" onClick={() => setEditing('new')} disabled={addresses.length >= 10}><Icon name="plus" className="h-4 w-4" /> Add address</Button>
         </div>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {addresses.map((a) => (
-            <Card key={a.id} className="flex items-start gap-3 p-4">
-              <Icon name="pin" className="mt-0.5 h-5 w-5 text-orange-text" />
-              <div className="flex-1">
-                <p className="font-bold">{a.label}</p>
-                <p className="text-sm text-grey-600">{a.line}</p>
-              </div>
-              <button onClick={() => remove(a.id)} className="h-9 rounded-full px-3 text-sm font-bold text-red-text hover:bg-red/10" aria-label={`Delete address ${a.label}`}>Delete</button>
-            </Card>
-          ))}
-        </div>
-        {adding && (
-          <Card className="mt-4 p-5">
-            <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid gap-4 sm:grid-cols-2">
-              <Input label="Label" placeholder="Home" {...register('label')} error={errors.label?.message} />
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-bold">City</span>
-                <select {...register('city')} className="h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3" aria-invalid={Boolean(errors.city)}>
-                  <option value="">Choose a city</option>
-                  {[...CITIES].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}, {c.state}</option>)}
-                </select>
-                {errors.city && <span className="mt-1 block text-sm font-semibold text-red-text">{errors.city.message}</span>}
-              </label>
-              <Input className="sm:col-span-2" label="Street and area" placeholder="House no., street, area" {...register('line')} error={errors.line?.message} />
-              <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-grey-50 p-3 text-sm sm:col-span-2">
-                <Button type="button" size="sm" variant="ghost" loading={locating} onClick={locate}><Icon name="pin" className="h-4 w-4" /> Use my current location</Button>
-                <span className="text-grey-600" aria-live="polite">
-                  {pin ? `Pin set to your location (within about ${pin.accuracyM} m).` : 'Without your location the pin is the city centre, and riders and delivery times are judged from there.'}
-                </span>
-              </div>
-              <div className="flex gap-2 sm:col-span-2">
-                <Button type="submit" loading={isSubmitting}>Save address</Button>
-                <Button type="button" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
-              </div>
-            </form>
+        <p className="mt-1 text-sm text-grey-600">Up to 10. Choose any of them at checkout; your default is picked first.</p>
+        {addresses.length === 0 && (
+          <Card className="mt-3 p-6 text-center">
+            <p className="font-bold">No saved addresses yet</p>
+            <p className="mt-1 text-sm text-grey-600">Add home, your hostel, college or office, with a pin riders can find.</p>
+            <Button className="mt-3" onClick={() => setEditing('new')}>Add your first address</Button>
           </Card>
         )}
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+          {addresses.map((a) => (
+            <li key={a.id}>
+              <Card className="flex h-full flex-col gap-3 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-sun/20 text-orange-text"><Icon name={KIND_ICON[a.kind] ?? 'pin'} className="h-5 w-5" /></span>
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-2 font-bold">
+                      {a.label}
+                      {a.label !== KIND_LABEL[a.kind] && <span className="text-xs font-semibold text-grey-600">{KIND_LABEL[a.kind]}</span>}
+                      {a.isDefault && <Pill tone="green">Default</Pill>}
+                    </p>
+                    <p className="text-sm text-grey-600">{addressSummary(a)}</p>
+                    {a.instructions && <p className="mt-1 text-sm text-grey-600"><span className="font-semibold text-grey-800">For the rider:</span> {a.instructions}</p>}
+                  </div>
+                </div>
+                <div className="mt-auto flex flex-wrap gap-1">
+                  <button onClick={() => setEditing(a)} className="h-9 rounded-full px-3 text-sm font-bold hover:bg-grey-800/5" aria-label={`Edit address ${a.label}`}>Edit</button>
+                  {!a.isDefault && <button onClick={() => makeDefault(a)} className="h-9 rounded-full px-3 text-sm font-bold hover:bg-grey-800/5" aria-label={`Make ${a.label} the default address`}>Make default</button>}
+                  <button onClick={() => setConfirming(a)} className="ml-auto h-9 rounded-full px-3 text-sm font-bold text-red-text hover:bg-red/10" aria-label={`Delete address ${a.label}`}>Delete</button>
+                </div>
+              </Card>
+            </li>
+          ))}
+        </ul>
+
+        <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title={editing === 'new' ? 'Add an address' : 'Edit address'} wide>
+          <div className="relative p-5 sm:p-6">
+            <CloseButton onClick={() => setEditing(null)} className="absolute right-3 top-3" />
+            <h2 className="mb-4 text-2xl font-extrabold">{editing === 'new' ? 'Add an address' : 'Edit address'}</h2>
+            {editing && (
+              <AddressForm
+                key={editing === 'new' ? 'new' : editing.id}
+                address={editing === 'new' ? null : editing}
+                demo={demo}
+                onSaved={(saved) => {
+                  if (editing === 'new' && saved) dispatch(setAddress(saved.id));
+                  setEditing(null);
+                }}
+                onCancel={() => setEditing(null)}
+              />
+            )}
+          </div>
+        </Modal>
+        <Modal open={Boolean(confirming)} onClose={() => setConfirming(null)} title="Delete address">
+          <div className="p-6">
+            <h2 className="text-2xl font-extrabold">Delete {confirming?.label}?</h2>
+            <p className="mt-2 text-grey-600">Orders already placed keep their address.{confirming?.isDefault ? ' Your oldest other address becomes the default.' : ''}</p>
+            <div className="mt-5 flex gap-2">
+              <Button variant="danger" onClick={() => remove(confirming)}>Delete</Button>
+              <Button variant="ghost" onClick={() => setConfirming(null)}>Keep it</Button>
+            </div>
+          </div>
+        </Modal>
       </section>
 
       <section className="mt-8">

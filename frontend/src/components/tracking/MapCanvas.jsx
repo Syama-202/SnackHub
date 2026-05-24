@@ -5,7 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useReducedMotion } from '../../hooks';
 
 // Free vector tiles from OpenFreeMap (no key, OpenStreetMap data), not the public OSM tile servers
-const STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+export const STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 setWorkerUrl(workerUrl);
 
 const PATHS = {
@@ -21,7 +21,7 @@ const LOOK = {
 
 const markerClass = (kind, muted) => `grid h-9 w-9 place-items-center rounded-full shadow-lg ${muted ? 'bg-grey-400 text-white' : LOOK[kind]}`;
 
-function markerEl(kind, label, muted) {
+export function markerEl(kind, label, muted) {
   const el = document.createElement('div');
   el.className = markerClass(kind, muted);
   el.setAttribute('role', 'img');

@@ -172,11 +172,18 @@ export async function viewOrders(dbs, orders, viewer) {
       otpRevealed: Boolean(o.otp_revealed_at),
       otpLocked: Boolean(o.otp_locked_at),
     };
+    const detail = parseDetail(o.address_detail);
+    const atTheDoor = ['PICKED_UP', 'ON_THE_WAY', 'ARRIVED', 'DELIVERED'].includes(o.status);
     if (viewer === 'customer') {
       v.addressText = o.address_text;
+      v.addressDetail = detail;
       v.review = review.has(o.id) ? { rating: review.get(o.id).rating } : null;
     }
-    if (viewer === 'rider') v.addressText = ['PICKED_UP', 'ON_THE_WAY', 'ARRIVED', 'DELIVERED'].includes(o.status) ? o.address_text : areaOf(o.address_text);
+    if (viewer === 'rider') {
+      // before pickup a rider sees the area only; the door, floor and instructions after
+      v.addressText = atTheDoor ? o.address_text : areaOf(detail?.line ?? o.address_text);
+      v.addressDetail = atTheDoor ? detail : null;
+    }
     if (viewer !== 'seller') v.drop = { lat: Number(o.drop_lat), lng: Number(o.drop_lng) };
     if (viewer === 'seller' && o.collected_paise != null) v.collectedPaise = o.collected_paise;
     return v;
@@ -184,6 +191,19 @@ export async function viewOrders(dbs, orders, viewer) {
 }
 
 export const viewOrder = async (dbs, order, viewer) => (await viewOrders(dbs, [order], viewer))[0];
+
+/** The parts of the address an order keeps (orders.address_detail). */
+export const addressDetail = (a) => ({ kind: a.kind ?? 'HOME', label: a.label, house: a.house ?? null, floor: a.floor ?? null, line: a.line, landmark: a.landmark ?? null, instructions: a.instructions ?? null });
+
+const parseDetail = (d) => {
+  if (!d) return null;
+  if (typeof d === 'object') return d;
+  try {
+    return JSON.parse(d);
+  } catch {
+    return null;
+  }
+};
 
 // before pickup a rider sees the area, not the door
 const areaOf = (address) => address.split(',').slice(1).join(',').trim() || 'Address shown after pickup';

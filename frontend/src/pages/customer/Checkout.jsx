@@ -10,7 +10,10 @@ import { fetchCart, updateQuantity } from '../../store/slices/cart';
 import { createPayment, fetchOrders, fetchPaymentStatus, fetchQuote, placeOrder, reportPaymentFailure, verifyPayment } from '../../store/slices/order';
 import { rupees } from '@shared/domain/money';
 import { PROMISE_WORDING } from '@shared/domain/promise';
-import { Button, Card, Icon, Pill, EmptyState, TempBadge, Spinner, cx } from '../../components/ui';
+import { Button, Card, Icon, Pill, EmptyState, TempBadge, Spinner, Modal, CloseButton, cx } from '../../components/ui';
+import AddressForm, { KIND_ICON } from '../../components/address/Form';
+import { selectSavedAddress } from '../../store/slices/profile';
+import { KIND_LABEL, addressSummary } from '@shared/domain/addresses';
 import SnackImage from '../../components/ui/SnackImage';
 import RazorpayMock from '../../components/payment/RazorpayMock';
 
@@ -23,8 +26,10 @@ const METHODS = [
 const Checkout = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const addressId = useSelector((state) => state.ui.addressId);
+  // the chosen address, or the default one; checkout never sends an address that is not saved
+  const addressId = useSelector(selectSavedAddress)?.id ?? null;
   const addresses = useSelector((state) => state.profile.addresses);
+  const [adding, setAdding] = useState(false);
   const cart = useSelector((state) => state.cart);
   const { quote: q, quoteLoading, quoteError } = useSelector((state) => state.orders);
   // a real account pays on delivery for now; online payment runs only in the demo
@@ -40,7 +45,7 @@ const Checkout = () => {
 
   // The server re-prices the cart and re-runs serviceability for this address
   useEffect(() => {
-    if (cart.items.length) dispatch(fetchQuote({ addressId }));
+    if (cart.items.length && addressId) dispatch(fetchQuote({ addressId }));
   }, [dispatch, addressId, cartKey, cart.items.length]);
 
   // Prices, address or method changed: a new attempt gets a new idempotency key
@@ -111,14 +116,39 @@ const Checkout = () => {
             {addresses.map((a) => (
                 <label key={a.id} className={cx('flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-3 transition', a.id === addressId ? 'border-orange bg-sun/10' : 'border-grey-800/10')}>
                   <input type="radio" name="addr" checked={a.id === addressId} onChange={() => dispatch(setAddress(a.id))} className="mt-1 h-4 w-4 accent-orange-deep" />
-                  <span>
-                    <span className="block font-bold">{a.label}</span>
-                    <span className="block text-sm text-grey-600">{a.line}</span>
+                  <Icon name={KIND_ICON[a.kind] ?? 'pin'} className="mt-0.5 h-5 w-5 shrink-0 text-orange-text" />
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-center gap-2 font-bold">
+                      {a.label}
+                      {a.label !== KIND_LABEL[a.kind] && <span className="text-xs font-semibold text-grey-600">{KIND_LABEL[a.kind]}</span>}
+                      {a.isDefault && <Pill tone="green">Default</Pill>}
+                    </span>
+                    <span className="block text-sm text-grey-600">{addressSummary(a)}</span>
+                    {a.instructions && <span className="block text-xs text-grey-600">For the rider: {a.instructions}</span>}
                   </span>
                 </label>
               ))}
             </div>
-            <Link to="/account" className="mt-2 inline-block text-sm font-bold text-orange-text">Add or edit addresses</Link>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setAdding(true)} disabled={addresses.length >= 10}><Icon name="plus" className="h-4 w-4" /> New address</Button>
+              <Link to="/account" className="inline-flex h-9 items-center px-2 text-sm font-bold text-orange-text">Edit saved addresses</Link>
+            </div>
+            <Modal open={adding} onClose={() => setAdding(false)} title="Add an address" wide>
+              <div className="relative p-5 sm:p-6">
+                <CloseButton onClick={() => setAdding(false)} className="absolute right-3 top-3" />
+                <h2 className="mb-4 text-2xl font-extrabold">Deliver somewhere new</h2>
+                {adding && (
+                  <AddressForm
+                    demo={demo}
+                    onSaved={(saved) => {
+                      if (saved) dispatch(setAddress(saved.id));
+                      setAdding(false);
+                    }}
+                    onCancel={() => setAdding(false)}
+                  />
+                )}
+              </div>
+            </Modal>
           </Card>
 
           <Card className="p-5">

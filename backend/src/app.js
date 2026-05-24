@@ -16,6 +16,7 @@ import { createScanner } from './utils/malwareScan.js';
 import { createMailer } from './utils/mailer.js';
 import { createSms } from './utils/sms.js';
 import { memoryCounter, redisCounter } from './utils/rateLimit.js';
+import { createGeocoder } from './utils/geocoder.js';
 import { limit, byIp } from './middleware/rateLimit.js';
 
 export function createApp({
@@ -30,6 +31,7 @@ export function createApp({
   // rate-limit counters: Redis when the server passes a client, so every process shares them
   redis = null,
   rateStore = redis ? redisCounter(redis, { logger }) : memoryCounter(),
+  geocoder = createGeocoder(env, { logger }),
 }) {
   const app = express();
   app.disable('x-powered-by');
@@ -40,7 +42,7 @@ export function createApp({
   // exact origins only, never a wildcard with credentials (doc 16.2)
   app.use(cors({ origin: env.CORS_ORIGINS, credentials: true, exposedHeaders: ['X-Request-Id', 'Retry-After', 'RateLimit-Remaining'] }));
   // every API request from one address, before the body is even read (health checks are outside /api)
-  const deps = { env, dbs, verifyGoogle, storage, scanner, mailer, sms, rateStore };
+  const deps = { env, dbs, verifyGoogle, storage, scanner, mailer, sms, rateStore, geocoder };
   app.use('/api/v1', limit(deps, 'api.ip', { minutes: 1, max: env.RATE_LIMIT_IP_PER_MIN }, byIp, 'Too many requests from your network. Wait a minute and try again.'));
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());

@@ -4,11 +4,24 @@ import { CITIES } from '@shared/domain/cities';
 import { distanceM } from '@shared/domain/geo';
 
 export const fetchAddresses = apiThunk('profile/fetchAddresses', async (_, { apiFetch }) => apiFetch('/me/addresses'));
-export const addAddress = apiThunk('profile/addAddress', async (address, { apiFetch }) => apiFetch('/me/addresses', { method: 'POST', body: address }));
-export const deleteAddress = apiThunk('profile/deleteAddress', async (id, { apiFetch }) => {
+export const addAddress = apiThunk('profile/addAddress', async (address, { apiFetch, dispatch }) => {
+  const saved = await apiFetch('/me/addresses', { method: 'POST', body: address });
+  // a new default changes another row too
+  if (saved.isDefault) await dispatch(fetchAddresses());
+  return saved;
+});
+/** Changes some fields, or { isDefault: true }; the answer is the whole list. */
+export const updateAddress = apiThunk('profile/updateAddress', async ({ id, ...changes }, { apiFetch }) => apiFetch(`/me/addresses/${id}`, { method: 'PATCH', body: changes }));
+export const deleteAddress = apiThunk('profile/deleteAddress', async (id, { apiFetch, dispatch }) => {
   await apiFetch(`/me/addresses/${id}`, { method: 'DELETE' });
+  // the oldest one left may have become the default
+  await dispatch(fetchAddresses());
   return id;
 });
+/** Up to five places in India for a typed query (through the API, never straight to the map server). */
+export const searchPlaces = apiThunk('profile/searchPlaces', async (q, { apiFetch }) => apiFetch('/me/places/search', { method: 'POST', body: { q } }));
+/** A street line for a pin, or null. */
+export const describePin = apiThunk('profile/describePin', async (pin, { apiFetch }) => apiFetch('/me/places/reverse', { method: 'POST', body: pin }));
 export const fetchCredits = apiThunk('profile/fetchCredits', async (_, { apiFetch }) => apiFetch('/me/credits'));
 
 const profileSlice = createSlice({
@@ -24,7 +37,10 @@ const profileSlice = createSlice({
         state.addressesLoaded = true;
       })
       .addCase(addAddress.fulfilled, (state, action) => {
-        state.addresses.push(action.payload);
+        if (!state.addresses.some((a) => a.id === action.payload.id)) state.addresses.push(action.payload);
+      })
+      .addCase(updateAddress.fulfilled, (state, action) => {
+        state.addresses = action.payload;
       })
       .addCase(deleteAddress.fulfilled, (state, action) => {
         state.addresses = state.addresses.filter((a) => a.id !== action.payload);
@@ -49,8 +65,10 @@ export const herePoint = ({ lat, lng }) => {
 // until a guest picks a city or shares their location, browsing starts at the first demo city
 export const GUEST_POINT = cityPoint(CITIES[0]);
 
+/** The chosen saved address, else the customer's default one. */
+export const selectSavedAddress = (state) => state.profile.addresses.find((a) => a.id === state.ui.addressId) || state.profile.addresses.find((a) => a.isDefault) || null;
 
 /** The selected delivery point: a saved address, else the guest's city or location. */
-export const selectDeliveryPoint = (state) => state.profile.addresses.find((a) => a.id === state.ui.addressId) || state.ui.guestPoint || GUEST_POINT;
+export const selectDeliveryPoint = (state) => selectSavedAddress(state) || state.ui.guestPoint || GUEST_POINT;
 
 export default profileSlice.reducer;
