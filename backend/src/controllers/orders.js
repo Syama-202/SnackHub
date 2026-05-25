@@ -9,6 +9,8 @@
 //   GET  /orders/:id/otp       the delivery code, only once the rider is within 500 m
 //   POST /orders/:id/cancel    free until the shop has packed it
 //   POST /orders/:id/review    one rating after delivery
+import { gateway, recordCod, settlePayment, startOnlinePayment } from '../utils/payments.js';
+import { paymentModel } from '../models/payment/payment.js';
 import { AppError } from '../utils/AppError.js';
 import { addressSummary } from '../../../shared/domain/addresses.js';
 import { cartView } from './cart.js';
@@ -59,7 +61,8 @@ export function ordersController({ env, dbs }) {
     const { cart, policy, promise } = await prepare(req.user.userId, req.body.addressId);
     // the oldest usable credit from a resolved complaint, applied to a pay-on-delivery order
     const [credit] = await customerCreditModel.listUsable(dbs.ordering, req.user.userId);
-    res.json({ ...cart, promise, codEnabled: policy.config.codEnabled, creditPaise: credit?.amount_paise ?? 0, paymentModes: policy.config.codEnabled ? ['COD'] : [] });
+    const modes = [...(gateway.enabled ? ['ONLINE'] : []), ...(policy.config.codEnabled ? ['COD'] : [])];
+    res.json({ ...cart, promise, codEnabled: policy.config.codEnabled, creditPaise: credit?.amount_paise ?? 0, paymentModes: modes, onlineProvider: gateway.enabled ? gateway.provider.name : null });
   }
 
   async function replay(customerId, idemKey) {
@@ -72,10 +75,11 @@ export function ordersController({ env, dbs }) {
     const idemKey = req.idempotencyKey;
     const again = await replay(customerId, idemKey);
     if (again) return res.json(again);
-    if (req.body.paymentMode === 'ONLINE') throw new AppError(409, 'ONLINE_PAYMENT_UNAVAILABLE', 'Online payment is not available yet. Choose pay on delivery.');
+    const online = req.body.paymentMode === 'ONLINE';
+    if (online && !gateway.enabled) throw new AppError(409, 'ONLINE_PAYMENT_UNAVAILABLE', 'Online payment is not available right now. Choose pay on delivery.');
 
     const { cart, address, seller, policy, promise, drop } = await prepare(customerId, req.body.addressId);
-    if (!policy.config.codEnabled) throw new AppError(409, 'COD_DISABLED', 'Pay on delivery is switched off right now');
+    if (!online && !policy.config.codEnabled) throw new AppError(409, 'COD_DISABLED', 'Pay on delivery is switched off right now');
     // serviceability is run again at checkout (doc 10.8); the client's prices are never used
     if (!promise.serviceable) throw new AppError(409, 'NOT_SERVICEABLE', promise.reasons[0] ?? 'This address is out of range', { reasons: promise.reasons });
     const fresh = new Map((await productModel.listWithStock(dbs.catalog, cart.items.map((i) => i.productId))).map((p) => [p.id, p]));
@@ -94,7 +98,8 @@ export function ordersController({ env, dbs }) {
     const items = cart.items.map((i) => ({ productId: i.productId, title: fresh.get(i.productId).title, unitPricePaise: fresh.get(i.productId).price_paise, qty: i.qty }));
     const subtotal = items.reduce((s, i) => s + i.unitPricePaise * i.qty, 0);
     const fee = policy.config.deliveryFeePaise;
-    const [credit] = await customerCreditModel.listUsable(dbs.ordering, customerId);
+    // app credit applies to pay-on-delivery orders
+    const [credit] = online ? [] : await customerCreditModel.listUsable(dbs.ordering, customerId);
     const creditPaise = credit ? Math.min(credit.amount_paise, subtotal) : 0;
     const now = new Date();
     let orderId;
@@ -103,13 +108,14 @@ export function ordersController({ env, dbs }) {
         const id = await orderModel.create(trx, {
           customer_id: customerId,
           seller_id: seller.id,
-          status: 'PLACED',
+          // an online order reaches the shop only once its payment is confirmed
+          status: online ? 'PENDING_PAYMENT' : 'PLACED',
           temp_class: cart.tempClass,
           subtotal_paise: subtotal,
           delivery_fee_paise: fee,
           credit_paise: creditPaise,
           total_paise: subtotal + fee - creditPaise,
-          payment_mode: 'COD',
+          payment_mode: online ? 'ONLINE' : 'COD',
           // the address as it is now; later edits to the saved address never reach this order
           address_text: addressSummary(address).slice(0, 255),
           address_detail: JSON.stringify(addressDetail(address)),
@@ -128,8 +134,8 @@ export function ordersController({ env, dbs }) {
         await orderItemModel.createMany(trx, id, items);
         // spent with the order, or not at all (a second checkout racing for it fails here)
         if (credit && !(await customerCreditModel.use(trx, credit.id, id))) throw new AppError(409, 'CREDIT_USED', 'Your credit was just used on another order. Check out again.');
-        await trx('order_events').insert({ order_id: id, from_status: null, to_status: 'PLACED', actor_id: customerId, actor_role: 'customer', at: now });
-        await notifySeller(dbs, trx, { id, seller_id: seller.id }, 'shop.order_new', `New order #${id}: accept it within 2 minutes.`);
+        await trx('order_events').insert({ order_id: id, from_status: null, to_status: online ? 'PENDING_PAYMENT' : 'PLACED', actor_id: customerId, actor_role: 'customer', at: now });
+        if (!online) await notifySeller(dbs, trx, { id, seller_id: seller.id }, 'shop.order_new', `New order #${id}: accept it within 2 minutes.`);
         await cartModel.clear(trx, customerId);
         return id;
       });
@@ -143,6 +149,10 @@ export function ordersController({ env, dbs }) {
       throw err;
     }
     await stockHoldModel.commit(dbs.catalog, orderKey);
+    const placed = await orderModel.findById(dbs.ordering, orderId);
+    // online: the payment page; if it cannot start, the order is cancelled and the stock returned
+    if (online) await startOnlinePayment(dbs, env, placed);
+    else await recordCod(dbs, placed);
     // the shop's board hears about it at once
     announceOrder(dbs, orderId);
     res.status(201).json({ order: await viewOrder(dbs, await orderModel.findById(dbs.ordering, orderId), 'customer') });
@@ -188,5 +198,15 @@ export function ordersController({ env, dbs }) {
     res.status(201).json({ ok: true, rating: req.body.rating });
   }
 
-  return { quote, place, list, show, track, otp, cancel, review };
+  /** After the pay page sends the customer back: ask the provider, never trust the redirect. */
+  async function checkPayment(req, res) {
+    const order = await ownOrder(req);
+    const p = order.payment_mode === 'ONLINE' ? await paymentModel.findByOrder(dbs.payment, order.id) : null;
+    // the page asks every few seconds: PhonePe is asked at most once every 3 seconds per order
+    const fresh = p?.checked_at && Date.now() - new Date(p.checked_at).getTime() < 3000;
+    if (p && !fresh && ['CREATED', 'EXPIRED', 'FAILED'].includes(p.status)) await settlePayment(dbs, p);
+    res.set('Cache-Control', 'no-store').json(await viewOrder(dbs, await orderModel.findById(dbs.ordering, order.id), 'customer'));
+  }
+
+  return { quote, place, list, show, track, otp, cancel, review, checkPayment };
 }

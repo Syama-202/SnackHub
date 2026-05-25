@@ -1,5 +1,5 @@
 // Every router in one place. Health checks sit at the root; the API lives under /api/v1.
-// Payment routes come when online payment is built (pay on delivery only for now).
+// Provider webhooks are mounted in app.js, before the JSON parser (routes/webhooks.js).
 import { Router } from 'express';
 import { healthRoutes } from './health.js';
 import { authRoutes } from './auth.js';

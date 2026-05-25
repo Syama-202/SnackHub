@@ -16,7 +16,7 @@ import { hashPassword } from '../../src/utils/passwords.js';
 import { signAccessToken } from '../../src/utils/tokens.js';
 import { encryptSecret, newTotpSecret, totpNow } from '../../src/utils/mfa.js';
 
-export const MODULES = ['identity', 'catalog', 'dispatch', 'ordering', 'notify'];
+export const MODULES = ['identity', 'catalog', 'dispatch', 'ordering', 'payment', 'notify'];
 export const STEP = 30_000;
 export const PASSWORD = 'mango pickle on a rainy tuesday';
 export const WEB = { 'X-SnackHub-Client': 'web' };
@@ -66,14 +66,14 @@ export async function openHarness(overrides = {}) {
  * One test's world: module transactions, the app on them, a fake inbox, and helpers.
  * Call end() in afterEach.
  */
-export async function beginTest(h, { scan = 'not_scanned', sms = false } = {}) {
+export async function beginTest(h, { scan = 'not_scanned', sms = false, paymentProvider } = {}) {
   const trx = Object.fromEntries(await Promise.all(MODULES.map(async (m) => [m, await h.pools[m].transaction()])));
   const sent = [];
   const mailer = { enabled: true, send: async (m) => sent.push(m) };
   const smsFake = { enabled: sms, send: async (m) => sent.push({ ...m, sms: true }) };
   const scanner = { enabled: scan !== 'not_scanned', scan: async () => scan };
   const storage = createStorage(h.env);
-  const app = createApp({ env: h.env, logger: pino({ level: 'silent' }), dbs: trx, verifyGoogle: fakeVerify, storage, scanner, mailer, sms: smsFake });
+  const app = createApp({ env: h.env, logger: pino({ level: 'silent' }), dbs: trx, verifyGoogle: fakeVerify, storage, scanner, mailer, sms: smsFake, ...(paymentProvider && { paymentProvider }) });
   const relay = createOutboxRelay({ env: h.env, dbs: trx, mailer, sms: smsFake });
 
   /** Sends what the outbox holds; returns the messages sent since the last call. */

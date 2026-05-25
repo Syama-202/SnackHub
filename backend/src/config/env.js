@@ -91,6 +91,18 @@ const server = database.extend({
   GEOCODER_URL: z.string().url().or(z.literal('')).optional(),
   GEOCODER_CONTACT: z.string().max(120).default(''),
 
+  // Online payment through PhonePe Standard Checkout (utils/phonepe.js), sandbox only: the
+  // code knows no production address, so live payments cannot happen from this app. Leave
+  // the client id empty to offer pay on delivery only. The webhook username and password are
+  // the ones set on the PhonePe dashboard; the webhook is refused when they are not set.
+  PHONEPE_CLIENT_ID: z.string().max(100).default(''),
+  PHONEPE_CLIENT_SECRET: z.string().max(200).default(''),
+  PHONEPE_CLIENT_VERSION: z.coerce.number().int().positive().default(1),
+  PHONEPE_WEBHOOK_USERNAME: z.string().max(100).default(''),
+  PHONEPE_WEBHOOK_PASSWORD: z.string().max(200).default(''),
+  // how long the customer has to finish paying (PhonePe allows 5 to 60 minutes)
+  PAYMENT_WINDOW_MIN: z.coerce.number().int().min(5).max(60).default(15),
+
 });
 
 function parse(schema, source) {
@@ -116,6 +128,7 @@ export function loadEnv(source = process.env) {
   // saved emails hold sign-in links, so production never writes them to disk
   if (env.MAIL_TRANSPORT === 'file' && env.NODE_ENV === 'production') throw new Error('Invalid settings: MAIL_TRANSPORT=file is for development only.');
   if (env.MAIL_TRANSPORT === 'smtp' && !env.SMTP_HOST) throw new Error('Invalid or missing settings: SMTP_HOST. See backend/.env.example.');
+  if (env.PHONEPE_CLIENT_ID && !env.PHONEPE_CLIENT_SECRET) throw new Error('Invalid or missing settings: PHONEPE_CLIENT_SECRET. See backend/.env.example.');
   if (env.SMS_PROVIDER === 'twilio' && !(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_FROM)) {
     throw new Error('Invalid or missing settings: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM. See backend/.env.example.');
   }

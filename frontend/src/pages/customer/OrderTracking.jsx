@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTracking } from '../../hooks/useTracking';
 import { laneStatus } from '../../components/tracking/RiderLane';
@@ -7,12 +7,16 @@ import { OrderMap } from '../../components/tracking/TrackMap';
 import { TIMELINE, STATE_LABEL, customerCanCancel } from '@shared/domain/orderStates';
 import { rupees } from '@shared/domain/money';
 import { addToast } from '../../store/slices/toast';
-import { cancelOrder, fetchOrders, fetchOtp, reviewOrder } from '../../store/slices/order';
+import { cancelOrder, checkPayment, fetchOrders, fetchOtp, reviewOrder } from '../../store/slices/order';
+import { useNow, usePolling } from '../../hooks';
 import { Button, Card, Icon, Pill, EmptyState, Spinner, cx } from '../../components/ui';
 
 const OrderTracking = () => {
   const { id } = useParams();
   const { track: t, isLoading, error } = useTracking(id);
+  const dispatch = useDispatch();
+  // waiting for payment: the server asks PhonePe; the return from the pay page proves nothing
+  usePolling(() => dispatch(checkPayment(id)), 4000, t?.order.status === 'PENDING_PAYMENT', 'order');
   if (isLoading) return <div className="grid min-h-[50vh] place-items-center"><Spinner className="h-8 w-8 text-orange-text" /></div>;
   if (error && !t) return <EmptyState title="Order not found" body="It may belong to another account." action={<Link to="/orders"><Button>Your orders</Button></Link>} />;
   const o = t.order;
@@ -33,9 +37,8 @@ const OrderTracking = () => {
         )}
       </div>
 
-      {o.status === 'PENDING_PAYMENT' && (
-        <p className="mt-4 rounded-2xl bg-sun/25 p-4 font-semibold">Waiting for payment confirmation. If you paid, this updates in a few seconds; unpaid orders are released after 10 minutes.</p>
-      )}
+      {o.status === 'PENDING_PAYMENT' && <PaymentPending order={o} />}
+      <PaymentNote order={o} />
 
       <div className="mt-6 overflow-hidden rounded-[28px] bg-grey-900 shadow-2xl">
         <div className="flex items-center justify-between px-5 pt-4 text-white">
@@ -86,8 +89,67 @@ const OrderTracking = () => {
   );
 };
 
+const PAY_MODE = { UPI_INTENT: 'UPI app', UPI_COLLECT: 'UPI', UPI_QR: 'UPI QR', CARD: 'card', NET_BANKING: 'net banking' };
+
 function paymentLabel(o) {
-  return { CAPTURED: 'Paid online', CREATED: 'Payment pending', COD_PENDING: 'Pay on delivery', COD_COLLECTED: 'Paid to rider', REFUND_PENDING: 'Refund in progress' }[o.paymentStatus] || o.paymentStatus;
+  const via = PAY_MODE[o.payment?.payMode];
+  return {
+    CAPTURED: via ? `Paid online by ${via}` : 'Paid online',
+    CREATED: 'Waiting for payment',
+    FAILED: o.paymentMode === 'COD' ? 'Not collected' : 'Payment failed',
+    EXPIRED: 'Payment not completed',
+    COD_PENDING: 'Pay on delivery',
+    COD_COLLECTED: 'Paid to rider',
+    REFUND_PENDING: 'Refund in progress',
+    PARTIALLY_REFUNDED: 'Partly refunded',
+    REFUNDED: 'Refunded',
+  }[o.paymentStatus] || o.paymentStatus;
+}
+
+const isPhonePePage = (url) => {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:' && (u.hostname === 'phonepe.com' || u.hostname.endsWith('.phonepe.com'));
+  } catch {
+    return false;
+  }
+};
+
+/** An online order waiting for PhonePe: confirming after a return, or a way back to the pay page. */
+function PaymentPending({ order }) {
+  const [params] = useSearchParams();
+  const now = useNow(1000);
+  const returning = params.get('payment') === 'return';
+  const p = order.payment;
+  const open = p?.redirectUrl && isPhonePePage(p.redirectUrl) && (!p.expiresAt || p.expiresAt > now);
+  const minutes = p?.expiresAt ? Math.max(0, Math.ceil((p.expiresAt - now) / 60000)) : null;
+  return (
+    <div className="mt-4 rounded-2xl bg-sun/25 p-4" role="status" aria-live="polite">
+      <p className="flex items-center gap-2 font-extrabold"><Spinner className="h-4 w-4" /> {returning ? 'Confirming your payment with PhonePe' : 'Waiting for your payment'}</p>
+      <p className="mt-1 text-sm text-grey-800">
+        {returning
+          ? 'This page updates by itself as soon as PhonePe confirms it to us, usually within a few seconds. If the payment did not go through, nothing is charged.'
+          : `The shop gets your order once the payment is confirmed.${minutes != null ? ` The payment page stays open for about ${minutes} more minute${minutes === 1 ? '' : 's'}.` : ''}`}
+      </p>
+      {open && (
+        <a href={p.redirectUrl} className="mt-3 inline-flex h-10 items-center gap-1 rounded-full bg-grey-900 px-4 text-sm font-bold text-white">
+          {returning ? 'Back to the payment page' : 'Continue to PhonePe'} <Icon name="arrowRight" className="h-4 w-4" />
+        </a>
+      )}
+    </div>
+  );
+}
+
+/** What happened to the money on an online order that did not go ahead, or was refunded. */
+function PaymentNote({ order }) {
+  const p = order.payment;
+  if (!p || order.paymentMode !== 'ONLINE') return null;
+  let text = null;
+  if (['FAILED', 'EXPIRED'].includes(p.status)) text = 'The payment did not go through, so nothing was charged and the order was cancelled.';
+  else if (p.refundPendingPaise > 0) text = `A refund of ${rupees(p.refundPendingPaise)} is on its way back to how you paid. PhonePe is processing it.`;
+  else if (p.refundedPaise > 0) text = `${rupees(p.refundedPaise)} was refunded to how you paid.`;
+  if (!text) return null;
+  return <p className="mt-4 rounded-2xl bg-white/80 p-4 text-sm font-semibold shadow-sm">{text}</p>;
 }
 
 /**

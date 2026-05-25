@@ -3,11 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { newIdempotencyKey } from '../../services/api';
 import { isDemoSession } from '../../store/slices/auth';
-import { usePolling } from '../../hooks';
 import { setAddress } from '../../store/slices/ui';
 import { addToast } from '../../store/slices/toast';
 import { fetchCart, updateQuantity } from '../../store/slices/cart';
-import { createPayment, fetchOrders, fetchPaymentStatus, fetchQuote, placeOrder, reportPaymentFailure, verifyPayment } from '../../store/slices/order';
+import { fetchOrders, fetchQuote, placeOrder } from '../../store/slices/order';
 import { rupees } from '@shared/domain/money';
 import { PROMISE_WORDING } from '@shared/domain/promise';
 import { Button, Card, Icon, Pill, EmptyState, TempBadge, Spinner, Modal, CloseButton, cx } from '../../components/ui';
@@ -15,13 +14,22 @@ import AddressForm, { KIND_ICON } from '../../components/address/Form';
 import { selectSavedAddress } from '../../store/slices/profile';
 import { KIND_LABEL, addressSummary } from '@shared/domain/addresses';
 import SnackImage from '../../components/ui/SnackImage';
-import RazorpayMock from '../../components/payment/RazorpayMock';
 
+// what the server offers decides what shows (quote.paymentModes)
 const METHODS = [
-  { id: 'UPI', label: 'UPI', body: 'Any UPI app, through Razorpay', mode: 'ONLINE' },
-  { id: 'CARD', label: 'Card', body: 'Debit or credit card, through Razorpay', mode: 'ONLINE' },
-  { id: 'COD', label: 'Pay on delivery', body: 'Cash or UPI to the rider', mode: 'COD' },
+  { id: 'ONLINE', label: 'Pay online', body: 'Google Pay, PhonePe, Paytm, BHIM or any UPI app, a UPI QR, or a card, on PhonePe’s secure page', mode: 'ONLINE' },
+  { id: 'COD', label: 'Pay on delivery', body: 'Cash or UPI to the rider at your door', mode: 'COD' },
 ];
+
+// the pay page must be PhonePe's own; anything else is never opened
+const isPhonePePage = (url) => {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:' && (u.hostname === 'phonepe.com' || u.hostname.endsWith('.phonepe.com'));
+  } catch {
+    return false;
+  }
+};
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -32,14 +40,12 @@ const Checkout = () => {
   const [adding, setAdding] = useState(false);
   const cart = useSelector((state) => state.cart);
   const { quote: q, quoteLoading, quoteError } = useSelector((state) => state.orders);
-  // a real account pays on delivery for now; online payment runs only in the demo
+  // the demo session has no payment provider; it simulates the shop and rider instead
   const demo = isDemoSession();
-  const [method, setMethod] = useState(demo ? 'UPI' : 'COD');
+  const [method, setMethod] = useState('COD');
   const [simulate, setSimulate] = useState(true);
   const [placing, setPlacing] = useState(false);
   const [problem, setProblem] = useState(null);
-  const [payment, setPayment] = useState(null); // { order, payment }
-  const [phase, setPhase] = useState('form'); // form | paying | confirming | failed
   const idem = useRef(newIdempotencyKey());
   const cartKey = cart.items.map((i) => `${i.productId}x${i.qty}`).join(',');
 
@@ -53,7 +59,8 @@ const Checkout = () => {
     idem.current = newIdempotencyKey();
   }, [addressId, method, cart.subtotalPaise]);
 
-  const mode = METHODS.find((m) => m.id === method).mode;
+  const offered = METHODS.filter((m) => q?.paymentModes?.includes(m.mode));
+  const mode = offered.some((m) => m.id === method) ? method : (offered[0]?.mode ?? 'COD');
   const creditPaise = q && mode === 'COD' ? Math.min(q.creditPaise, q.subtotalPaise) : 0;
   const total = q ? q.subtotalPaise + q.deliveryFeePaise - creditPaise : 0;
 
@@ -69,9 +76,14 @@ const Checkout = () => {
         navigate(`/orders/${order.id}`);
         return;
       }
-      const p = await dispatch(createPayment({ orderId: order.id })).unwrap();
-      setPayment({ order, payment: p });
-      setPhase('paying');
+      // off to PhonePe; the order waits for the server to confirm the payment
+      const url = order.payment?.redirectUrl;
+      if (!isPhonePePage(url)) {
+        setProblem({ code: 'PAYMENT_PAGE', message: 'The payment page did not open. Your order is waiting; try again from the order page.' });
+        navigate(`/orders/${order.id}`);
+        return;
+      }
+      window.location.assign(url);
     } catch (e) {
       setProblem(e);
     } finally {
@@ -79,28 +91,9 @@ const Checkout = () => {
     }
   };
 
-  const onPaid = async (res) => {
-    setPhase('confirming');
-    window.scrollTo(0, 0);
-    try {
-      // Browser fast path only. The order becomes PLACED when the webhook arrives.
-      await dispatch(verifyPayment({ providerOrderId: payment.payment.providerOrderId, ...res })).unwrap();
-    } catch (e) {
-      setProblem(e);
-      setPhase('failed');
-    }
-  };
-
-  const onFailed = async ({ reason }) => {
-    dispatch(reportPaymentFailure({ providerOrderId: payment.payment.providerOrderId, reason }));
-    setProblem({ code: 'PAYMENT_FAILED', message: `${reason}. Your order is waiting for payment for 10 minutes; you can retry on the same order.` });
-    setPhase('failed');
-  };
-
-  if (phase === 'confirming') return <Confirming orderId={payment.order.id} />;
 
   if (cart.isLoading && !cart.items.length) return <div className="grid min-h-[50vh] place-items-center"><Spinner className="h-8 w-8 text-orange-text" /></div>;
-  if (!cart.items.length && !payment)
+  if (!cart.items.length)
     return <EmptyState title="Your cart is empty" body="Add snacks from a shop near you to check out." action={<Link to="/shop"><Button>Explore snacks</Button></Link>} />;
 
   const lines = cart.items.length ? cart.items : [];
@@ -153,18 +146,19 @@ const Checkout = () => {
 
           <Card className="p-5">
             <h2 className="text-xl font-extrabold">Payment</h2>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Payment method">
-              {METHODS.filter((m) => (demo || m.mode === 'COD') && (m.id !== 'COD' || q?.codEnabled !== false)).map((m) => (
-                <label key={m.id} className={cx('flex cursor-pointer flex-col rounded-2xl border-2 p-3 transition', method === m.id ? 'border-orange bg-sun/10' : 'border-grey-800/10')}>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Payment method">
+              {offered.map((m) => (
+                <label key={m.id} className={cx('flex cursor-pointer flex-col rounded-2xl border-2 p-3 transition', mode === m.id ? 'border-orange bg-sun/10' : 'border-grey-800/10')}>
                   <span className="flex items-center gap-2">
-                    <input type="radio" name="pay" checked={method === m.id} onChange={() => setMethod(m.id)} className="h-4 w-4 accent-orange-deep" />
+                    <input type="radio" name="pay" checked={mode === m.id} onChange={() => setMethod(m.id)} className="h-4 w-4 accent-orange-deep" />
                     <span className="font-bold">{m.label}</span>
                   </span>
                   <span className="mt-1 text-xs text-grey-600">{m.body}</span>
                 </label>
               ))}
             </div>
-            {!demo && <p className="mt-3 text-xs text-grey-600">UPI and card payments are coming soon. For now you pay the rider at your door, in cash or by UPI.</p>}
+            {q && !offered.some((m) => m.mode === 'ONLINE') && <p className="mt-3 text-xs text-grey-600">{demo ? 'The demo takes pay on delivery only.' : 'Online payment is not available right now. You pay the rider at your door, in cash or by UPI.'}</p>}
+            {mode === 'ONLINE' && <p className="mt-3 text-xs text-grey-600">You finish paying on PhonePe&rsquo;s page. Your UPI PIN and card details go to PhonePe only, never to SnackHub. The shop gets your order once PhonePe confirms the payment to us; if it does not go through, nothing is charged and the order is cancelled.</p>}
             {mode === 'COD' && q?.creditPaise > 0 && <p className="mt-3 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">You have {rupees(q.creditPaise)} of app credit. It is applied to this pay-on-delivery order.</p>}
             {demo && (
               <label className="mt-4 flex items-start gap-3 rounded-2xl bg-grey-50 p-3 text-sm">
@@ -182,7 +176,7 @@ const Checkout = () => {
             <h2 className="text-xl font-extrabold">Your order</h2>
             {(q?.seller || cart.seller) && <p className="text-sm text-grey-600">From {(q?.seller || cart.seller).shopName}</p>}
             <ul className="mt-3 divide-y divide-grey-800/5">
-              {(lines.length ? lines : payment?.order.items.map((i) => ({ ...i, pricePaise: i.unitPricePaise, art: null })) || []).map((i) => (
+              {lines.map((i) => (
                 <li key={i.productId} className="flex items-center gap-3 py-2">
                   {i.art && <SnackImage slug={i.slug} art={i.art} title={i.title} plate={false} sizes="48px" className="h-10 w-12 rounded-md" />}
                   <span className="flex-1 text-sm"><b>{i.title}</b> × {i.qty}</span>
@@ -215,29 +209,14 @@ const Checkout = () => {
 
             {problem && <Problem problem={problem} onTake={(d) => dispatch(updateQuantity({ id: d.productId, sellerId: cart.sellerId, title: d.title }, d.available))} />}
 
-            {phase === 'failed' && payment ? (
-              <Button className="mt-4 w-full" size="lg" onClick={() => { setProblem(null); setPhase('paying'); }}>Retry payment</Button>
-            ) : (
-              <Button className="mt-4 w-full" size="lg" loading={placing} disabled={!q?.promise.serviceable || !lines.length} onClick={place}>
-                {mode === 'COD' ? `Place order · ${rupees(total)}` : `Pay ${rupees(total)}`}
-              </Button>
-            )}
+            <Button className="mt-4 w-full" size="lg" loading={placing} disabled={!addressId || !q?.promise.serviceable || !lines.length || !offered.length} onClick={place}>
+              {mode === 'COD' ? `Place order · ${rupees(total)}` : `Pay ${rupees(total)} with PhonePe`}
+            </Button>
             <p className="mt-2 text-center text-xs text-grey-600">The server recalculates every price and reserves stock when you place the order.</p>
           </Card>
         </aside>
       </div>
 
-      <RazorpayMock
-        open={phase === 'paying'}
-        payment={payment?.payment}
-        method={method}
-        onSuccess={onPaid}
-        onFailure={onFailed}
-        onDismiss={() => {
-          setPhase('failed');
-          setProblem({ code: 'PAYMENT_CANCELLED', message: 'Payment was cancelled. Your order waits 10 minutes for payment.' });
-        }}
-      />
     </div>
   );
 };
@@ -251,32 +230,6 @@ function Problem({ problem, onTake }) {
         <button onClick={() => onTake(d)} className="mt-2 rounded-full bg-white px-3 py-1.5 font-bold text-grey-800 shadow">Take {d.available} instead</button>
       )}
       {problem.code === 'OUT_OF_STOCK' && d?.available === 0 && <p className="mt-1">Remove it from your cart to continue. We never change quantities silently.</p>}
-    </div>
-  );
-}
-
-/** "Confirming" until the payment.captured webhook moves the order to PLACED. */
-function Confirming({ orderId }) {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const status = useSelector((state) => state.orders.payment[orderId]);
-  const done = status?.status === 'CAPTURED';
-  usePolling(() => dispatch(fetchPaymentStatus(orderId)), 800, !done);
-  useEffect(() => {
-    if (!done) return;
-    const t = setTimeout(() => navigate(`/orders/${orderId}`, { replace: true }), 900);
-    return () => clearTimeout(t);
-  }, [done, navigate, orderId]);
-  return (
-    <div className="mx-auto grid min-h-[60vh] max-w-md place-items-center px-4 text-center" aria-live="polite">
-      <div>
-        <div className={cx('mx-auto grid h-24 w-24 place-items-center rounded-full', done ? 'bg-emerald-500 text-white' : 'bg-sun/30 text-orange-text')}>
-          {done ? <Icon name="check" className="h-12 w-12" /> : <Spinner className="h-12 w-12" />}
-        </div>
-        <h1 className="mt-6 text-3xl font-extrabold">{done ? 'Payment received' : 'Confirming your payment'}</h1>
-        <p className="mt-2 text-grey-600">{done ? 'Your order is with the shop.' : 'We wait for Razorpay to confirm the payment on our server. This usually takes a few seconds. You can close this tab; the order is safe.'}</p>
-        {!done && <Pill tone="grey" className="mt-4">Waiting for the signed webhook</Pill>}
-      </div>
     </div>
   );
 }

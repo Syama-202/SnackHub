@@ -210,7 +210,18 @@ take orders.
 - Nobody reaches another person's order, shop board or delivery: ids are always checked
   against the account in the token.
 - The seeded demo shops and riders take no real orders; the one-tap demo account keeps the
-  simulated shop, rider and online payment in the browser.
+  simulated shop and rider in the browser, and pays on delivery only.
+- Online payment: PhonePe Standard Checkout, sandbox only (the code has no production
+  address). With PHONEPE_CLIENT_ID and PHONEPE_CLIENT_SECRET set (backend/.env.example),
+  checkout offers "Pay online": the order waits as PENDING_PAYMENT with its stock held and the
+  customer pays on PhonePe's page (any UPI app, UPI QR or card; no PIN or card number reaches
+  SnackHub). The order goes to the shop only when PhonePe's order-status API says paid for
+  the exact amount, asked after the return from the pay page, after a webhook (checked
+  against the dashboard credentials, de-duplicated), and by a timer for lost ones. Failed or
+  abandoned payments cancel the order and return the stock; money for an order that will not
+  be delivered (cancelled, rejected, paid late, wrong amount) is refunded automatically, never
+  more than was paid. Cash on delivery is recorded the same way, and every charge and refund
+  is a row in the append-only ledger. Without keys, checkout offers pay on delivery only.
 - Riders share their phone's location while online, and the customer, the rider and the
   admin console follow it on a real map (MapLibre with free OpenFreeMap tiles from
   OpenStreetMap data, no key): shop, drop point and the rider's last GPS fix, with a straight
@@ -341,8 +352,8 @@ From the repository root:
   (`/admin/verification`, `/admin/documents`, `/admin/requirements`, `/admin/users`,
   `/admin/audit`), the customer order flow, complaints, credit, fines, rider pay disputes, the
   delivery policy and the live operations board (see "Ordering" above), with live updates over
-  Socket.IO and shared rate limits in Redis (see "Live updates and rate limits"). Online payment is not
-  built (pay on delivery only), so it stays in the demo. Passkeys are not built yet.
+  Socket.IO and shared rate limits in Redis (see "Live updates and rate limits"). Online payment runs
+  through PhonePe's sandbox once its test keys are set; there is no live payment. Passkeys are not built yet.
 - The demo catalogue has 201 snacks in 28 cities, most of them from the Telugu states, Tamil
   Nadu, Karnataka, Kerala and Maharashtra (`shared/seed/regional.js`).
 - Every shop is a shop, a street stall (a cart, bandi or kadai) or a home kitchen (`catalog.sellers.kind`):

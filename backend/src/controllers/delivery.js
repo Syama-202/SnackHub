@@ -11,6 +11,7 @@
 //   POST /rider/orders/:id/:step    picked-up | deliver | emergency | unreachable
 //   GET  /rider/earnings            pay for each delivery
 //   POST /rider/earnings/:id/dispute  question a lateness cut within 48 hours
+import { collectCod } from '../utils/payments.js';
 import { AppError } from '../utils/AppError.js';
 import { loadApplicant, eligibilityOf } from '../utils/applicants.js';
 import { inbox, move, policyOf, refreshRiderStatus, trackState, viewOrder } from '../utils/orders.js';
@@ -177,6 +178,7 @@ export function deliveryController({ env, dbs }) {
       notify: [{ userId: order.customer_id, type: 'order.delivered', body: 'Delivered. Enjoy!' }],
     });
     if (!ok) throw new AppError(409, 'ORDER_CHANGED', 'This order changed a moment ago');
+    if (order.payment_mode === 'COD') await collectCod(dbs, order, collectedPaise);
     if (order.payment_mode === 'COD' && collectedPaise !== order.total_paise) await alertAdmins(order, 'cash_mismatch', userId);
     // pay for this delivery, judged by the policy version the order was promised under
     const seller = await sellerModel.findById(dbs.catalog, order.seller_id);

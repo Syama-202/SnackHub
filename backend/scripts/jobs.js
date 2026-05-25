@@ -1,7 +1,7 @@
 // npm run jobs: one pass of the background work, for cron or a scheduler when the API runs
 // with RUN_JOBS=false (several processes, or a separate worker):
 //   - the document expiry job (reminders, hiding shops and taking riders offline on expiry)
-//   - the order clocks (shop accept timeout, rider offers, stale stock holds)
+//   - the order clocks (shop accept timeout, rider offers, stale stock holds, payment checks)
 //   - the outbox relay (emails, texts and inbox messages), until nothing more is due
 import { loadEnv } from '../src/config/env.js';
 import { createLogger } from '../src/utils/logger.js';
@@ -14,10 +14,14 @@ import { runOrderTimers } from '../src/jobs/orderTimers.js';
 import { Emitter } from '@socket.io/redis-emitter';
 import { createRedis, closeRedis, safePublisher } from '../src/utils/redis.js';
 import { realtime } from '../src/utils/realtime.js';
+import { createPhonePe } from '../src/utils/phonepe.js';
+import { gateway } from '../src/utils/payments.js';
 
 const env = loadEnv();
 const logger = createLogger(env);
 const dbs = moduleDbs(env);
+// the payment checks ask the provider directly
+gateway.use(createPhonePe(env, { logger }));
 // live hints from this worker reach the apps through the API's Socket.IO servers (Redis)
 const redis = createRedis(env, logger, { name: 'jobs', queue: true });
 if (redis) {

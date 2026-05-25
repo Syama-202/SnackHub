@@ -48,6 +48,7 @@ export function ordersRoutes(deps) {
   router.get('/orders/:id', ...asCustomer('orders.self'), validateParams(idParams), wrap(c.show));
   router.get('/orders/:id/track', ...asCustomer('orders.self'), perUser('track', 1, 120), validateParams(idParams), wrap(c.track));
   router.get('/orders/:id/otp', ...asCustomer('orders.self'), perUser('otp', 1, 30), validateParams(idParams), wrap(c.otp));
+  router.post('/orders/:id/payment/check', ...asCustomer('orders.self'), perUser('payment-check', 1, 40), validateParams(idParams), validateBody(z.object({}).strict()), wrap(c.checkPayment));
   router.post('/orders/:id/cancel', ...asCustomer('orders.self'), perUser('cancel', 10, 10, 'Too many cancellations in a few minutes. Wait a little and try again.'), validateParams(idParams), validateBody(z.object({}).strict()), wrap(c.cancel));
   router.post('/orders/:id/review', ...asCustomer('orders.self'), perUser('review', 60, 20, 'Too many reviews in an hour. Try again later.'), validateParams(idParams), validateBody(review), wrap(c.review));
   return router;

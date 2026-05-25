@@ -9,14 +9,9 @@ export const placeOrder = apiThunk('orders/place', async ({ addressId, paymentMo
   apiFetch('/orders', { method: 'POST', idempotencyKey, body: { addressId, paymentMode, simulate } }),
 );
 
-// Razorpay (doc 10.9): the server decides the amount and creates the provider order
-export const createPayment = apiThunk('orders/createPayment', async ({ orderId }, { apiFetch }) =>
-  apiFetch('/payments', { method: 'POST', idempotencyKey: `pay-${orderId}`, body: { orderId } }),
-);
-// Browser fast path only; the signed webhook marks the order paid
-export const verifyPayment = apiThunk('orders/verifyPayment', async (body, { apiFetch }) => apiFetch('/payments/verify', { method: 'POST', body }));
-export const reportPaymentFailure = apiThunk('orders/paymentFailed', async (body, { apiFetch }) => apiFetch('/payments/fail', { method: 'POST', body }));
-export const fetchPaymentStatus = apiThunk('orders/paymentStatus', async (orderId, { apiFetch }) => apiFetch(`/payments/by-order/${orderId}`));
+// Online payment (doc 10.9): placing an ONLINE order returns PhonePe's pay page; afterwards the
+// server asks PhonePe itself. The browser's return from the pay page proves nothing.
+export const checkPayment = apiThunk('orders/checkPayment', async (orderId, { apiFetch }) => apiFetch(`/orders/${orderId}/payment/check`, { method: 'POST' }));
 
 export const fetchOrders = apiThunk('orders/fetchAll', async (_, { apiFetch }) => apiFetch('/orders'));
 export const fetchOrder = apiThunk('orders/fetchOne', async (id, { apiFetch }) => apiFetch(`/orders/${id}`));
@@ -53,7 +48,6 @@ const orderSlice = createSlice({
     quote: null,
     quoteError: null,
     quoteLoading: false,
-    payment: {},
   },
   reducers: {
     resetOrders: (state) => {
@@ -85,8 +79,12 @@ const orderSlice = createSlice({
         state.byId[o.id] = o;
         state.list = [o, ...state.list.filter((x) => x.id !== o.id)];
       })
-      .addCase(fetchPaymentStatus.fulfilled, (state, action) => {
-        state.payment[action.meta.arg] = action.payload;
+      .addCase(checkPayment.fulfilled, (state, action) => {
+        const o = action.payload;
+        state.byId[o.id] = o;
+        state.list = state.list.map((x) => (x.id === o.id ? o : x));
+        // the tracking page reads the order from its tracking entry
+        if (state.tracking[o.id]) state.tracking[o.id] = { ...state.tracking[o.id], stage: o.status, order: o };
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.list = action.payload;

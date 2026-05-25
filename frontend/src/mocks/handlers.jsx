@@ -455,7 +455,8 @@ export const handlers = [
     const seller = db.sellers.find((s) => s.id === cart.sellerId);
     const promise = promiseFor(db, seller, addr, cart.tempClass);
     const credit = db.credits.find((c) => c.customerId === g.u.userId && !c.usedOrderId && c.expiresAt > Date.now());
-    return ok({ ...cart, promise, codEnabled: db.policy.codEnabled, creditPaise: credit?.amountPaise || 0 });
+    // the demo has no payment provider: it takes pay on delivery only
+    return ok({ ...cart, promise, codEnabled: db.policy.codEnabled, creditPaise: credit?.amountPaise || 0, paymentModes: db.policy.codEnabled ? ['COD'] : [], onlineProvider: null });
   })),
   http.post(`${API}/orders`, withDb(({ body, request, db }) => {
     if (!isDemoToken(request)) return passthrough();
@@ -477,7 +478,8 @@ export const handlers = [
     // Serviceability is re-run at checkout (doc 10.8)
     const promise = promiseFor(db, seller, addr, cart.tempClass);
     if (!promise.serviceable) return fail(409, 'NOT_SERVICEABLE', promise.reasons[0] || 'Not serviceable', { reasons: promise.reasons });
-    if (body.paymentMode === 'COD' && !db.policy.codEnabled) return fail(409, 'COD_DISABLED', 'Pay on delivery is switched off right now');
+    if (body.paymentMode === 'ONLINE') return fail(409, 'ONLINE_PAYMENT_UNAVAILABLE', 'The demo takes pay on delivery only. Online payment needs a real account and PhonePe sandbox keys.');
+    if (!db.policy.codEnabled) return fail(409, 'COD_DISABLED', 'Pay on delivery is switched off right now');
     // Reserve stock: all-or-nothing, in sorted product order (doc 10.8)
     const sorted = [...cart.items].sort((a, b) => a.productId - b.productId);
     for (const it of sorted) {
@@ -599,70 +601,6 @@ export const handlers = [
     db.complaints.push(c);
     notify(db, g.u.userId, o.id, `complaint.${c.id}`, auto ? 'Complaint resolved. A credit was added to your account.' : 'Complaint received. An admin will review it.');
     return ok(c, 201);
-  })),
-
-  // ---------- payments (Razorpay, mocked; the server decides the amount)
-  http.post(`${API}/payments`, withDb(({ body, request, db }) => {
-    const g = guard(request, ['customer']);
-    if (g.res) return g.res;
-    const { orderId } = body;
-    const o = db.orders.find((x) => x.id === orderId && x.customerId === g.u.userId);
-    if (!o) return fail(404, 'NOT_FOUND', 'Order not found');
-    if (o.status !== 'PENDING_PAYMENT') return fail(409, 'NOT_PAYABLE', 'This order is not waiting for payment');
-    let p = db.payments.find((x) => x.orderId === o.id);
-    if (!p) {
-      p = { id: nextId(db, 'payment'), orderId: o.id, method: 'RAZORPAY', providerOrderId: `order_demo${Date.now().toString(36)}`, amountPaise: o.totalPaise, currency: 'INR', status: 'CREATED', createdAt: Date.now() };
-      db.payments.push(p);
-    }
-    return ok({ providerOrderId: p.providerOrderId, keyId: 'rzp_test_demo_public', amountPaise: p.amountPaise, currency: 'INR' });
-  })),
-  // Browser fast path. It never marks the order paid on its own.
-  http.post(`${API}/payments/verify`, withDb(({ body, request, db }) => {
-    const g = guard(request, ['customer']);
-    if (g.res) return g.res;
-    const b = body;
-    const p = db.payments.find((x) => x.providerOrderId === b.providerOrderId);
-    if (!p) return fail(404, 'NOT_FOUND', 'Payment not found');
-    const valid = b.signature === `sig_${b.providerOrderId}_${b.providerPaymentId}`;
-    if (!valid) return fail(400, 'SIGNATURE_INVALID', 'Signature check failed');
-    p.providerPaymentId = b.providerPaymentId;
-    p.verifiedAt = Date.now();
-    // The simulated Razorpay webhook (source of truth) lands a moment later
-    p.webhookDueAt = Date.now() + 2200;
-    return ok({ verified: true, status: p.status });
-  })),
-  http.post(`${API}/payments/fail`, withDb(({ body, request, db }) => {
-    const g = guard(request, ['customer']);
-    if (g.res) return g.res;
-    const b = body;
-    const p = db.payments.find((x) => x.providerOrderId === b.providerOrderId);
-    if (p) p.lastFailure = { reason: b.reason, at: Date.now() };
-    return ok({ status: 'FAILED_ATTEMPT' });
-  })),
-  http.get(`${API}/payments/by-order/:orderId`, withDb(({ request, params, db }) => {
-    const g = guard(request, ['customer']);
-    if (g.res) return g.res;
-    const o = db.orders.find((x) => x.id === Number(params.orderId) && x.customerId === g.u.userId);
-    if (!o) return fail(404, 'NOT_FOUND', 'Order not found');
-    const p = db.payments.find((x) => x.orderId === o.id);
-    // Process the simulated webhook: payment.captured moves the order to PLACED
-    // A capture can arrive after the window expired; it still has to be handled (and refunded)
-    if (p && ['CREATED', 'EXPIRED'].includes(p.status) && p.webhookDueAt && Date.now() >= p.webhookDueAt) {
-      p.status = 'CAPTURED';
-      p.capturedAt = Date.now();
-      o.paymentStatus = 'CAPTURED';
-      if (o.status === 'PENDING_PAYMENT') {
-        addEvent(db, o, 'PLACED', 'system');
-        o.placedAt = Date.now();
-        notify(db, o.customerId, o.id, 'payment.captured', 'Payment received. Your order is with the shop.');
-      } else {
-        // Paid after the order closed (expired or cancelled): refund automatically (doc 10.9)
-        p.status = 'REFUND_PENDING';
-        o.paymentStatus = 'REFUND_PENDING';
-        notify(db, o.customerId, o.id, 'payment.refund', 'Your payment arrived after the order closed, so it is being refunded.');
-      }
-    }
-    return ok({ status: p?.status || 'NONE', orderStatus: o.status, lastFailure: p?.lastFailure || null });
   })),
 
   // ---------- seller console

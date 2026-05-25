@@ -3,11 +3,14 @@
 // - an offer nobody answered in 20 seconds: it closes and the next rider is asked
 // - an accepted order with no rider and no open offer: ask again (nobody was free before)
 // - a checkout's stock hold whose order was never written: the units go back on the shelf
+// - online payments: lost redirects and webhooks settled from the provider's status API,
+//   abandoned payments expired (the order cancelled, stock back), refunds asked about again
 // Every step is safe to run twice: changes go through the status the job saw.
 import { closeOrder, policyOf } from '../utils/orders.js';
 import { expireOffers, offerNext } from '../utils/dispatch.js';
 import { orderModel } from '../models/ordering/order.js';
 import { stockHoldModel } from '../models/catalog/stockHold.js';
+import { reconcilePayments } from '../utils/payments.js';
 
 export async function runOrderTimers({ dbs, logger }) {
   const out = { sellerTimeouts: 0, offersExpired: 0, offersMade: 0, holdsReleased: 0 };
@@ -34,7 +37,9 @@ export async function runOrderTimers({ dbs, logger }) {
     else out.holdsReleased += await stockHoldModel.release(dbs.catalog, key);
   }
 
-  if (out.sellerTimeouts || out.offersExpired || out.holdsReleased) logger?.info(out, 'order timers');
+  if (dbs.payment) out.payments = await reconcilePayments(dbs);
+
+  if (out.sellerTimeouts || out.offersExpired || out.holdsReleased || out.payments?.checked || out.payments?.refunds) logger?.info(out, 'order timers');
   return out;
 }
 

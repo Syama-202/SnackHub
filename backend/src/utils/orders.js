@@ -14,6 +14,7 @@ import { sellerModel } from '../models/catalog/seller.js';
 import { riderModel } from '../models/dispatch/rider.js';
 import { assignmentModel } from '../models/dispatch/assignment.js';
 import { realtime } from './realtime.js';
+import { onOrderClosed, paymentViews } from './payments.js';
 import { DEFAULT_POLICY, tempRules } from '../../../shared/domain/policy.js';
 import { distanceM, clamp } from '../../../shared/domain/geo.js';
 
@@ -101,6 +102,8 @@ export async function closeOrder(dbs, order, to, { role, actorId = null, reason,
   // credit spent on an order that will not arrive goes back to the customer
   if (order.credit_paise) await dbs.ordering('customer_credits').where({ used_order_id: order.id }).update({ used_order_id: null });
   await assignmentModel.expireOthers(dbs.dispatch, order.id);
+  // prepaid money goes back; expected cash is closed
+  await onOrderClosed(dbs, order);
   announceOffers(dbs, order.id);
   await refreshRiderStatus(dbs, order.rider_id);
   return true;
@@ -132,12 +135,13 @@ export const notifySeller = async (dbs, trx, order, type, body) => {
 export async function viewOrders(dbs, orders, viewer) {
   if (!orders.length) return [];
   const ids = orders.map((o) => o.id);
-  const [items, events, sellers, riders, reviews] = await Promise.all([
+  const [items, events, sellers, riders, reviews, payments] = await Promise.all([
     orderItemModel.listForOrders(dbs.ordering, ids),
     orderModel.eventsFor(dbs.ordering, ids),
     sellerModel.listByIds(dbs.catalog, [...new Set(orders.map((o) => o.seller_id))]),
     riderModel.listByIds(dbs.dispatch, [...new Set(orders.map((o) => o.rider_id).filter(Boolean))]),
     viewer === 'customer' ? dbs.ordering('order_reviews').whereIn('order_id', ids) : [],
+    dbs.payment ? paymentViews(dbs, ids) : new Map(),
   ]);
   const shop = new Map(sellers.map((s) => [s.id, s]));
   const rider = new Map(riders.map((r) => [r.id, r]));
@@ -155,7 +159,7 @@ export async function viewOrders(dbs, orders, viewer) {
       creditPaise: o.credit_paise ?? 0,
       totalPaise: o.total_paise,
       paymentMode: o.payment_mode,
-      paymentStatus: o.payment_mode === 'COD' ? (o.collected_paise != null ? 'COD_COLLECTED' : 'COD_PENDING') : 'CAPTURED',
+      paymentStatus: payments.get(o.id)?.status ?? (o.payment_mode === 'COD' ? (o.collected_paise != null ? 'COD_COLLECTED' : 'COD_PENDING') : 'CREATED'),
       placedAt: ms(o.placed_at),
       promisedAt: ms(o.promised_at),
       acceptedAt: ms(o.accepted_at),
@@ -175,6 +179,8 @@ export async function viewOrders(dbs, orders, viewer) {
     const detail = parseDetail(o.address_detail);
     const atTheDoor = ['PICKED_UP', 'ON_THE_WAY', 'ARRIVED', 'DELIVERED'].includes(o.status);
     if (viewer === 'customer') {
+      // how it was paid, what came back, and the pay page while it is still open
+      v.payment = payments.get(o.id) ?? null;
       v.addressText = o.address_text;
       v.addressDetail = detail;
       v.review = review.has(o.id) ? { rating: review.get(o.id).rating } : null;
