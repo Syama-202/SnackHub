@@ -10,6 +10,8 @@
 //   POST  /seller/products               add a snack (unlisted until published)
 //   PATCH /seller/products/:id           edit it, list it ({ active: true }) or hide it
 //   PATCH /seller/products/:id/stock     { delta, reason }: an adjustment, never a replacement
+import { hoursOf } from '../models/catalog/seller.js';
+import { hoursView } from './catalog.js';
 import { AppError } from '../utils/AppError.js';
 import { loadApplicant, eligibilityOf } from '../utils/applicants.js';
 import { closeOrder, move, policyOf, sellerDelayMin, viewOrder, viewOrders } from '../utils/orders.js';
@@ -52,6 +54,10 @@ export function shopController({ dbs }) {
       paused: Boolean(shop.paused),
       busyExtraMin: shop.busy_extra_min,
       openHours: shop.open_hours,
+      weeklyHours: hoursOf(shop).weeklyHours,
+      closedDates: hoursOf(shop).closedDates,
+      pincodes: hoursOf(shop).pincodes,
+      hours: hoursView(shop),
       radiusKm: Number(shop.radius_km),
       licenceNo: shop.licence_no,
       licenceExpiresOn: shop.licence_expires_on ? new Date(shop.licence_expires_on).toISOString().slice(0, 10) : null,
@@ -70,7 +76,9 @@ export function shopController({ dbs }) {
     const before = await ownShop(userId);
     if ('busyExtraMin' in req.body) await sellerModel.setBusyExtra(dbs.catalog, before.id, req.body.busyExtraMin);
     if ('paused' in req.body) await sellerModel.setPaused(dbs.catalog, before.id, req.body.paused);
-    await audit(userId, 'shop.settings', `seller:${before.id}`, { busyExtraMin: before.busy_extra_min, paused: Boolean(before.paused) }, req.body);
+    await sellerModel.setHoursAndArea(dbs.catalog, before.id, req.body);
+    const was = hoursOf(before);
+    await audit(userId, 'shop.settings', `seller:${before.id}`, { busyExtraMin: before.busy_extra_min, paused: Boolean(before.paused), weeklyHours: was.weeklyHours, closedDates: was.closedDates, pincodes: was.pincodes }, req.body);
     res.json(await shopView(await sellerModel.findById(dbs.catalog, before.id)));
   }
 

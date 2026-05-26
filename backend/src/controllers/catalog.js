@@ -2,7 +2,8 @@
 // menu, the products near a point and search. Everything is read from MySQL; the delivery
 // promise comes from the shared rules with the current delivery_policy.
 import { AppError } from '../utils/AppError.js';
-import { sellerModel, VISIBLE_STATUSES } from '../models/catalog/seller.js';
+import { sellerModel, VISIBLE_STATUSES, hoursOf, shopOpenState } from '../models/catalog/seller.js';
+import { hoursLabel, pincodeServed } from '../../../shared/domain/hours.js';
 import { productModel } from '../models/catalog/product.js';
 import { deliveryPolicyModel } from '../models/ordering/deliveryPolicy.js';
 import { deliveryPromise } from '../../../shared/domain/promise.js';
@@ -65,7 +66,15 @@ export function sellerView(row, products = []) {
     licenceValid: !row.licence_expires_on || dateOnly(row.licence_expires_on) >= today(),
     // a seeded demo shop shows how SnackHub works but takes no real orders
     demo: Boolean(row.is_demo),
+    hours: hoursView(row),
   };
+}
+
+/** Open now or not, a label in India time, and the week, for the shop page. */
+export function hoursView(row, now = Date.now()) {
+  const st = shopOpenState(row, now);
+  const h = hoursOf(row);
+  return { openNow: st.open, label: hoursLabel(st, now), opensAt: st.opensAt, closesAt: st.closesAt, week: h.schedule, closedDates: h.closedDates, byPincode: h.pincodes.length > 0 };
 }
 
 export function catalogController({ dbs }) {
@@ -73,10 +82,17 @@ export function catalogController({ dbs }) {
 
   const promiseFor = (pol, row, point, temp) => {
     const km = distanceM({ lat: Number(row.lat), lng: Number(row.lng) }, point) / 1000;
-    return { ...deliveryPromise({ straightKm: km, temp, busyExtraMin: row.busy_extra_min, sellerRadiusKm: Number(row.radius_km) }, pol), distanceKm: +km.toFixed(2) };
+    const promise = { ...deliveryPromise({ straightKm: km, temp, busyExtraMin: row.busy_extra_min, sellerRadiusKm: Number(row.radius_km) }, pol), distanceKm: +km.toFixed(2) };
+    // a shop that lists its pincodes delivers only there; an unknown pincode is judged at checkout
+    if (point.pincode && !pincodeServed(hoursOf(row).pincodes, point.pincode)) return { ...promise, serviceable: false, reasons: [`This shop does not deliver to pincode ${point.pincode}`, ...promise.reasons] };
+    return promise;
   };
 
-  /** Shops near a point with their products, each with a HOT and AMBIENT promise, nearest first. */
+  /**
+   * Shops near a point with their products, each with a HOT and AMBIENT promise, open shops
+   * first and nearest first. Closed shops stay in the list (marked, with when they open);
+   * their snacks are left out of product lists and search, since they cannot be ordered.
+   */
   async function nearby(point, temp) {
     const pol = await policy();
     const rows = await sellerModel.listServiceable(dbs.catalog, { ...point, maxKm: Math.max(pol.hot.maxKm, pol.ambient.maxKm) });
@@ -88,7 +104,8 @@ export function catalogController({ dbs }) {
         const ambient = promiseFor(pol, row, point, 'AMBIENT');
         return { ...sellerView(row, own), promise: { HOT: hot, AMBIENT: ambient }, distanceKm: ambient.distanceKm, products: own };
       })
-      .filter((s) => (temp === 'HOT' ? s.promise.HOT?.serviceable : s.promise.AMBIENT.serviceable || s.promise.HOT?.serviceable));
+      .filter((s) => (temp === 'HOT' ? s.promise.HOT?.serviceable : s.promise.AMBIENT.serviceable || s.promise.HOT?.serviceable))
+      .sort((a, b) => Number(b.hours.openNow) - Number(a.hours.openNow));
   }
 
   async function cities(req, res) {
@@ -96,26 +113,26 @@ export function catalogController({ dbs }) {
   }
 
   async function sellers(req, res) {
-    const { lat, lng, temp } = req.query;
-    res.json((await nearby({ lat, lng }, temp)).map(({ products, ...s }) => s));
+    const { lat, lng, temp, pincode } = req.query;
+    res.json((await nearby({ lat, lng, pincode }, temp)).map(({ products, ...s }) => s));
   }
 
   async function seller(req, res) {
-    const { lat, lng } = req.query;
+    const { lat, lng, pincode } = req.query;
     const row = await sellerModel.findById(dbs.catalog, req.params.id);
     if (!row || !VISIBLE_STATUSES.includes(row.status) || row.paused) throw new AppError(404, 'NOT_FOUND', 'Shop not found');
     const products = (await productModel.listActiveForSellers(dbs.catalog, [row.id])).map((p) => productView(p, row));
     let promise = null;
     if (lat != null && lng != null) {
       const pol = await policy();
-      promise = { HOT: promiseFor(pol, row, { lat, lng }, 'HOT'), AMBIENT: promiseFor(pol, row, { lat, lng }, 'AMBIENT') };
+      promise = { HOT: promiseFor(pol, row, { lat, lng, pincode }, 'HOT'), AMBIENT: promiseFor(pol, row, { lat, lng, pincode }, 'AMBIENT') };
     }
     res.json({ ...sellerView(row, products), promise, products });
   }
 
   async function products(req, res) {
-    const { lat, lng } = req.query;
-    const list = (await nearby({ lat, lng })).flatMap((s) =>
+    const { lat, lng, pincode } = req.query;
+    const list = (await nearby({ lat, lng, pincode })).filter((s) => s.hours.openNow).flatMap((s) =>
       s.products
         .map((p) => {
           const pr = s.promise[p.servingTemp];
@@ -127,8 +144,8 @@ export function catalogController({ dbs }) {
   }
 
   async function search(req, res) {
-    const { q, lat, lng } = req.query;
-    const shops = await nearby({ lat, lng });
+    const { q, lat, lng, pincode } = req.query;
+    const shops = (await nearby({ lat, lng, pincode })).filter((s) => s.hours.openNow);
     const shopName = new Map(shops.map((s) => [s.id, s.shopName]));
     const results = rankSearch(shops.flatMap((s) => s.products), searchTerm(q)).map((p) => ({
       id: p.id, slug: p.slug, title: p.title, sellerId: p.sellerId, shopName: shopName.get(p.sellerId), pricePaise: p.pricePaise, art: p.art, servingTemp: p.servingTemp,

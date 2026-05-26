@@ -9,6 +9,7 @@ import { requireAuth, requireRole, requirePermission } from '../middleware/auth.
 import { limit, byUser } from '../middleware/rateLimit.js';
 import { ROLES } from '../../../shared/domain/permissions.js';
 import { ADDRESS_KINDS, ADDRESS_LIMITS } from '../../../shared/domain/addresses.js';
+import { PINCODE } from '../../../shared/domain/hours.js';
 
 // a pin anywhere in India; the city is the key the frontend uses (guntur, chennai, ...)
 const text = (k) => z.string().trim().min(ADDRESS_LIMITS[k][0]).max(ADDRESS_LIMITS[k][1]);
@@ -20,6 +21,7 @@ const fields = {
   kind: z.enum(ADDRESS_KINDS),
   label: text('label'),
   line: text('line'),
+  pincode: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? null : v), z.string().trim().regex(PINCODE, 'A pincode is six digits and does not start with 0').nullable().optional()),
   house: detail('house'),
   floor: detail('floor'),
   landmark: detail('landmark'),

@@ -6,7 +6,7 @@ import { openProduct } from '../../store/slices/ui';
 import { SELLER_KINDS } from '../../constants/catalog';
 import { updateQuantity } from '../../store/slices/cart';
 
-const ProductCard = ({ product: p, className, highlight }) => {
+const ProductCard = ({ product: p, className, highlight, closed = false }) => {
   const dispatch = useDispatch();
   const qty = useSelector((state) => state.cart.items.find((i) => i.productId === p.id)?.qty || 0);
   const [fav, setFav] = useState(false);
@@ -44,7 +44,11 @@ const ProductCard = ({ product: p, className, highlight }) => {
         </div>
         <div className="mt-auto flex items-end justify-between gap-2 pt-3">
           <Price paise={p.pricePaise} mrp={p.mrpPaise} className="flex-wrap text-lg" />
-          <QtyControl qty={qty} onChange={(q) => dispatch(updateQuantity(p, q))} max={p.stock} disabled={soldOut} label={p.title} />
+          {closed && qty === 0 ? (
+            <span className="rounded-full bg-grey-50 px-3 py-2 text-xs font-bold text-grey-600">Closed now</span>
+          ) : (
+            <QtyControl qty={qty} onChange={(q) => dispatch(updateQuantity(p, q))} max={p.stock} disabled={soldOut || closed} label={p.title} />
+          )}
         </div>
       </div>
     </article>

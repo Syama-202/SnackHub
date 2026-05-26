@@ -1,11 +1,40 @@
-// catalog.sellers: shops, their delivery radius and verification state (doc 12.1, 16.4).
+// catalog.sellers: shops, their delivery radius, opening hours, pincodes and verification
+// state (doc 12.1, 16.4).
+import { scheduleOf, openState, hoursLabel } from '../../../../shared/domain/hours.js';
+
 const TABLE = 'sellers';
 // states a customer can order from; draft, pending, suspended and rejected shops stay hidden
 export const VISIBLE_STATUSES = ['active', 'probation', 'warned'];
 
-/** Whether a customer can order from this shop right now (the same rules as the listings). */
-export const isOpenForOrders = (row) =>
+/** Whether the shop is listed at all: approved, not paused, documents valid. */
+export const isListed = (row) =>
   Boolean(row) && VISIBLE_STATUSES.includes(row.status) && !row.paused && (!row.docs_valid_until || new Date(row.docs_valid_until).toISOString().slice(0, 10) >= new Date().toISOString().slice(0, 10));
+
+const json = (v) => (v == null ? null : typeof v === 'string' ? JSON.parse(v) : v);
+
+/** The shop's week, holidays and pincodes, from its row. */
+export const hoursOf = (row) => ({
+  schedule: scheduleOf({ weeklyHours: json(row.weekly_hours), openHours: row.open_hours }),
+  weeklyHours: json(row.weekly_hours),
+  closedDates: json(row.closed_dates) ?? [],
+  pincodes: json(row.pincodes) ?? [],
+});
+
+/** Open or closed right now in India time, and when that changes. */
+export const shopOpenState = (row, now = Date.now()) => {
+  const h = hoursOf(row);
+  return openState(h.schedule, h.closedDates, now);
+};
+
+/** Whether a customer can order from this shop right now (the same rules as the listings). */
+export const isOpenForOrders = (row, now = Date.now()) => isListed(row) && shopOpenState(row, now).open;
+
+/** Why an order cannot go to this shop now, for the customer; null when it can. */
+export function closedReason(row, now = Date.now()) {
+  if (!isListed(row)) return 'This shop is not taking orders right now';
+  const st = shopOpenState(row, now);
+  return st.open ? null : `${row.shop_name} is closed now. ${hoursLabel(st, now)}.`;
+}
 
 export const sellerModel = {
   findById: (db, id) => db(TABLE).where({ id }).first(),
@@ -50,5 +79,13 @@ export const sellerModel = {
   markVerified: (db, id, status) => db(TABLE).where({ id }).update({ status, verified_at: new Date() }),
   setPaused: (db, id, paused) => db(TABLE).where({ id }).update({ paused }),
   setBusyExtra: (db, id, minutes) => db(TABLE).where({ id }).update({ busy_extra_min: minutes }),
+  /** Weekly hours (null: back to the daily window), holidays and pincodes; only the keys given. */
+  setHoursAndArea: (db, id, { weeklyHours, closedDates, pincodes }) => {
+    const set = {};
+    if (weeklyHours !== undefined) set.weekly_hours = weeklyHours === null ? null : JSON.stringify(weeklyHours);
+    if (closedDates !== undefined) set.closed_dates = JSON.stringify([...new Set(closedDates)].sort());
+    if (pincodes !== undefined) set.pincodes = pincodes.length ? JSON.stringify([...new Set(pincodes)].sort()) : null;
+    return Object.keys(set).length ? db(TABLE).where({ id }).update(set) : Promise.resolve(0);
+  },
   listByIds: (db, ids) => (ids.length ? db(TABLE).whereIn('id', ids) : Promise.resolve([])),
 };

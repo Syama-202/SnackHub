@@ -66,7 +66,7 @@ export function createGeocoder(env, { fetchImpl = globalThis.fetch, logger } = {
     async search(q) {
       const rows = await call('/search', { q, format: 'jsonv2', countrycodes: 'in', addressdetails: '1', limit: '5' });
       return (Array.isArray(rows) ? rows : [])
-        .map((r) => ({ name: String(r.name || r.display_name || '').slice(0, 120), line: shortLine(r.address, r.display_name), lat: +Number(r.lat).toFixed(6), lng: +Number(r.lon).toFixed(6) }))
+        .map((r) => ({ name: String(r.name || r.display_name || '').slice(0, 120), line: shortLine(r.address, r.display_name), postcode: /^[1-9][0-9]{5}$/.test(r.address?.postcode ?? '') ? r.address.postcode : null, lat: +Number(r.lat).toFixed(6), lng: +Number(r.lon).toFixed(6) }))
         .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
     },
     /** A street-level description of a pin, or null when nothing is known there. */

@@ -26,6 +26,8 @@ export async function openShop(t, staff, { stock = 5, temp = 'AMBIENT', price = 
   expect(p).toMatchObject({ active: false, stock: 0, art: { shape: 'spiral' } });
   if (stock) await seller.patch(`/seller/products/${p.id}/stock`, { delta: stock, reason: 'new batch' }).expect(200);
   await seller.patch(`/seller/products/${p.id}`, { active: true }).expect(200);
+  // open around the clock, so the tests do not depend on the time of day (hours.test.js sets real hours)
+  await t.trx.catalog('sellers').where({ user_id: s.user.id }).update({ open_hours: null });
   const shop = await t.trx.catalog('sellers').where({ user_id: s.user.id }).first();
   return { ...s, api: seller, shop, product: { ...p, active: true, stock } };
 }

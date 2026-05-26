@@ -24,6 +24,7 @@ const Schema = z
     kind: z.enum(ADDRESS_KINDS),
     label: z.union([z.literal(''), len('label', 'Use at least 2 letters')]),
     line: len('line', 'Add the street and area'),
+    pincode: z.union([z.literal(''), z.string().trim().regex(/^[1-9][0-9]{5}$/, 'A pincode is six digits and does not start with 0')]),
     house: optional('house'),
     floor: optional('floor'),
     landmark: optional('landmark'),
@@ -60,6 +61,7 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
       kind: address?.kind ?? 'HOME',
       label: address?.kind === 'OTHER' || (address && address.label !== KIND_LABEL[address.kind]) ? address.label : '',
       line: address?.line ?? '',
+      pincode: address?.pincode ?? '',
       house: address?.house ?? '',
       floor: address?.floor ?? '',
       landmark: address?.landmark ?? '',
@@ -75,17 +77,22 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
     if (!cityPicked.current) setValue('city', nearestCity(pin).id);
   }, [pin, setValue]);
 
-  /** Moves the pin; fills an empty street line from what is known at that point. */
-  const placePin = async (p, line) => {
+  /** Moves the pin; fills an empty street line and pincode from what is known at that point. */
+  const placePin = async (p, line, postcode) => {
     setPin(p);
     setPinSet(true);
-    if (getValues('line').trim()) return;
-    if (line) return setValue('line', line.slice(0, 255), { shouldValidate: true });
+    if (postcode && !getValues('pincode')) setValue('pincode', postcode, { shouldValidate: true });
+    if (getValues('line').trim() && getValues('pincode')) return;
+    if (line) {
+      if (!getValues('line').trim()) setValue('line', line.slice(0, 255), { shouldValidate: true });
+      return;
+    }
     try {
       const found = await dispatch(describePin(p)).unwrap();
       if (found?.line && !getValues('line').trim()) setValue('line', found.line.slice(0, 255), { shouldValidate: true });
+      if (/^[1-9][0-9]{5}$/.test(found?.postcode ?? '') && !getValues('pincode')) setValue('pincode', found.postcode, { shouldValidate: true });
     } catch {
-      // no street name for this pin: the person types it
+      // nothing known for this pin: the person types it
     }
   };
 
@@ -125,6 +132,7 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
       kind: v.kind,
       ...(v.label ? { label: v.label.trim() } : {}),
       line: demo && !v.line.includes('(demo)') ? `${v.line.trim()} (demo)` : v.line.trim(),
+      pincode: blank(v.pincode),
       house: blank(v.house),
       floor: blank(v.floor),
       landmark: blank(v.landmark),
@@ -191,7 +199,7 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
             {results.length === 0 && <li className="text-sm text-grey-600">Nothing found. Try a nearby landmark, or drag the pin.</li>}
             {results.map((r, i) => (
               <li key={`${r.lat},${r.lng},${i}`}>
-                <button type="button" onClick={() => (placePin({ lat: r.lat, lng: r.lng }, r.line), setResults(null))} className="flex w-full items-start gap-2 rounded-xl bg-white px-3 py-2 text-left text-sm hover:bg-sun/15">
+                <button type="button" onClick={() => (placePin({ lat: r.lat, lng: r.lng }, r.line, r.postcode), setResults(null))} className="flex w-full items-start gap-2 rounded-xl bg-white px-3 py-2 text-left text-sm hover:bg-sun/15">
                   <Icon name="pin" className="mt-0.5 h-4 w-4 shrink-0 text-orange-text" />
                   <span><span className="block font-bold">{r.name}</span><span className="block text-grey-600">{r.line}</span></span>
                 </button>
@@ -213,6 +221,7 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Input className="sm:col-span-2" label="Street and area" placeholder="Street, area, town" {...register('line')} error={errors.line?.message} />
+        <Input label="Pincode" inputMode="numeric" maxLength={6} placeholder="522002" hint="Some shops deliver only to the pincodes they list." {...register('pincode')} error={errors.pincode?.message} />
         <Input label="Flat, house or room (optional)" placeholder="Flat 4B, Sai Residency" {...register('house')} error={errors.house?.message} />
         <Input label="Floor (optional)" placeholder="2" {...register('floor')} error={errors.floor?.message} />
         <Input label="Landmark (optional)" placeholder="Opposite the temple" {...register('landmark')} error={errors.landmark?.message} />

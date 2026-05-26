@@ -8,10 +8,10 @@ export function useNearbyProducts() {
   const dispatch = useDispatch();
   const point = useSelector(selectDeliveryPoint);
   const { items, itemsKey, isLoading, error } = useSelector((state) => state.products);
-  const key = `${point.lat},${point.lng}`;
+  const key = `${point.lat},${point.lng},${point.pincode ?? ''}`;
   useEffect(() => {
-    dispatch(fetchProducts({ lat: point.lat, lng: point.lng }));
-  }, [dispatch, point.lat, point.lng]);
+    dispatch(fetchProducts({ lat: point.lat, lng: point.lng, pincode: point.pincode }));
+  }, [dispatch, point.lat, point.lng, point.pincode]);
   const current = itemsKey === key;
   return { items: current ? items : [], isLoading: isLoading || (!current && !error), error, point };
 }
@@ -22,7 +22,7 @@ export function useNearbySellers() {
   const point = useSelector(selectDeliveryPoint);
   const sellers = useSelector((state) => state.products.sellers);
   useEffect(() => {
-    dispatch(fetchSellers({ lat: point.lat, lng: point.lng }));
-  }, [dispatch, point.lat, point.lng]);
+    dispatch(fetchSellers({ lat: point.lat, lng: point.lng, pincode: point.pincode }));
+  }, [dispatch, point.lat, point.lng, point.pincode]);
   return sellers;
 }

@@ -230,6 +230,11 @@ take orders.
   in Chrome DevTools > More tools > Sensors and change it as the rider "moves".
 - Shops span 28 demo cities. Guests pick a city or share their location from "Deliver to"
   (kept in this browser); signed-in customers order to any saved address.
+- Opening hours: a seller sets each day's hours in India time (up to two windows, such as
+  7 to 11 am and 4 to 10 pm), holidays, and optionally the pincodes they deliver to on top of
+  their radius. Closed shops stay visible with when they open next, but their snacks leave
+  the lists and search, and nothing can be added or ordered until they open. A shop that
+  lists pincodes takes orders only for addresses with one of them.
 - Saved addresses (up to 10): home, hostel, college, office or a named place, with flat,
   floor, landmark and instructions for the rider, and one default that checkout picks first.
   The pin is set by place search (OpenStreetMap Nominatim through the API, one request a

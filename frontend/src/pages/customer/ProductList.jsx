@@ -70,7 +70,7 @@ const ProductList = () => {
           {shopsShown.map((s) => {
             const w = s.promise.HOT?.serviceable ? s.promise.HOT.window : s.promise.AMBIENT.window;
             return (
-              <Link key={s.id} to={`/shop/${s.id}`} className="surface glow flex w-[18.75rem] shrink-0 items-center gap-3 p-3.5">
+              <Link key={s.id} to={`/shop/${s.id}`} className={`surface glow flex w-[18.75rem] shrink-0 items-center gap-3 p-3.5 ${s.hours && !s.hours.openNow ? 'opacity-70' : ''}`}>
                 <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-hero font-display text-2xl font-extrabold text-grey-900 shadow-cta">{s.shopName[0]}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-display text-[1.0625rem] font-bold">{s.shopName}</span>
@@ -80,7 +80,7 @@ const ProductList = () => {
                     {SELLER_KINDS[s.kind] && <Pill tone={SELLER_KINDS[s.kind].tone}>{SELLER_KINDS[s.kind].label}</Pill>}
                     {s.busyExtraMin > 0 && <Pill tone="grey">Busy +{s.busyExtraMin} min</Pill>}
                   </span>
-                  <span className="block text-xs text-grey-600">{s.distanceKm} km · {w[0]} to {w[1]} min</span>
+                  <span className="block text-xs text-grey-600">{s.hours && !s.hours.openNow ? <b className="text-grey-800">Closed · {s.hours.label}</b> : `${s.distanceKm} km · ${w[0]} to ${w[1]} min`}</span>
                 </span>
               </Link>
             );

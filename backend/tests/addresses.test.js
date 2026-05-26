@@ -141,7 +141,7 @@ describe('place search', () => {
     };
     const g = createGeocoder(env, { fetchImpl });
     const [first] = await g.search('Brodipet Guntur');
-    expect(first).toEqual({ name: 'Brodipet', line: '4th Lane, Brodipet, Guntur, Andhra Pradesh, 522002', lat: 16.3152, lng: 80.4301 });
+    expect(first).toEqual({ name: 'Brodipet', line: '4th Lane, Brodipet, Guntur, Andhra Pradesh, 522002', postcode: '522002', lat: 16.3152, lng: 80.4301 });
     await g.search('Brodipet Guntur');
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toMatch(/^http:\/\/geo\.test\/search\?q=Brodipet\+Guntur&.*countrycodes=in/);

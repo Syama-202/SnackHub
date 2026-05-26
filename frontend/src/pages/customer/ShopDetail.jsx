@@ -50,6 +50,11 @@ const ShopDetail = () => {
             </div>
             <h1 className="mt-3 text-[clamp(2rem,5vw,3.4rem)] font-extrabold leading-none">{shop.shopName}</h1>
             <p className="mt-2 font-semibold">{[shop.city, shop.region].filter(Boolean).join(', ')}</p>
+            {shop.hours && (
+              <p className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold ${shop.hours.openNow ? 'bg-emerald-50 text-emerald-800' : 'bg-grey-900 text-white'}`}>
+                <Icon name="clock" className="h-4 w-4" /> {shop.hours.openNow ? shop.hours.label : `Closed now · ${shop.hours.label}`}
+              </p>
+            )}
             {shop.demo && !isDemoSession() && <p className="mt-2 max-w-xl rounded-xl bg-white/80 p-3 text-sm font-semibold text-grey-800">This demo shop shows how SnackHub works but takes no real orders. Try the demo sign-in to order from it.</p>}
             <div className="mt-4 flex flex-wrap gap-3 text-sm font-bold">
               {hot && <span className="glass glass-strong rounded-full px-3 py-1.5">{hot.serviceable ? `Hot snacks: ${hot.window[0]} to ${hot.window[1]} min` : `Hot snacks: ${hot.reasons[0]}`}</span>}
@@ -64,7 +69,7 @@ const ShopDetail = () => {
         {!shop && Array.from({ length: 4 }, (_, i) => <ProductCardSkeleton key={i} />)}
         {products.map((x) => (
           <div id={`p-${x.id}`} key={x.id}>
-            <ProductCard product={x} highlight={x.id === highlight} className="h-full" />
+            <ProductCard product={x} highlight={x.id === highlight} className="h-full" closed={shop.hours ? !shop.hours.openNow : false} />
           </div>
         ))}
       </div>

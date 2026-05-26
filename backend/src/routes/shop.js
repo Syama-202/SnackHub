@@ -1,3 +1,4 @@
+import { DAYS, MAX_WINDOWS, MAX_CLOSED_DATES, MAX_PINCODES, PINCODE, scheduleProblem, istDate } from '../../../shared/domain/hours.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
@@ -12,7 +13,30 @@ const idParams = z.object({ id }).strict();
 const atLeastOne = (o) => Object.keys(o).length > 0;
 const price = z.number().int().min(MIN_PRICE_PAISE, `At least ₹${MIN_PRICE_PAISE / 100}`).max(MAX_PRICE_PAISE, `At most ₹${MAX_PRICE_PAISE / 100}`);
 
-const settings = z.object({ busyExtraMin: z.number().int().min(0).max(60).optional(), paused: z.boolean().optional() }).strict().refine(atLeastOne, 'Nothing to change');
+const hhmm = z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$|^24:00$/, 'Use HH:MM');
+const week = z
+  .object(Object.fromEntries(DAYS.map((d) => [d, z.array(z.tuple([hhmm, hhmm])).max(MAX_WINDOWS)])))
+  .strict()
+  .superRefine((w, ctx) => {
+    const problem = scheduleProblem(w);
+    if (problem) ctx.addIssue({ code: 'custom', message: problem });
+  });
+// holidays from today to a year ahead, in India time
+const holiday = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').refine((d) => {
+  const today = istDate(Date.now()).date;
+  const limit = istDate(Date.now() + 366 * 24 * 3600_000).date;
+  return !Number.isNaN(Date.parse(d)) && d >= today && d <= limit;
+}, 'Pick a date from today to a year ahead');
+const settings = z
+  .object({
+    busyExtraMin: z.number().int().min(0).max(60).optional(),
+    paused: z.boolean().optional(),
+    weeklyHours: week.nullable().optional(),
+    closedDates: z.array(holiday).max(MAX_CLOSED_DATES).optional(),
+    pincodes: z.array(z.string().regex(PINCODE, 'A pincode is six digits and does not start with 0')).max(MAX_PINCODES).optional(),
+  })
+  .strict()
+  .refine(atLeastOne, 'Nothing to change');
 const orderAction = z.object({ id, action: z.enum(['accept', 'reject', 'start', 'packed']) }).strict();
 const menuFields = {
   title: z.string().trim().min(3).max(160),

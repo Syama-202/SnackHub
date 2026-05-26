@@ -9,6 +9,7 @@ import { rankSearch, searchTerm } from '@shared/domain/search';
 import { computeEarning } from '@shared/domain/penalty';
 import { KIND_LABEL, addressSummary } from '@shared/domain/addresses';
 import { CITIES } from '@shared/domain/cities';
+import { scheduleOf, openState, hoursLabel } from '@shared/domain/hours';
 
 const API = '/api/v1';
 let reqSeq = 1;
@@ -187,6 +188,12 @@ const addressCopy = (a) => ({
   addressText: addressSummary(a),
   addressDetail: { kind: a.kind ?? 'HOME', label: a.label, house: a.house ?? null, floor: a.floor ?? null, line: a.line, landmark: a.landmark ?? null, instructions: a.instructions ?? null },
 });
+
+// a demo shop's week, holidays and pincodes, and whether it is open now (shared/domain/hours.js)
+const withHours = (s) => {
+  const st = openState(scheduleOf({ weeklyHours: s.weeklyHours, openHours: s.openHours }), s.closedDates ?? []);
+  return { ...s, weeklyHours: s.weeklyHours ?? null, closedDates: s.closedDates ?? [], pincodes: s.pincodes ?? [], hours: { openNow: st.open, label: hoursLabel(st), opensAt: st.opensAt, closesAt: st.closesAt } };
+};
 
 export const handlers = [
   // ---------- platform
@@ -612,7 +619,7 @@ export const handlers = [
     const s = db.sellers.find((x) => x.id === user.sellerId);
     const mine = db.orders.filter((o) => o.sellerId === s.id && o.status !== 'PENDING_PAYMENT');
     const delivered = mine.filter((o) => o.status === 'DELIVERED');
-    return ok({ ...s, stats: { ordersToday: mine.filter((o) => Date.now() - o.placedAt < 86400000).length, delivered: delivered.length, salesPaise: delivered.reduce((a, o) => a + o.subtotalPaise, 0) } });
+    return ok({ ...withHours(s), stats: { ordersToday: mine.filter((o) => Date.now() - o.placedAt < 86400000).length, delivered: delivered.length, salesPaise: delivered.reduce((a, o) => a + o.subtotalPaise, 0) } });
   })),
   http.patch(`${API}/seller/shop`, withDb(({ body, request, db }) => {
     if (!isDemoToken(request)) return passthrough();
@@ -621,8 +628,8 @@ export const handlers = [
     const user = db.users.find((u) => u.id === g.u.userId);
     const s = db.sellers.find((x) => x.id === user.sellerId);
     const b = body;
-    ['busyExtraMin', 'paused', 'openHours', 'radiusKm'].forEach((k) => k in b && (s[k] = b[k]));
-    return ok(s);
+    ['busyExtraMin', 'paused', 'openHours', 'radiusKm', 'weeklyHours', 'closedDates', 'pincodes'].forEach((k) => k in b && (s[k] = b[k]));
+    return ok(withHours(s));
   })),
   http.get(`${API}/seller/products`, withDb(({ request, db }) => {
     if (!isDemoToken(request)) return passthrough();

@@ -9,8 +9,9 @@ export const KIND_LABEL = { HOME: 'Home', HOSTEL: 'Hostel', COLLEGE: 'College', 
 
 export const ADDRESS_LIMITS = { label: [2, 30], line: [8, 255], house: [1, 80], floor: [1, 20], landmark: [2, 120], instructions: [2, 200] };
 
-/** One line for a rider and for the order's copy: flat, floor, street and area, landmark. */
+/** One line for a rider and for the order's copy: flat, floor, street and area, landmark, pincode. */
 export function addressSummary(a) {
   const floor = a.floor ? `floor ${a.floor}` : null;
-  return [a.house, floor, a.line, a.landmark ? `near ${a.landmark}` : null].filter(Boolean).join(', ');
+  const pin = a.pincode && !String(a.line ?? '').includes(a.pincode) ? a.pincode : null;
+  return [a.house, floor, a.line, a.landmark ? `near ${a.landmark}` : null, pin].filter(Boolean).join(', ');
 }

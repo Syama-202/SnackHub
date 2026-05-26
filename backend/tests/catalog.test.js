@@ -1,6 +1,6 @@
 // Catalog API on the seeded demo data (doc 11.2): the same shapes the frontend mock serves,
 // read from MySQL through the catalog and ordering module users. Read only.
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import pino from 'pino';
 import { connect } from './helpers/db.js';
@@ -20,6 +20,10 @@ const env = migrator
       MFA_KEY: 'dGVzdC1vbmx5LW1mYS1rZXktMzItYnl0ZXMtbG9uZyE', GOOGLE_CLIENT_ID: '' })
   : null;
 const app = migrator ? createApp({ env, logger: pino({ level: 'silent' }), dbs, verifyGoogle: async () => { throw new Error('unused'); } }) : null;
+
+// the demo shops keep real hours (most 8 am to 10 pm, India time): read them at Monday noon
+beforeAll(() => vi.useFakeTimers({ toFake: ['Date'], now: Date.UTC(2026, 10, 2, 6, 30) }));
+afterAll(() => vi.useRealTimers());
 
 const BRODIPET = 'lat=16.3152&lng=80.4301'; // demo home address in Guntur
 const NOWHERE = 'lat=21.1458&lng=79.0882'; // Nagpur: no demo shops

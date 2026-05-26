@@ -23,7 +23,8 @@ import { cartModel } from '../models/ordering/cart.js';
 import { customerCreditModel } from '../models/ordering/customerCredit.js';
 import { addressModel } from '../models/identity/address.js';
 import { productModel } from '../models/catalog/product.js';
-import { sellerModel, isOpenForOrders } from '../models/catalog/seller.js';
+import { sellerModel, isOpenForOrders, closedReason, hoursOf } from '../models/catalog/seller.js';
+import { pincodeServed } from '../../../shared/domain/hours.js';
 import { stockHoldModel } from '../models/catalog/stockHold.js';
 import { riderModel } from '../models/dispatch/rider.js';
 import { deliveryPromise } from '../../../shared/domain/promise.js';
@@ -49,11 +50,15 @@ export function ordersController({ env, dbs }) {
     if (!address) throw new AppError(422, 'ADDRESS_REQUIRED', 'Choose one of your delivery addresses');
     const seller = await sellerModel.findById(dbs.catalog, cart.sellerId);
     if (seller.is_demo) throw new AppError(409, 'DEMO_SHOP', `${seller.shop_name} is a demo shop and takes no real orders`);
-    if (!isOpenForOrders(seller)) throw new AppError(409, 'SHOP_UNAVAILABLE', 'This shop is not taking orders right now');
+    if (!isOpenForOrders(seller)) throw new AppError(409, 'SHOP_UNAVAILABLE', closedReason(seller));
     const policy = await currentPolicy(dbs);
     const drop = { lat: Number(address.lat), lng: Number(address.lng) };
     const km = distanceM({ lat: Number(seller.lat), lng: Number(seller.lng) }, drop) / 1000;
-    const promise = { ...deliveryPromise({ straightKm: km, temp: cart.tempClass, busyExtraMin: seller.busy_extra_min, sellerRadiusKm: Number(seller.radius_km) }, policy.config), distanceKm: +km.toFixed(2) };
+    let promise = { ...deliveryPromise({ straightKm: km, temp: cart.tempClass, busyExtraMin: seller.busy_extra_min, sellerRadiusKm: Number(seller.radius_km) }, policy.config), distanceKm: +km.toFixed(2) };
+    // a shop that lists pincodes delivers only there, so the address needs its pincode
+    const pins = hoursOf(seller).pincodes;
+    if (pins.length && !address.pincode) promise = { ...promise, serviceable: false, reasons: ['Add the pincode to this address: this shop delivers to listed pincodes only', ...promise.reasons] };
+    else if (!pincodeServed(pins, address.pincode)) promise = { ...promise, serviceable: false, reasons: [`This shop does not deliver to pincode ${address.pincode}`, ...promise.reasons] };
     return { cart, address, seller, policy, promise, drop };
   }
 

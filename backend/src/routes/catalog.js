@@ -1,3 +1,4 @@
+import { PINCODE } from '../../../shared/domain/hours.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
@@ -11,10 +12,11 @@ const lat = num().min(6).max(38);
 const lng = num().min(68).max(98);
 const point = { lat, lng };
 
-const nearQuery = z.object(point).strict();
-const sellersQuery = z.object({ ...point, temp: z.enum(['HOT', 'AMBIENT']).optional() }).strict();
-const shopQuery = z.object({ lat: lat.optional(), lng: lng.optional() }).strict();
-const searchQuery = z.object({ ...point, q: z.string().trim().min(1).max(60) }).strict();
+const pincode = z.string().regex(PINCODE).optional();
+const nearQuery = z.object({ ...point, pincode }).strict();
+const sellersQuery = z.object({ ...point, pincode, temp: z.enum(['HOT', 'AMBIENT']).optional() }).strict();
+const shopQuery = z.object({ lat: lat.optional(), lng: lng.optional(), pincode }).strict();
+const searchQuery = z.object({ ...point, pincode, q: z.string().trim().min(1).max(60) }).strict();
 const idParams = z.object({ id: z.coerce.number().int().positive() });
 
 // Public reads: no sign-in needed to browse (doc 11.2)

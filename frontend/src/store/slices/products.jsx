@@ -2,7 +2,9 @@ import { createSlice } from '@reduxjs/toolkit';
 import { apiThunk } from '../apiThunk';
 
 const FRESH_MS = 30_000;
-const pointKey = ({ lat, lng }) => `${lat},${lng}`;
+const pointKey = ({ lat, lng, pincode }) => `${lat},${lng},${pincode ?? ''}`;
+// where to look, and the pincode when the address has one (shops that list pincodes check it)
+const near = ({ lat, lng, pincode }) => `lat=${lat}&lng=${lng}${pincode ? `&pincode=${pincode}` : ''}`;
 
 /**
  * Snacks from shops that can reach this point within 30 minutes (doc 8.3).
@@ -11,7 +13,7 @@ const pointKey = ({ lat, lng }) => `${lat},${lng}`;
  */
 export const fetchProducts = apiThunk(
   'products/fetchAll',
-  async (point, { apiFetch }) => ({ key: pointKey(point), items: await apiFetch(`/products?lat=${point.lat}&lng=${point.lng}`) }),
+  async (point, { apiFetch }) => ({ key: pointKey(point), items: await apiFetch(`/products?${near(point)}`) }),
   {
     condition: (point, { getState }) => {
       const s = getState().products;
@@ -23,14 +25,14 @@ export const fetchProducts = apiThunk(
 
 export const fetchSellers = apiThunk('products/fetchSellers', async (point, { apiFetch }) => ({
   key: pointKey(point),
-  sellers: await apiFetch(`/sellers?lat=${point.lat}&lng=${point.lng}`),
+  sellers: await apiFetch(`/sellers?${near(point)}`),
 }));
 
-export const fetchShop = apiThunk('products/fetchShop', async ({ id, point }, { apiFetch }) => apiFetch(`/sellers/${id}?lat=${point.lat}&lng=${point.lng}`));
+export const fetchShop = apiThunk('products/fetchShop', async ({ id, point }, { apiFetch }) => apiFetch(`/sellers/${id}?${near(point)}`));
 
 // Search: Elasticsearch in the real stack, with a MySQL FULLTEXT fallback (doc 12.2)
 export const searchProducts = apiThunk('products/search', async ({ q, point }, { apiFetch }) =>
-  apiFetch(`/search?q=${encodeURIComponent(q)}&lat=${point.lat}&lng=${point.lng}`),
+  apiFetch(`/search?q=${encodeURIComponent(q)}&${near(point)}`),
 );
 
 const productsSlice = createSlice({

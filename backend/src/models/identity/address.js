@@ -3,7 +3,7 @@
 // customer's addresses run one at a time (the account row is locked), which keeps exactly one
 // default and the address limit true even when two tabs save at once.
 const TABLE = 'addresses';
-const FIELDS = ['kind', 'label', 'line', 'house', 'floor', 'landmark', 'instructions', 'city', 'lat', 'lng'];
+const FIELDS = ['kind', 'label', 'line', 'pincode', 'house', 'floor', 'landmark', 'instructions', 'city', 'lat', 'lng'];
 
 const pick = (fields) => Object.fromEntries(FIELDS.filter((k) => fields[k] !== undefined).map((k) => [k, fields[k]]));
 

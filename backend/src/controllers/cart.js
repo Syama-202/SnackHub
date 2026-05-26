@@ -7,7 +7,7 @@ import { AppError } from '../utils/AppError.js';
 import { currentPolicy } from '../utils/orders.js';
 import { cartModel } from '../models/ordering/cart.js';
 import { productModel } from '../models/catalog/product.js';
-import { sellerModel, isOpenForOrders } from '../models/catalog/seller.js';
+import { sellerModel, isOpenForOrders, closedReason } from '../models/catalog/seller.js';
 import { productView, sellerView } from './catalog.js';
 import { cartTempClass } from '../../../shared/domain/promise.js';
 
@@ -52,7 +52,7 @@ export function cartController({ dbs }) {
     const seller = await sellerModel.findById(dbs.catalog, product.seller_id);
     if (qty > 0) {
       if (seller?.is_demo) throw new AppError(409, 'DEMO_SHOP', `${seller.shop_name} is a demo shop: it shows how SnackHub works but takes no real orders. Use the demo sign-in to try it.`);
-      if (!isOpenForOrders(seller)) throw new AppError(409, 'SHOP_UNAVAILABLE', 'This shop is not taking orders right now');
+      if (!isOpenForOrders(seller)) throw new AppError(409, 'SHOP_UNAVAILABLE', closedReason(seller));
     }
     const cart = await cartModel.get(dbs.ordering, customerId);
     if (qty > 0 && cart.sellerId && cart.sellerId !== product.seller_id && cart.items.length && !replace) {
