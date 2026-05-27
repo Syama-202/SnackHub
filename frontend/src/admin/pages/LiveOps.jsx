@@ -80,7 +80,7 @@ const LiveOps = () => {
         <Metric label="Active orders" value={m?.activeOrders} />
         <Metric label="Delivered today" value={m?.deliveredToday} />
         <Metric label="On-time rate" value={(m?.onTimeRate || 0) * 100} format={(v) => `${Math.round(v)}%`} tone={m?.onTimeRate < 0.85 ? 'text-red-text' : ''} />
-        <Metric label="P90 delivery" value={m?.p90DeliveryMin} format={(v) => `${v.toFixed(1)}m`} />
+        <Metric label="P90 delivery" value={m?.p90DeliveryMin} format={(v) => `${Math.round(v)} min`} />
         <Metric label="Late orders" value={m?.lateOrders} tone={m?.lateOrders ? 'text-red-text' : ''} />
         <Metric label="Riders online" value={m?.ridersOnline} />
         <Metric label="Open complaints" value={m?.openComplaints} />
@@ -109,7 +109,7 @@ const LiveOps = () => {
         <Card className="p-4">
           <h2 className="text-lg font-extrabold">Live orders</h2>
           <div className="mt-3 max-h-[420px] space-y-2 overflow-y-auto">
-            {live.length === 0 && <p className="py-8 text-center text-sm text-grey-600">No active orders. Place one on the customer site.</p>}
+            {live.length === 0 && <p className="py-8 text-center text-sm text-grey-600">No active orders right now. New ones appear here as they are placed.</p>}
             {live.map((o) => (
               <div key={o.id} className="rounded-xl bg-grey-50 p-3 text-sm">
                 <div className="flex items-center justify-between">
@@ -124,7 +124,7 @@ const LiveOps = () => {
         </Card>
       </div>
 
-      <Card className="mt-6 overflow-x-auto p-4">
+      <Card className="mt-6 overflow-x-auto p-4" tabIndex={0} role="region" aria-label="Cash reconciliation">
         <h2 className="text-lg font-extrabold">Cash reconciliation</h2>
         <p className="text-sm text-grey-600">Pay-on-delivery orders: what the rider recorded against the order total.</p>
         <table className="mt-3 w-full min-w-[480px] text-sm">

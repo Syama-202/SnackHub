@@ -32,7 +32,7 @@ const ProductCard = ({ product: p, className, highlight, closed = false }) => {
       </button>
       <div className="flex flex-1 flex-col px-1 pt-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-display text-xl font-bold leading-tight text-grey-900">{p.title}</h3>
+          <h3 className="font-display text-lg font-bold leading-tight text-grey-900 sm:text-xl">{p.title}</h3>
           <SpiceMeter level={p.spice} />
         </div>
         <p className="mt-1 text-sm font-semibold text-grey-600">{p.region} · {p.weight}</p>

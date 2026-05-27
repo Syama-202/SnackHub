@@ -1,3 +1,5 @@
+import { useRouteTitle } from '../hooks';
+import { ADMIN_TITLES } from '../constants/titles';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -43,6 +45,7 @@ const AdminApp = () => {
   const dispatch = useDispatch();
   const { user, accessToken, isInitializing } = useSelector((state) => state.auth);
   const { pathname } = useLocation();
+  useRouteTitle(ADMIN_TITLES, 'SnackHub Admin');
 
   useEffect(() => {
     dispatch(restoreSession());
@@ -91,6 +94,7 @@ const AdminApp = () => {
   return (
     <AdminCtx.Provider value={{ run }}>
       <div className="min-h-dvh">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[80] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:font-bold">Skip to content</a>
         <Backdrop />
         <DemoBanner tone="dark" />
         <div className="flex">
@@ -116,7 +120,7 @@ const AdminApp = () => {
                 <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => cx('h-10 shrink-0 rounded-full px-4 text-sm font-bold leading-10', isActive ? 'chip-on' : 'text-grey-800')}>{t.label}</NavLink>
               ))}
             </nav>
-            <main className="page py-4 lg:py-8">
+            <main id="main" className="page py-4 lg:py-8">
               {/* a crashed page keeps the console and its navigation around it */}
               <ErrorBoundary resetKey={pathname}>
                 <Routes>

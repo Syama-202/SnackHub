@@ -1,3 +1,5 @@
+import { useRouteTitle } from './hooks';
+import { WEB_TITLES } from './constants/titles';
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Provider, useDispatch } from 'react-redux';
@@ -56,6 +58,7 @@ function ScrollToTop() {
 function AppRoutes() {
   // a crash shows a way back instead of a blank screen; another page starts fresh
   const { pathname } = useLocation();
+  useRouteTitle(WEB_TITLES);
   return (
     <ErrorBoundary resetKey={pathname}>
       <Suspense fallback={<PageFallback />}>

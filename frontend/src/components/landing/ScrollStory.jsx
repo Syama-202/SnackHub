@@ -86,7 +86,7 @@ export default function ScrollStory() {
           <div data-stage className={`${reduced ? '' : 'sticky top-0 h-[100dvh]'} flex items-center overflow-hidden`} style={{ backgroundColor: c.colors[reduced ? 1 : 0] }}>
             <div className="page grid items-center gap-10 py-16 md:grid-cols-[1fr_1.1fr]">
               <div className="relative z-10">
-                <p data-line className="text-sm font-extrabold uppercase tracking-[0.16em] text-orange-text">{c.eyebrow}</p>
+                <p data-line className="text-sm font-extrabold uppercase tracking-[0.16em] text-orange-ink">{c.eyebrow}</p>
                 <h2 id={`ch-${c.id}`} data-line className="mt-3 text-[clamp(2.4rem,5.4vw,4.4rem)] font-extrabold leading-[1]">{c.title}</h2>
                 <p data-line className="mt-5 max-w-lg text-lg text-grey-800/80">{c.body}</p>
                 <dl className="mt-8 grid max-w-md grid-cols-3 gap-3">

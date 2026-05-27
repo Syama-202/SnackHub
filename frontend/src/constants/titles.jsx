@@ -1,0 +1,44 @@
+// The browser tab title for each page (hooks/index.jsx, useRouteTitle). First match wins, so
+// fixed paths come before ones with parameters. Pages with a name of their own (a shop, an
+// order) set a more specific title once it has loaded.
+export const WEB_TITLES = [
+  ['/', 'Hometown snacks, delivered'],
+  ['/shop', 'Snacks near you'],
+  ['/shop/:sellerId', 'Shop'],
+  ['/checkout', 'Checkout'],
+  ['/orders', 'Your orders'],
+  ['/orders/:id', 'Your order'],
+  ['/orders/:id/report', 'Report a problem'],
+  ['/account', 'Your account'],
+  ['/account/security', 'Sign-in and security'],
+  ['/notifications', 'Notifications'],
+  ['/join', 'Sign in or join'],
+  ['/signin', 'Sign in'],
+  ['/verify-email', 'Verify your email'],
+  ['/forgot-password', 'Forgot your password'],
+  ['/reset-password', 'Choose a new password'],
+  ['/seller/onboarding', 'Shop application'],
+  ['/rider/onboarding', 'Rider application'],
+  ['/design', 'Design system'],
+  ['/seller', 'Orders · Seller console'],
+  ['/seller/products', 'Products · Seller console'],
+  ['/seller/shop', 'Shop settings · Seller console'],
+  ['/seller/notifications', 'Inbox · Seller console'],
+  ['/rider', 'Today · Rider app'],
+  ['/rider/earnings', 'Earnings · Rider app'],
+  ['/rider/notifications', 'Inbox · Rider app'],
+  ['/:portal/signin', 'Sign in'],
+  ['/:portal/signup', 'Create an account'],
+];
+
+export const ADMIN_TITLES = [
+  ['/', 'Live operations'],
+  ['/verification', 'Verification'],
+  ['/expiring', 'Expiring documents'],
+  ['/requirements', 'Document requirements'],
+  ['/users', 'Accounts'],
+  ['/complaints', 'Complaints'],
+  ['/policy', 'Delivery policy'],
+  ['/audit', 'Audit log'],
+  ['/enrol', 'Set up your admin access'],
+];

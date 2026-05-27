@@ -1,3 +1,4 @@
+import { STATE_LABEL } from '@shared/domain/orderStates';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -121,7 +122,7 @@ const SellerOrders = () => {
         })}
       </div>
       <h2 className="mt-8 text-xl font-extrabold">Recent</h2>
-      <div className="mt-3 overflow-x-auto rounded-2xl bg-white">
+      <div className="mt-3 overflow-x-auto rounded-2xl bg-white" tabIndex={0} role="region" aria-label="Recent orders">
         <table className="w-full min-w-[560px] text-sm">
           <thead className="text-left text-grey-600"><tr><th className="p-3">Order</th><th className="p-3">Items</th><th className="p-3">Status</th><th className="p-3 text-right">Value</th></tr></thead>
           <tbody>
@@ -130,7 +131,7 @@ const SellerOrders = () => {
               <tr key={o.id} className="border-t border-grey-800/5">
                 <td className="p-3 font-bold">#{o.id}</td>
                 <td className="p-3">{o.items.map((i) => `${i.title} × ${i.qty}`).join(', ')}</td>
-                <td className="p-3"><Pill tone={o.status === 'DELIVERED' ? 'green' : o.status === 'CANCELLED' || o.status === 'REJECTED' ? 'red' : 'sun'}>{o.status.replace('_', ' ').toLowerCase()}</Pill></td>
+                <td className="p-3"><Pill tone={o.status === 'DELIVERED' ? 'green' : o.status === 'CANCELLED' || o.status === 'REJECTED' ? 'red' : 'sun'}>{STATE_LABEL[o.status] ?? o.status}</Pill></td>
                 <td className="p-3 text-right font-bold">{rupees(o.subtotalPaise)}</td>
               </tr>
             ))}

@@ -74,13 +74,17 @@ const ProductList = () => {
                 <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-hero font-display text-2xl font-extrabold text-grey-900 shadow-cta">{s.shopName[0]}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-display text-[1.0625rem] font-bold">{s.shopName}</span>
-                  <span className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                  <span className="mt-0.5 flex flex-wrap items-center gap-1 text-xs font-semibold text-emerald-700">
                     <Icon name="shield" className="h-3.5 w-3.5" /> Verified
                     {s.isNew && <Pill tone="orange">New</Pill>}
                     {SELLER_KINDS[s.kind] && <Pill tone={SELLER_KINDS[s.kind].tone}>{SELLER_KINDS[s.kind].label}</Pill>}
                     {s.busyExtraMin > 0 && <Pill tone="grey">Busy +{s.busyExtraMin} min</Pill>}
                   </span>
-                  <span className="block text-xs text-grey-600">{s.hours && !s.hours.openNow ? <b className="text-grey-800">Closed · {s.hours.label}</b> : `${s.distanceKm} km · ${w[0]} to ${w[1]} min`}</span>
+                  {s.hours && !s.hours.openNow ? (
+                    <span className="mt-1 flex items-center gap-1.5 truncate text-xs"><Pill tone="dark">Closed</Pill><span className="truncate font-semibold text-grey-800">{s.hours.label}</span></span>
+                  ) : (
+                    <span className="block text-xs text-grey-600">{s.distanceKm} km · {w[0]} to {w[1]} min</span>
+                  )}
                 </span>
               </Link>
             );

@@ -72,7 +72,8 @@ export default function CustomerLayout() {
           )}
         </Suspense>
       </main>
-      <Footer />
+      {/* checkout keeps the page on paying: no marketing footer under it */}
+      {location.pathname !== '/checkout' && <Footer />}
       <CartDrawer />
       <ProductModal />
       <CartPrompts />

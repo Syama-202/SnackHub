@@ -5,6 +5,7 @@ import { fetchShop } from '../../store/slices/products';
 import { selectDeliveryPoint } from '../../store/slices/profile';
 import ProductCard, { ProductCardSkeleton } from '../../components/product/Card';
 import { Pill, Icon, EmptyState, Button } from '../../components/ui';
+import { usePageTitle } from '../../hooks';
 import { isDemoSession } from '../../store/slices/auth';
 
 /** One verified shop, its delivery promise for this address, and its menu. */
@@ -16,6 +17,7 @@ const ShopDetail = () => {
   const point = useSelector(selectDeliveryPoint);
   const shop = useSelector((state) => state.products.shops[sellerId]);
   const error = useSelector((state) => state.products.shopErrors[sellerId]);
+  usePageTitle(shop?.shopName);
 
   useEffect(() => {
     dispatch(fetchShop({ id: sellerId, point }));

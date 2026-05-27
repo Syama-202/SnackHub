@@ -26,6 +26,7 @@ const ConsoleLayout = ({ title, tabs, children, mobileTabs = false }) => {
   return (
     <div className="min-h-dvh">
       <Backdrop />
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[80] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:font-bold">Skip to content</a>
       <DemoBanner />
       <header className="sticky top-0 z-40 px-3 pt-3">
         <div className="page glass glass-strong flex h-16 items-center gap-3">

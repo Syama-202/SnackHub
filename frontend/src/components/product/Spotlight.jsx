@@ -53,7 +53,7 @@ export default function Spotlight({ eyebrow, title, shops, snacks, fastest, chil
           <div className="mt-5 grid grid-cols-3 gap-2 sm:mt-6 sm:flex sm:flex-wrap">
             {[
               [shops, shops === 1 ? 'shop near you' : 'shops near you'],
-              [snacks, 'snacks to pick from'],
+              [snacks, snacks === 1 ? 'snack to pick from' : 'snacks to pick from'],
               fastest ? [`${fastest} min`, 'fastest delivery'] : null,
             ]
               .filter(Boolean)

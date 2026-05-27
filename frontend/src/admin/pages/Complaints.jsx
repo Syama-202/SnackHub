@@ -126,7 +126,7 @@ export default function Complaints() {
       </div>
 
       <h2 className="mt-10 text-xl font-extrabold">Fines ledger</h2>
-      <div className="mt-3 overflow-x-auto rounded-2xl bg-white">
+      <div className="mt-3 overflow-x-auto rounded-2xl bg-white" tabIndex={0} role="region" aria-label="Complaints">
         <table className="w-full min-w-[560px] text-sm">
           <thead className="text-left text-grey-600"><tr><th className="p-3">Fine</th><th className="p-3">Target</th><th className="p-3">Reason</th><th className="p-3">Amount</th><th className="p-3">Status</th><th className="p-3" /></tr></thead>
           <tbody>

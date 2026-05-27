@@ -8,7 +8,6 @@ import { addToast } from '../../store/slices/toast';
 import { fetchCart, updateQuantity } from '../../store/slices/cart';
 import { fetchOrders, fetchQuote, placeOrder } from '../../store/slices/order';
 import { rupees } from '@shared/domain/money';
-import { PROMISE_WORDING } from '@shared/domain/promise';
 import { Button, Card, Icon, Pill, EmptyState, TempBadge, Spinner, Modal, CloseButton, cx } from '../../components/ui';
 import AddressForm, { KIND_ICON } from '../../components/address/Form';
 import { selectSavedAddress } from '../../store/slices/profile';
@@ -196,7 +195,7 @@ const Checkout = () => {
                   {q.promise.serviceable ? (
                     <>
                       <p className="flex items-center gap-2 font-extrabold"><Icon name="clock" className="h-4 w-4" /> Arrives in {q.promise.window[0]} to {q.promise.window[1]} min <TempBadge temp={q.tempClass} /></p>
-                      <p className="mt-1 text-xs text-grey-600">{PROMISE_WORDING}</p>
+                      <p className="mt-1 text-xs text-grey-600">An estimate from the shop's distance and preparation time; traffic can change it.</p>
                     </>
                   ) : (
                     <p className="font-bold">{q.promise.reasons[0]}. Try another address or shop.</p>

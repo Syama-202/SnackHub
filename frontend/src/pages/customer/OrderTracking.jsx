@@ -8,7 +8,7 @@ import { TIMELINE, STATE_LABEL, customerCanCancel } from '@shared/domain/orderSt
 import { rupees } from '@shared/domain/money';
 import { addToast } from '../../store/slices/toast';
 import { cancelOrder, checkPayment, fetchOrders, fetchOtp, reviewOrder } from '../../store/slices/order';
-import { useNow, usePolling } from '../../hooks';
+import { useNow, usePageTitle, usePolling } from '../../hooks';
 import { Button, Card, Icon, Pill, EmptyState, Spinner, cx } from '../../components/ui';
 
 const OrderTracking = () => {
@@ -17,6 +17,7 @@ const OrderTracking = () => {
   const dispatch = useDispatch();
   // waiting for payment: the server asks PhonePe; the return from the pay page proves nothing
   usePolling(() => dispatch(checkPayment(id)), 4000, t?.order.status === 'PENDING_PAYMENT', 'order');
+  usePageTitle(t ? `Order #${t.order.id}: ${STATE_LABEL[t.order.status]}` : null);
   if (isLoading) return <div className="grid min-h-[50vh] place-items-center"><Spinner className="h-8 w-8 text-orange-text" /></div>;
   if (error && !t) return <EmptyState title="Order not found" body="It may belong to another account." action={<Link to="/orders"><Button>Your orders</Button></Link>} />;
   const o = t.order;

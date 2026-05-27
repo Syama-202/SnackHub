@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useSelector } from 'react-redux';
+import { matchPath, useLocation } from 'react-router-dom';
 import { onTopics, realtimeStatus, startRealtime, stopRealtime, subscribeStatus } from '../services/realtime';
 
 const rmQuery = typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
@@ -216,4 +217,20 @@ export function useDocumentVisible() {
     () => document.visibilityState === 'visible',
     () => true,
   );
+}
+
+/** The tab title from the first matching [pattern, title] (constants/titles.jsx), as "Title · SnackHub". */
+export function useRouteTitle(table, site = 'SnackHub') {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const hit = table.find(([path]) => matchPath({ path, end: true }, pathname));
+    document.title = hit ? `${hit[1]} · ${site}` : site;
+  }, [table, site, pathname]);
+}
+
+/** A page's own title once it knows it (a shop's name, an order number). */
+export function usePageTitle(title, site = 'SnackHub') {
+  useEffect(() => {
+    if (title) document.title = `${title} · ${site}`;
+  }, [title, site]);
 }
