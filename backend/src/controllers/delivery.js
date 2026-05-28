@@ -11,10 +11,11 @@
 //   POST /rider/orders/:id/:step    picked-up | deliver | emergency | unreachable
 //   GET  /rider/earnings            pay for each delivery
 //   POST /rider/earnings/:id/dispute  question a lateness cut within 48 hours
+import { cashInHand, cashLimitOf, listDeposits } from '../utils/cash.js';
 import { collectCod } from '../utils/payments.js';
 import { AppError } from '../utils/AppError.js';
 import { loadApplicant, eligibilityOf } from '../utils/applicants.js';
-import { inbox, move, policyOf, refreshRiderStatus, trackState, viewOrder } from '../utils/orders.js';
+import { currentPolicy, inbox, move, policyOf, refreshRiderStatus, trackState, viewOrder } from '../utils/orders.js';
 import { realtime } from '../utils/realtime.js';
 import { acceptOffer, declineOffer, recordPosition, riderDistanceTo } from '../utils/dispatch.js';
 import { deliveryCodeMatches } from '../utils/deliveryCode.js';
@@ -236,5 +237,23 @@ export function deliveryController({ env, dbs }) {
     res.json(earningView(await dbs.dispatch('rider_earnings').where({ id: e.id }).first()));
   }
 
-  return { me, setStatus, location, offers, respond, active, step, earnings, dispute };
+  /** Cash in hand: what the rider holds, the limit, recent collections and deposits. */
+  async function cash(req, res) {
+    const rider = await ownRider(req.user.userId);
+    const policy = (await currentPolicy(dbs)).config;
+    const held = (await cashInHand(dbs, [rider.id])).get(rider.id);
+    const collections = await dbs.ordering('orders').where({ rider_id: rider.id, payment_mode: 'COD', status: 'DELIVERED' }).whereNotNull('collected_paise').orderBy('delivered_at', 'desc').limit(20).select('id', 'collected_paise', 'total_paise', 'delivered_at');
+    const limitPaise = cashLimitOf(policy);
+    res.json({
+      heldPaise: held.held,
+      collectedPaise: held.collected,
+      depositedPaise: held.deposited,
+      limitPaise,
+      overLimit: held.held >= limitPaise,
+      collections: collections.map((o) => ({ orderId: o.id, collectedPaise: o.collected_paise, totalPaise: o.total_paise, at: ms(o.delivered_at) })),
+      deposits: await listDeposits(dbs, rider.id, 20),
+    });
+  }
+
+  return { me, setStatus, location, offers, respond, active, step, earnings, dispute, cash };
 }

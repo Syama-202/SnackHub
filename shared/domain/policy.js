@@ -24,6 +24,8 @@ export const DEFAULT_POLICY = {
   onTimeBonusPaise: 500,
   deliveryFeePaise: 2900,
   codEnabled: true,
+  // cash a rider may hold before handing it in; at or above it, no new pay-on-delivery offers
+  cashLimitPaise: 200000,
 };
 
 export const tempRules = (policy, temp) => (temp === 'HOT' ? policy.hot : policy.ambient);

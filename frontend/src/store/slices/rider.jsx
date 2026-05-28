@@ -12,11 +12,14 @@ export const fetchActiveDelivery = apiThunk('rider/fetchActive', async (_, { api
 export const deliveryStep = apiThunk('rider/step', async ({ orderId, step, body }, { apiFetch }) => apiFetch(`/rider/orders/${orderId}/${step}`, { method: 'POST', body: body || {} }));
 export const sendLocation = apiThunk('rider/location', async (point, { apiFetch }) => apiFetch('/rider/location', { method: 'POST', body: point }));
 export const fetchEarnings = apiThunk('rider/fetchEarnings', async (_, { apiFetch }) => apiFetch('/rider/earnings'));
+// pay-on-delivery cash the rider holds, the limit, collections and deposits
+export const fetchCash = apiThunk('rider/fetchCash', async (_, { apiFetch }) => apiFetch('/rider/cash'));
 export const disputeEarning = apiThunk('rider/dispute', async ({ id, reason }, { apiFetch }) => apiFetch(`/rider/earnings/${id}/dispute`, { method: 'POST', body: { reason } }));
 
 const riderSlice = createSlice({
   name: 'rider',
-  initialState: { me: null, offers: [], active: null, activeLoaded: false, earnings: [], earningsLoaded: false, stepPending: false },
+  initialState: {
+    cash: null, me: null, offers: [], active: null, activeLoaded: false, earnings: [], earningsLoaded: false, stepPending: false },
   reducers: {
     resetRider: () => ({ me: null, offers: [], active: null, activeLoaded: false, earnings: [], earningsLoaded: false, stepPending: false }),
   },
@@ -50,6 +53,9 @@ const riderSlice = createSlice({
       })
       .addCase(deliveryStep.rejected, (state) => {
         state.stepPending = false;
+      })
+      .addCase(fetchCash.fulfilled, (state, action) => {
+        state.cash = action.payload;
       })
       .addCase(fetchEarnings.fulfilled, (state, action) => {
         state.earnings = action.payload;

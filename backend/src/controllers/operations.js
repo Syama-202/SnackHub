@@ -8,6 +8,7 @@
 //   GET  /admin/earnings                 rider pay rows, disputed ones first
 //   POST /admin/earnings/:id/resolve     give a lateness cut back or keep it (fresh code)
 //   GET  /admin/policy, PUT /admin/policy  the current version, history, and a new version
+import { cashInHand, cashLimitOf, recordDeposit, reverseDeposit } from '../utils/cash.js';
 import { AppError } from '../utils/AppError.js';
 import { currentPolicy, inbox, policyOf, trackState, viewOrders } from '../utils/orders.js';
 import { realtime } from '../utils/realtime.js';
@@ -154,6 +155,43 @@ export function operationsController({ dbs }) {
     res.json((await currentPolicy(dbs)).config);
   }
 
-  return { sla, orders, riders, sellers, reconciliation, earnings, resolveEarning, policy, savePolicy };
+  // ---------- cash in hand: riders holding pay-on-delivery cash, and the deposits staff record
+  async function cash(req, res) {
+    const policy = (await currentPolicy(dbs)).config;
+    const limitPaise = cashLimitOf(policy);
+    const ids = await dbs.ordering('orders').where({ payment_mode: 'COD', status: 'DELIVERED' }).whereNotNull('rider_id').distinct('rider_id').pluck('rider_id');
+    const held = await cashInHand(dbs, ids.map(Number));
+    const riders = ids.length ? await riderModel.listByIds(dbs.dispatch, ids) : [];
+    const recent = await dbs.dispatch('cash_deposits').orderBy('id', 'desc').limit(30);
+    res.json({
+      limitPaise,
+      riders: riders
+        .map((r) => ({ riderId: r.id, name: r.name, cityId: cityId(r.city), ...Object.fromEntries(Object.entries(held.get(r.id)).map(([k, v]) => [`${k}Paise`, v])), overLimit: held.get(r.id).held >= limitPaise }))
+        .sort((a, b) => b.heldPaise - a.heldPaise),
+      recent: recent.map((d) => ({ id: d.id, riderId: d.rider_id, kind: d.kind, amountPaise: d.amount_paise, reversesId: d.reverses_id, note: d.note, at: ms(d.created_at) })),
+    });
+  }
+
+  async function recordCash(req, res) {
+    const staffId = req.user.userId;
+    const { riderId, amountPaise, note } = req.body;
+    const done = await recordDeposit(dbs, { riderId, amountPaise, note, staffId });
+    const rider = await riderModel.findById(dbs.dispatch, riderId);
+    await auditLogModel.append(dbs.identity, { actorId: staffId, action: 'cash.deposit', target: `rider:${riderId}`, before: { heldPaise: done.heldBefore }, after: { heldPaise: done.heldAfter, amountPaise, note } });
+    if (rider) await dbs.ordering.transaction((trx) => inbox(trx, { userId: rider.user_id, orderId: null, type: `delivery.cash_deposit.${done.id}`, body: `Cash deposit of Rs ${(amountPaise / 100).toFixed(2)} recorded. You now hold Rs ${(done.heldAfter / 100).toFixed(2)}.` }));
+    realtime.publish([{ userId: rider?.user_id, role: 'rider' }], 'earning', {});
+    res.status(201).json({ id: done.id, heldPaise: done.heldAfter });
+  }
+
+  async function reverseCash(req, res) {
+    const staffId = req.user.userId;
+    const done = await reverseDeposit(dbs, { depositId: req.params.id, staffId, note: req.body.reason });
+    await auditLogModel.append(dbs.identity, { actorId: staffId, action: 'cash.reverse', target: `cash_deposit:${done.deposit.id}`, before: { amountPaise: done.deposit.amount_paise }, after: { reversal: done.id, reason: req.body.reason } });
+    const rider = await riderModel.findById(dbs.dispatch, done.deposit.rider_id);
+    realtime.publish([{ userId: rider?.user_id, role: 'rider' }], 'earning', {});
+    res.status(201).json({ id: done.id });
+  }
+
+  return { sla, orders, riders, sellers, reconciliation, earnings, resolveEarning, policy, savePolicy, cash, recordCash, reverseCash };
 }
 

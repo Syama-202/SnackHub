@@ -38,6 +38,7 @@ export const ADMIN_TITLES = [
   ['/requirements', 'Document requirements'],
   ['/users', 'Accounts'],
   ['/complaints', 'Complaints'],
+  ['/cash', 'Cash in hand'],
   ['/policy', 'Delivery policy'],
   ['/audit', 'Audit log'],
   ['/enrol', 'Set up your admin access'],

@@ -20,6 +20,7 @@ const FIELDS = [
   ['baseFeePaise', 'Base fee', 'paise'],
   ['distanceFeePaisePerKm', 'Distance fee', 'paise/km'],
   ['onTimeBonusPaise', 'On-time bonus', 'paise'],
+  ['cashLimitPaise', 'Rider cash limit', 'paise'],
 ];
 
 /** Delivery policy editor (doc 11.4): versioned, applies only to later orders. */
@@ -32,7 +33,8 @@ export default function PolicyEditor() {
   }, [dispatch]);
   const [draft, setDraft] = useState(null);
   useEffect(() => {
-    if (data && !draft) setDraft(data.current);
+    // versions saved before the cash limit existed use its default
+    if (data && !draft) setDraft({ cashLimitPaise: 200000, ...data.current });
   }, [data, draft]);
   if (!draft) return <div className="skeleton h-64" />;
 

@@ -15,19 +15,23 @@ export const fetchFines = get('fines', '/admin/fines');
 export const fetchPolicy = get('policy', '/admin/policy');
 export const fetchAudit = get('audit', '/admin/audit');
 export const fetchEarningsAdmin = get('earnings', '/admin/earnings');
+export const fetchCash = get('cash', '/admin/cash');
 
 export const decideComplaint = apiThunk('admin/decideComplaint', async ({ id, ...body }, { apiFetch }) => apiFetch(`/admin/complaints/${id}/decide`, { method: 'POST', body }));
 export const reverseFine = apiThunk('admin/reverseFine', async ({ id, reason }, { apiFetch }) => apiFetch(`/admin/fines/${id}/reverse`, { method: 'POST', body: { reason } }));
 // a rider's dispute: give the lateness cut back (reverse) or keep it, always with a reason
 export const resolveEarning = apiThunk('admin/resolveEarning', async ({ id, reverse, reason }, { apiFetch }) => apiFetch(`/admin/earnings/${id}/resolve`, { method: 'POST', body: { reverse, reason } }));
+// cash a rider handed in; a mistake is reversed, never edited
+export const recordDeposit = apiThunk('admin/recordDeposit', async (body, { apiFetch }) => apiFetch('/admin/cash/deposits', { method: 'POST', body }));
+export const reverseDeposit = apiThunk('admin/reverseDeposit', async ({ id, reason }, { apiFetch }) => apiFetch(`/admin/cash/deposits/${id}/reverse`, { method: 'POST', body: { reason } }));
 export const savePolicy = apiThunk('admin/savePolicy', async (changes, { apiFetch }) => apiFetch('/admin/policy', { method: 'PUT', body: changes }));
 
-const fetchers = [fetchSla, fetchAdminOrders, fetchAdminRiders, fetchAdminSellers, fetchReconciliation, fetchComplaints, fetchFines, fetchPolicy, fetchAudit, fetchEarningsAdmin];
+const fetchers = [fetchSla, fetchAdminOrders, fetchAdminRiders, fetchAdminSellers, fetchReconciliation, fetchComplaints, fetchFines, fetchPolicy, fetchAudit, fetchEarningsAdmin, fetchCash];
 const replaceIn = (list, item) => (list || []).map((x) => (x.id === item.id ? item : x));
 
 const adminSlice = createSlice({
   name: 'admin',
-  initialState: { sla: null, orders: [], riders: [], sellers: [], reconciliation: [], complaints: [], fines: [], policy: null, audit: [], earnings: [] },
+  initialState: { sla: null, orders: [], riders: [], sellers: [], reconciliation: [], complaints: [], fines: [], policy: null, audit: [], earnings: [], cash: null },
   reducers: {},
   extraReducers: (builder) => {
     fetchers.forEach((f) =>

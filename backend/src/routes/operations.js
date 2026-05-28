@@ -37,10 +37,19 @@ const policyChanges = z
     onTimeBonusPaise: int(0, 5000),
     deliveryFeePaise: int(0, 20_000),
     codEnabled: z.boolean(),
+    cashLimitPaise: int(10_000, 2_000_000),
   })
   .partial()
   .strict()
   .refine((b) => Object.keys(b).length > 0, 'Nothing to change');
+
+const deposit = z
+  .object({
+    riderId: z.number().int().positive(),
+    amountPaise: z.number().int().min(100).max(10_000_000),
+    note: z.string().trim().max(200).optional(),
+  })
+  .strict();
 
 export function operationsRoutes(deps) {
   const router = Router();
@@ -57,6 +66,9 @@ export function operationsRoutes(deps) {
   router.get('/admin/earnings', ...staff('operations.read'), wrap(c.earnings));
   router.post('/admin/earnings/:id/resolve', ...staff('earnings.resolve'), decisions, stepUp, validateParams(idParams), validateBody(resolve), wrap(c.resolveEarning));
   router.get('/admin/policy', ...staff('operations.read'), wrap(c.policy));
+  router.get('/admin/cash', ...staff('operations.read'), wrap(c.cash));
+  router.post('/admin/cash/deposits', ...staff('cash.record'), decisions, stepUp, validateBody(deposit), wrap(c.recordCash));
+  router.post('/admin/cash/deposits/:id/reverse', ...staff('cash.record'), decisions, stepUp, validateParams(idParams), validateBody(z.object({ reason: z.string().trim().min(5).max(200) }).strict()), wrap(c.reverseCash));
   router.put('/admin/policy', ...staff('policy.write'), decisions, stepUp, validateBody(policyChanges), wrap(c.savePolicy));
   return router;
 }

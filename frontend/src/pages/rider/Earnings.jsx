@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { disputeEarning, fetchEarnings } from '../../store/slices/rider';
+import { disputeEarning, fetchCash, fetchEarnings } from '../../store/slices/rider';
+import { usePolling } from '../../hooks';
 import { isDemoSession } from '../../store/slices/auth';
 import { addToast } from '../../store/slices/toast';
-import { rupeesExact } from '@shared/domain/money';
+import { rupees, rupeesExact } from '@shared/domain/money';
 import { Button, Card, Pill, Skeleton } from '../../components/ui';
 
 /** Earnings: base, distance, bonus, penalty and net, with the inputs (doc 8.4a). */
@@ -15,6 +16,8 @@ const RiderEarnings = () => {
   useEffect(() => {
     dispatch(fetchEarnings());
   }, [dispatch]);
+  // a deposit recorded by staff shows up at once (live hint), or within a minute
+  usePolling(() => dispatch(fetchCash()), 60000, true, 'earning');
 
   const [reason, setReason] = useState('');
   const dispute = async (e) => {
@@ -36,6 +39,7 @@ const RiderEarnings = () => {
         <p className="font-display text-4xl font-extrabold">{rupeesExact(total)}</p>
         <p className="text-sm">Pay = base + distance + on-time bonus − lateness cut. Only rider-caused delay counts; shop delay and a 2 minute grace are subtracted, the cut is capped, and net pay never goes below zero.</p>
       </Card>
+      <CashCard />
       <div className="mt-4 space-y-3">
         {!earningsLoaded && <Skeleton className="h-28" />}
         {earnings.map((e) => {
@@ -88,5 +92,36 @@ const RiderEarnings = () => {
     </div>
   );
 };
+
+/** Pay-on-delivery cash the rider holds, against the limit, and where it came from and went. */
+function CashCard() {
+  const cash = useSelector((state) => state.rider.cash);
+  if (!cash) return <Skeleton className="mt-4 h-28" />;
+  const share = Math.min(1, cash.heldPaise / cash.limitPaise);
+  const recent = [
+    ...cash.collections.slice(0, 5).map((c) => ({ key: `c${c.orderId}`, at: c.at, text: `Collected on order #${c.orderId}`, paise: c.collectedPaise })),
+    ...cash.deposits.slice(0, 5).map((d) => ({ key: `d${d.id}`, at: d.at, text: d.kind === 'REVERSAL' ? 'Deposit reversed' : `Handed in${d.reversed ? ' (reversed)' : ''}`, paise: d.kind === 'REVERSAL' ? d.amountPaise : -d.amountPaise })),
+  ].sort((a, b) => b.at - a.at).slice(0, 6);
+  return (
+    <Card className="mt-4 p-5" role="region" aria-labelledby="cash-h">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="cash-h" className="text-lg font-extrabold">Cash in hand</h2>
+        <p className="font-display text-3xl font-extrabold">{rupees(cash.heldPaise)}</p>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-grey-50" role="progressbar" aria-label="Cash held against the limit" aria-valuemin={0} aria-valuemax={cash.limitPaise / 100} aria-valuenow={cash.heldPaise / 100}>
+        <div className={`h-full ${cash.overLimit ? 'bg-red-strong' : 'bg-primary'}`} style={{ width: `${share * 100}%` }} />
+      </div>
+      <p className="mt-2 text-sm text-grey-600">Limit {rupees(cash.limitPaise)}. Hand cash in at the hub; the staff member records it and you get a message.</p>
+      {cash.overLimit && <p role="alert" className="mt-2 rounded-xl bg-red/10 p-3 text-sm font-bold text-red-text">You hold the limit, so no new pay-on-delivery orders reach you until you hand cash in. Prepaid orders still do.</p>}
+      {recent.length > 0 && (
+        <ul className="mt-3 divide-y divide-grey-800/5 text-sm">
+          {recent.map((r) => (
+            <li key={r.key} className="flex justify-between py-1.5"><span>{r.text}</span><span className={r.paise < 0 ? 'text-emerald-700' : 'font-bold'}>{r.paise < 0 ? `−${rupees(-r.paise)}` : `+${rupees(r.paise)}`}</span></li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
 
 export default RiderEarnings;

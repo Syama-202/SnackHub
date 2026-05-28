@@ -195,6 +195,14 @@ const withHours = (s) => {
   return { ...s, weeklyHours: s.weeklyHours ?? null, closedDates: s.closedDates ?? [], pincodes: s.pincodes ?? [], hours: { openNow: st.open, label: hoursLabel(st), opensAt: st.opensAt, closesAt: st.closesAt } };
 };
 
+// demo cash in hand: collected on delivered pay-on-delivery orders, less deposits (append only)
+const DEMO_CASH_LIMIT = 200000;
+const cashOf = (db, riderId) => {
+  const collected = db.orders.filter((o) => o.riderId === riderId && o.paymentMode === 'COD' && o.status === 'DELIVERED').reduce((t, o) => t + (o.collectedPaise ?? o.totalPaise), 0);
+  const deposited = (db.cashDeposits ?? []).filter((d) => d.riderId === riderId).reduce((t, d) => t + (d.kind === 'DEPOSIT' ? d.amountPaise : -d.amountPaise), 0);
+  return { collected, deposited, held: collected - deposited };
+};
+
 export const handlers = [
   // ---------- platform
   http.get(`${API}/health`, () => ok({ status: 'ok' })),
@@ -850,6 +858,18 @@ export const handlers = [
     const user = db.users.find((u) => u.id === g.u.userId);
     return ok(db.earnings.filter((e) => e.riderId === user.riderId).sort((a, b) => b.createdAt - a.createdAt));
   })),
+  http.get(`${API}/rider/cash`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = guard(request, ['rider']);
+    if (g.res) return g.res;
+    const riderId = db.users.find((u) => u.id === g.u.userId).riderId;
+    const c = cashOf(db, riderId);
+    const collections = db.orders.filter((o) => o.riderId === riderId && o.paymentMode === 'COD' && o.status === 'DELIVERED').sort((a, b) => (b.deliveredAt ?? 0) - (a.deliveredAt ?? 0)).slice(0, 20)
+      .map((o) => ({ orderId: o.id, collectedPaise: o.collectedPaise ?? o.totalPaise, totalPaise: o.totalPaise, at: o.deliveredAt ?? o.placedAt }));
+    const mine = (db.cashDeposits ?? []).filter((d) => d.riderId === riderId);
+    const deposits = [...mine].reverse().slice(0, 20).map((d) => ({ ...d, reversed: mine.some((x) => x.reversesId === d.id) }));
+    return ok({ heldPaise: c.held, collectedPaise: c.collected, depositedPaise: c.deposited, limitPaise: DEMO_CASH_LIMIT, overLimit: c.held >= DEMO_CASH_LIMIT, collections, deposits });
+  })),
   http.post(`${API}/rider/earnings/:id/dispute`, withDb(({ body, request, params, db }) => {
     if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['rider']);
@@ -989,6 +1009,41 @@ export const handlers = [
     const g = adminGuard(request);
     if (g.res) return g.res;
     return ok(db.orders.filter((o) => o.paymentMode === 'COD' && o.status === 'DELIVERED').map((o) => ({ orderId: o.id, totalPaise: o.totalPaise, collectedPaise: o.collectedPaise ?? o.totalPaise, mismatch: Boolean(o.cashMismatch), riderId: o.riderId })));
+  })),
+  http.get(`${API}/admin/cash`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = adminGuard(request);
+    if (g.res) return g.res;
+    const ids = [...new Set(db.orders.filter((o) => o.paymentMode === 'COD' && o.status === 'DELIVERED' && o.riderId).map((o) => o.riderId))];
+    const riders = ids.map((id) => {
+      const r = db.riders.find((x) => x.id === id);
+      const c = cashOf(db, id);
+      return { riderId: id, name: r?.name ?? `Rider #${id}`, cityId: r?.cityId, collectedPaise: c.collected, depositedPaise: c.deposited, heldPaise: c.held, overLimit: c.held >= DEMO_CASH_LIMIT };
+    });
+    return ok({ limitPaise: DEMO_CASH_LIMIT, riders: riders.sort((a, b) => b.heldPaise - a.heldPaise), recent: [...(db.cashDeposits ?? [])].reverse().slice(0, 30) });
+  })),
+  http.post(`${API}/admin/cash/deposits`, withDb(({ body, request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = adminGuard(request);
+    if (g.res) return g.res;
+    const held = cashOf(db, body.riderId).held;
+    if (body.amountPaise > held) return fail(409, 'MORE_THAN_HELD', `This rider holds ${held} paise; a deposit cannot be more than that`);
+    db.cashDeposits = db.cashDeposits ?? [];
+    const d = { id: (db.seq.cash = (db.seq.cash ?? 0) + 1), riderId: body.riderId, kind: 'DEPOSIT', amountPaise: body.amountPaise, reversesId: null, note: body.note ?? null, at: Date.now() };
+    db.cashDeposits.push(d);
+    return ok({ id: d.id, heldPaise: held - body.amountPaise }, 201);
+  })),
+  http.post(`${API}/admin/cash/deposits/:id/reverse`, withDb(({ body, request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = adminGuard(request);
+    if (g.res) return g.res;
+    const list = db.cashDeposits ?? [];
+    const d = list.find((x) => x.id === Number(params.id) && x.kind === 'DEPOSIT');
+    if (!d) return fail(404, 'NOT_FOUND', 'Deposit not found');
+    if (list.some((x) => x.reversesId === d.id)) return fail(409, 'ALREADY_REVERSED', 'This deposit was already reversed');
+    const r = { id: (db.seq.cash = (db.seq.cash ?? 0) + 1), riderId: d.riderId, kind: 'REVERSAL', amountPaise: d.amountPaise, reversesId: d.id, note: body.reason, at: Date.now() };
+    list.push(r);
+    return ok({ id: r.id }, 201);
   })),
   http.get(`${API}/admin/audit`, withDb(({ request, db }) => {
     // a real staff session reads the backend's audit log

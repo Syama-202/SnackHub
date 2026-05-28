@@ -1,6 +1,7 @@
 // Riders for orders (doc 10.2 to 10.4): offers with a 20-second timer, one accepted rider
 // per order (the database refuses a second), GPS pings checked for impossible jumps, and the
 // two distances that unlock the delivery: the code shows at 500 m, the door at 150 m.
+import { cashInHand, cashLimitOf } from './cash.js';
 import { AppError } from './AppError.js';
 import { inbox, move, policyOf, refreshRiderStatus, announceOrder, announceOffers } from './orders.js';
 import { realtime } from './realtime.js';
@@ -30,10 +31,13 @@ export async function offerNext(dbs, order) {
   const [asked, loads, declines] = await Promise.all([assignmentModel.riderIdsAsked(dbs.dispatch, order.id), orderModel.loadByRider(dbs.ordering, ids), assignmentModel.declinesToday(dbs.dispatch, ids)]);
   // a rider carrying hot food takes nothing else on the way
   const carryingHot = riders.filter((r) => loads.get(r.id)?.hot).map((r) => r.id);
+  // a rider holding the cash limit takes no more cash until they hand it in
+  const cash = order.payment_mode === 'COD' ? await cashInHand(dbs, ids) : new Map();
+  const cashFull = [...cash].filter(([, c]) => c.held >= cashLimitOf(policy)).map(([id]) => id);
   const ranked = rankRiders(
     riders.map((r) => ({ id: r.id, ...point(r, 'last_lat', 'last_lng'), lastSeenAt: r.last_seen_at ? new Date(r.last_seen_at).getTime() : null })),
     point(shop),
-    { policy, temp: order.temp_class, activeById: new Map([...loads].map(([id, l]) => [id, l.active])), declinesById: declines, exclude: [...asked, ...carryingHot] },
+    { policy, temp: order.temp_class, activeById: new Map([...loads].map(([id, l]) => [id, l.active])), declinesById: declines, exclude: [...asked, ...carryingHot, ...cashFull] },
   );
   if (!ranked.length) return null;
   const offer = await assignmentModel.offer(dbs.dispatch, order.id, ranked[0].rider.id);
