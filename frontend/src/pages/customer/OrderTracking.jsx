@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTracking } from '../../hooks/useTracking';
 import { laneStatus } from '../../components/tracking/RiderLane';
@@ -7,7 +7,8 @@ import { OrderMap } from '../../components/tracking/TrackMap';
 import { TIMELINE, STATE_LABEL, customerCanCancel } from '@shared/domain/orderStates';
 import { rupees } from '@shared/domain/money';
 import { addToast } from '../../store/slices/toast';
-import { cancelOrder, checkPayment, fetchOrders, fetchOtp, reviewOrder } from '../../store/slices/order';
+import { cancelOrder, checkPayment, fetchOrders, fetchOtp, reorder, reviewOrder } from '../../store/slices/order';
+import { fetchCart } from '../../store/slices/cart';
 import { useNow, usePageTitle, usePolling } from '../../hooks';
 import { Button, Card, Icon, Pill, EmptyState, Spinner, cx } from '../../components/ui';
 
@@ -84,6 +85,7 @@ const OrderTracking = () => {
             {o.rider && <p className="mt-2 text-sm text-grey-600"><Icon name="scooter" className="mr-1 inline h-4 w-4" />{[o.rider.name, o.rider.vehicle, o.rider.rating != null && `★ ${o.rider.rating}`].filter(Boolean).join(' · ')}</p>}
           </Card>
           <CancelBox order={o} />
+          {terminal && <OrderAgain order={o} />}
         </div>
       </div>
     </div>
@@ -264,6 +266,33 @@ function DeliveredPanel({ order }) {
       </div>
       {sent && <p className="mt-2 text-sm font-semibold text-emerald-700">Thanks. Ratings feed the shop’s quality score.</p>}
       <Link to={`/orders/${order.id}/report`} className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-red-text"><Icon name="flag" className="h-4 w-4" /> Report a problem</Link>
+    </Card>
+  );
+}
+
+/** The same snacks again, from today's menu: off to checkout, saying what was left out. */
+function OrderAgain({ order }) {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    setBusy(true);
+    try {
+      const { skipped } = await dispatch(reorder(order.id)).unwrap();
+      await dispatch(fetchCart());
+      if (skipped.length) dispatch(addToast({ type: 'info', title: 'Some snacks changed', message: skipped.map((x) => `${x.title}: ${x.reason}`).join('. ') }));
+      navigate('/checkout');
+    } catch (e) {
+      dispatch(addToast({ type: 'error', title: 'Cannot order again', message: e.details?.skipped?.length ? e.details.skipped.map((x) => `${x.title}: ${x.reason}`).join('. ') : e.message }));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Card className="p-5">
+      <h2 className="text-xl font-extrabold">Order again</h2>
+      <p className="mt-1 text-sm text-grey-600">Puts these snacks in your cart at today’s prices. Anything sold out or off the menu is left out, and we tell you.</p>
+      <Button className="mt-3 w-full" variant="outline" onClick={go} loading={busy}>Order again</Button>
     </Card>
   );
 }

@@ -22,6 +22,8 @@ export const fetchTracking = apiThunk('orders/track', async (id, { apiFetch }) =
 // The delivery code comes only from this endpoint, never in order payloads (doc 10.3)
 export const fetchOtp = apiThunk('orders/otp', async (id, { apiFetch }) => apiFetch(`/orders/${id}/otp`));
 
+// the cart refilled from a past order at today's prices; what was left out comes back as skipped
+export const reorder = apiThunk('orders/reorder', async (id, { apiFetch }) => apiFetch(`/orders/${id}/reorder`, { method: 'POST', body: {} }));
 export const cancelOrder = apiThunk('orders/cancel', async (id, { apiFetch }) => apiFetch(`/orders/${id}/cancel`, { method: 'POST' }));
 export const reviewOrder = apiThunk('orders/review', async ({ id, rating }, { apiFetch }) => apiFetch(`/orders/${id}/review`, { method: 'POST', body: { rating } }));
 // A real account sends the photos as multipart; the demo mock only needs their count

@@ -22,13 +22,18 @@ export const deleteAddress = apiThunk('profile/deleteAddress', async (id, { apiF
 export const searchPlaces = apiThunk('profile/searchPlaces', async (q, { apiFetch }) => apiFetch('/me/places/search', { method: 'POST', body: { q } }));
 /** A street line for a pin, or null. */
 export const describePin = apiThunk('profile/describePin', async (pin, { apiFetch }) => apiFetch('/me/places/reverse', { method: 'POST', body: pin }));
+// favourites live on the account; the hearts read the ids, the page reads the list
+export const fetchFavourites = apiThunk('profile/fetchFavourites', async (_, { apiFetch }) => apiFetch('/me/favourites'));
+export const toggleFavourite = apiThunk('profile/toggleFavourite', async ({ id, on }, { apiFetch }) =>
+  apiFetch(`/me/favourites/${id}`, on ? { method: 'PUT', body: {} } : { method: 'DELETE' }),
+);
 export const fetchCredits = apiThunk('profile/fetchCredits', async (_, { apiFetch }) => apiFetch('/me/credits'));
 
 const profileSlice = createSlice({
   name: 'profile',
-  initialState: { addresses: [], addressesLoaded: false, credits: [] },
+  initialState: { addresses: [], addressesLoaded: false, credits: [], favouriteIds: [], favourites: [], favouritesLoaded: false },
   reducers: {
-    resetProfile: () => ({ addresses: [], addressesLoaded: false, credits: [] }),
+    resetProfile: () => ({ addresses: [], addressesLoaded: false, credits: [], favouriteIds: [], favourites: [], favouritesLoaded: false }),
   },
   extraReducers: (builder) => {
     builder
@@ -44,6 +49,24 @@ const profileSlice = createSlice({
       })
       .addCase(deleteAddress.fulfilled, (state, action) => {
         state.addresses = state.addresses.filter((a) => a.id !== action.payload);
+      })
+      .addCase(fetchFavourites.fulfilled, (state, action) => {
+        state.favourites = action.payload;
+        state.favouriteIds = action.payload.map((p) => p.id);
+        state.favouritesLoaded = true;
+      })
+      // the heart changes at once; the server's answer settles it, a failure puts it back
+      .addCase(toggleFavourite.pending, (state, action) => {
+        const { id, on } = action.meta.arg;
+        state.favouriteIds = on ? [id, ...state.favouriteIds.filter((x) => x !== id)] : state.favouriteIds.filter((x) => x !== id);
+        if (!on) state.favourites = state.favourites.filter((p) => p.id !== id);
+      })
+      .addCase(toggleFavourite.fulfilled, (state, action) => {
+        state.favouriteIds = action.payload.ids;
+      })
+      .addCase(toggleFavourite.rejected, (state, action) => {
+        const { id, on } = action.meta.arg;
+        state.favouriteIds = on ? state.favouriteIds.filter((x) => x !== id) : [id, ...state.favouriteIds];
       })
       .addCase(fetchCredits.fulfilled, (state, action) => {
         state.credits = action.payload;

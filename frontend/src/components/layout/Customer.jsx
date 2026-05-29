@@ -13,7 +13,7 @@ import ProductModal from '../product/Modal';
 import RiderLane from '../tracking/RiderLane';
 import { PageFallback } from '../../routes/Guards';
 import { fetchCart, resetCart } from '../../store/slices/cart';
-import { fetchAddresses, resetProfile } from '../../store/slices/profile';
+import { fetchAddresses, fetchFavourites, resetProfile } from '../../store/slices/profile';
 import { fetchOrders, resetOrders } from '../../store/slices/order';
 import { fetchNotifications, resetNotifications } from '../../store/slices/notification';
 import { setAddress } from '../../store/slices/ui';
@@ -36,6 +36,7 @@ export default function CustomerLayout() {
     if (isCustomer) {
       dispatch(fetchCart());
       dispatch(fetchAddresses());
+      dispatch(fetchFavourites());
     } else {
       dispatch(resetCart());
       dispatch(resetProfile());

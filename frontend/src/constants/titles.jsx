@@ -12,6 +12,7 @@ export const WEB_TITLES = [
   ['/account', 'Your account'],
   ['/account/security', 'Sign-in and security'],
   ['/notifications', 'Notifications'],
+  ['/favourites', 'Favourites'],
   ['/join', 'Sign in or join'],
   ['/signin', 'Sign in'],
   ['/verify-email', 'Verify your email'],

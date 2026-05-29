@@ -1,3 +1,4 @@
+import { favouritesController } from '../controllers/favourites.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
@@ -12,6 +13,7 @@ const id = z.coerce.number().int().positive();
 const idParams = z.object({ id }).strict();
 const cartLine = z.object({ productId: id, qty: z.number().int().min(0).max(20), replace: z.boolean().optional().default(false) }).strict();
 const forAddress = z.object({ addressId: id }).strict();
+const productParams = z.object({ productId: z.coerce.number().int().positive() }).strict();
 const checkout = z.object({ addressId: id, paymentMode: z.enum(['COD', 'ONLINE']).default('COD') }).strict();
 const review = z
   .object({
@@ -35,6 +37,7 @@ export function ordersRoutes(deps) {
   const auth = requireAuth(deps.env);
   const cart = cartController(deps);
   const c = ordersController(deps);
+  const fav = favouritesController(deps);
   const perUser = (name, minutes, max, message) => limit(deps, `orders.${name}`, { minutes, max }, byUser, message);
   const asCustomer = (permission) => [auth, requirePermission(deps, permission)];
 
@@ -49,6 +52,10 @@ export function ordersRoutes(deps) {
   router.get('/orders/:id/track', ...asCustomer('orders.self'), perUser('track', 1, 120), validateParams(idParams), wrap(c.track));
   router.get('/orders/:id/otp', ...asCustomer('orders.self'), perUser('otp', 1, 30), validateParams(idParams), wrap(c.otp));
   router.post('/orders/:id/payment/check', ...asCustomer('orders.self'), perUser('payment-check', 1, 40), validateParams(idParams), validateBody(z.object({}).strict()), wrap(c.checkPayment));
+  router.get('/me/favourites', ...asCustomer('favourites.self'), wrap(fav.list));
+  router.put('/me/favourites/:productId', ...asCustomer('favourites.self'), perUser('favourites', 1, 60), validateParams(productParams), validateBody(z.object({}).strict()), wrap(fav.add));
+  router.delete('/me/favourites/:productId', ...asCustomer('favourites.self'), perUser('favourites', 1, 60), validateParams(productParams), wrap(fav.remove));
+  router.post('/orders/:id/reorder', ...asCustomer('cart.self'), perUser('reorder', 1, 20), validateParams(idParams), validateBody(z.object({}).strict()), wrap(fav.reorder));
   router.post('/orders/:id/cancel', ...asCustomer('orders.self'), perUser('cancel', 10, 10, 'Too many cancellations in a few minutes. Wait a little and try again.'), validateParams(idParams), validateBody(z.object({}).strict()), wrap(c.cancel));
   router.post('/orders/:id/review', ...asCustomer('orders.self'), perUser('review', 60, 20, 'Too many reviews in an hour. Try again later.'), validateParams(idParams), validateBody(review), wrap(c.review));
   return router;

@@ -307,6 +307,7 @@ function AccountMenu() {
           {user.role === 'customer' && (
             <>
               <MenuLink to="/orders" icon="list" onClick={() => setOpen(false)}>Your orders</MenuLink>
+              <MenuLink to="/favourites" icon="heart" onClick={() => setOpen(false)}>Favourites</MenuLink>
               <MenuLink to="/account" icon="user" onClick={() => setOpen(false)}>Profile and addresses</MenuLink>
               <MenuLink to="/notifications" icon="bell" onClick={() => setOpen(false)}>Notifications</MenuLink>
             </>

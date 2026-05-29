@@ -424,6 +424,57 @@ export const handlers = [
     if (g.res) return g.res;
     return ok(cartView(db, g.u.userId));
   })),
+  // ---------- demo favourites and "order again"
+  http.get(`${API}/me/favourites`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = guard(request, ['customer']);
+    if (g.res) return g.res;
+    const ids = (db.favourites ?? {})[g.u.userId] ?? [];
+    return ok(ids.map((id) => db.products.find((x) => x.id === id)).filter(Boolean).map((p) => {
+      const s = db.sellers.find((x) => x.id === p.sellerId);
+      return { ...p, shopName: s?.shopName ?? null, shopKind: s?.kind ?? 'shop', unavailable: !p.active ? 'No longer on the menu' : p.stock <= 0 ? 'Sold out today' : null };
+    }));
+  })),
+  http.put(`${API}/me/favourites/:id`, withDb(({ request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = guard(request, ['customer']);
+    if (g.res) return g.res;
+    db.favourites = db.favourites ?? {};
+    const id = Number(params.id);
+    if (!db.products.some((x) => x.id === id)) return fail(404, 'NOT_FOUND', 'Snack not found');
+    db.favourites[g.u.userId] = [id, ...(db.favourites[g.u.userId] ?? []).filter((x) => x !== id)];
+    return ok({ ids: db.favourites[g.u.userId] });
+  })),
+  http.delete(`${API}/me/favourites/:id`, withDb(({ request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = guard(request, ['customer']);
+    if (g.res) return g.res;
+    db.favourites = db.favourites ?? {};
+    db.favourites[g.u.userId] = (db.favourites[g.u.userId] ?? []).filter((x) => x !== Number(params.id));
+    return ok({ ids: db.favourites[g.u.userId] });
+  })),
+  http.post(`${API}/orders/:id/reorder`, withDb(({ request, params, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = guard(request, ['customer']);
+    if (g.res) return g.res;
+    const o = db.orders.find((x) => x.id === Number(params.id) && x.customerId === g.u.userId);
+    if (!o) return fail(404, 'NOT_FOUND', 'Order not found');
+    const skipped = [];
+    const items = [];
+    for (const i of o.items) {
+      const p = db.products.find((x) => x.id === i.productId);
+      if (!p?.active) skipped.push({ productId: i.productId, title: i.title, reason: 'No longer on the menu' });
+      else if (p.stock <= 0) skipped.push({ productId: p.id, title: p.title, reason: 'Sold out today' });
+      else {
+        const qty = Math.min(i.qty, p.stock);
+        if (qty < i.qty) skipped.push({ productId: p.id, title: p.title, reason: `Only ${qty} left, so ${qty} went in` });
+        items.push({ productId: p.id, qty });
+      }
+    }
+    if (!items.length) return fail(409, 'NOTHING_TO_REORDER', 'None of these snacks can be ordered right now', { skipped });
+    db.carts[g.u.userId] = { sellerId: o.sellerId, items };
+    return ok({ cart: cartView(db, g.u.userId), skipped });
+  })),
   http.put(`${API}/cart`, withDb(({ body, request, db }) => {
     if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['customer']);

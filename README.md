@@ -235,6 +235,9 @@ take orders.
   rider holds, with a recent second factor; append only, a mistake is reversed). At the
   policy's cash limit (Rs 2,000 by default) a rider gets no new pay-on-delivery offers until
   they deposit; prepaid orders still reach them. The rider sees it on the Earnings page.
+- Favourites are saved to the customer's account (the heart on every snack, and a Favourites
+  page), and "Order again" on a finished order refills the cart at today's prices, naming
+  anything sold out or off the menu.
 - Opening hours: a seller sets each day's hours in India time (up to two windows, such as
   7 to 11 am and 4 to 10 pm), holidays, and optionally the pincodes they deliver to on top of
   their radius. Closed shops stay visible with when they open next, but their snacks leave

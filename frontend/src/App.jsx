@@ -17,6 +17,7 @@ const ProductList = lazy(() => import('./pages/customer/ProductList'));
 const ShopDetail = lazy(() => import('./pages/customer/ShopDetail'));
 const Checkout = lazy(() => import('./pages/customer/Checkout'));
 const OrderHistory = lazy(() => import('./pages/customer/OrderHistory'));
+const Favourites = lazy(() => import('./pages/customer/Favourites'));
 const OrderTracking = lazy(() => import('./pages/customer/OrderTracking'));
 const ReportProblem = lazy(() => import('./pages/customer/ReportProblem'));
 const Profile = lazy(() => import('./pages/customer/Profile'));
@@ -74,6 +75,7 @@ function AppRoutes() {
             <Route path="orders/:id/report" element={<RequireRole role="customer"><ReportProblem /></RequireRole>} />
             <Route path="account" element={<RequireRole role="customer"><Profile /></RequireRole>} />
             <Route path="notifications" element={<RequireRole role="customer"><Notifications /></RequireRole>} />
+            <Route path="favourites" element={<RequireRole role="customer"><Favourites /></RequireRole>} />
             {/* one sign-up and one sign-in per portal; /signin?as=seller still lands on the right one */}
             <Route path="join" element={<Join />} />
             <Route path="signin" element={<Join />} />

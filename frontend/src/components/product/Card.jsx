@@ -1,15 +1,27 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import SnackImage from '../ui/SnackImage';
 import { Pill, Price, QtyControl, SpiceMeter, Icon, cx } from '../ui';
 import { openProduct } from '../../store/slices/ui';
 import { SELLER_KINDS } from '../../constants/catalog';
 import { updateQuantity } from '../../store/slices/cart';
+import { toggleFavourite } from '../../store/slices/profile';
+import { addToast } from '../../store/slices/toast';
 
 const ProductCard = ({ product: p, className, highlight, closed = false }) => {
   const dispatch = useDispatch();
   const qty = useSelector((state) => state.cart.items.find((i) => i.productId === p.id)?.qty || 0);
-  const [fav, setFav] = useState(false);
+  const isCustomer = useSelector((state) => state.auth.user?.role === 'customer');
+  const fav = useSelector((state) => state.profile.favouriteIds.includes(p.id));
+  const heart = async () => {
+    if (!isCustomer) return dispatch(addToast({ type: 'info', title: 'Sign in to save favourites', message: 'Favourites are kept on your customer account.' }));
+    try {
+      await dispatch(toggleFavourite({ id: p.id, on: !fav })).unwrap();
+    } catch (e) {
+      dispatch(addToast({ type: 'error', title: 'Not saved', message: e.message }));
+    }
+    return undefined;
+  };
   const soldOut = p.stock === 0;
   return (
     <article className={cx('surface glow group relative flex flex-col p-3', highlight && 'ring-4 ring-sun', className)}>
@@ -27,7 +39,7 @@ const ProductCard = ({ product: p, className, highlight, closed = false }) => {
         {soldOut && <span className="pointer-events-none absolute inset-x-0 bottom-2 mx-auto w-fit rounded-full bg-grey-800 px-3 py-1 text-xs font-bold text-white">Sold out today</span>}
         {!soldOut && p.stock <= 3 && <span className="pointer-events-none absolute inset-x-0 bottom-2 mx-auto w-fit rounded-full bg-white px-3 py-1 text-xs font-bold text-red-text shadow">Only {p.stock} left</span>}
       </div>
-      <button onClick={() => setFav((f) => !f)} aria-pressed={fav} aria-label={fav ? `Remove ${p.title} from favourites` : `Save ${p.title} to favourites`} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-grey-600 shadow-sm transition hover:text-red">
+      <button onClick={heart} aria-pressed={fav} aria-label={fav ? `Remove ${p.title} from favourites` : `Save ${p.title} to favourites`} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-grey-600 shadow-sm transition hover:text-red">
         <Icon name="heart" className={cx('h-[1.125rem] w-[1.125rem]', fav && 'fill-red text-red')} />
       </button>
       <div className="flex flex-1 flex-col px-1 pt-3">
