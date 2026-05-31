@@ -16,6 +16,12 @@ export const fetchPolicy = get('policy', '/admin/policy');
 export const fetchAudit = get('audit', '/admin/audit');
 export const fetchEarningsAdmin = get('earnings', '/admin/earnings');
 export const fetchCash = get('cash', '/admin/cash');
+export const fetchPayouts = get('payouts', '/admin/payouts');
+export const fetchPayout = apiThunk('admin/fetchPayout', async (id, { apiFetch }) => apiFetch(`/admin/payouts/${id}`));
+// a statement of everything payable to a shop; then paid (with the bank reference) or cancelled
+export const draftPayout = apiThunk('admin/draftPayout', async (sellerId, { apiFetch }) => apiFetch('/admin/payouts', { method: 'POST', body: { sellerId } }));
+export const markPayoutPaid = apiThunk('admin/markPayoutPaid', async ({ id, reference }, { apiFetch }) => apiFetch(`/admin/payouts/${id}/paid`, { method: 'POST', body: { reference } }));
+export const cancelPayout = apiThunk('admin/cancelPayout', async ({ id, reason }, { apiFetch }) => apiFetch(`/admin/payouts/${id}/cancel`, { method: 'POST', body: { reason } }));
 
 export const decideComplaint = apiThunk('admin/decideComplaint', async ({ id, ...body }, { apiFetch }) => apiFetch(`/admin/complaints/${id}/decide`, { method: 'POST', body }));
 export const reverseFine = apiThunk('admin/reverseFine', async ({ id, reason }, { apiFetch }) => apiFetch(`/admin/fines/${id}/reverse`, { method: 'POST', body: { reason } }));
@@ -26,12 +32,12 @@ export const recordDeposit = apiThunk('admin/recordDeposit', async (body, { apiF
 export const reverseDeposit = apiThunk('admin/reverseDeposit', async ({ id, reason }, { apiFetch }) => apiFetch(`/admin/cash/deposits/${id}/reverse`, { method: 'POST', body: { reason } }));
 export const savePolicy = apiThunk('admin/savePolicy', async (changes, { apiFetch }) => apiFetch('/admin/policy', { method: 'PUT', body: changes }));
 
-const fetchers = [fetchSla, fetchAdminOrders, fetchAdminRiders, fetchAdminSellers, fetchReconciliation, fetchComplaints, fetchFines, fetchPolicy, fetchAudit, fetchEarningsAdmin, fetchCash];
+const fetchers = [fetchSla, fetchAdminOrders, fetchAdminRiders, fetchAdminSellers, fetchReconciliation, fetchComplaints, fetchFines, fetchPolicy, fetchAudit, fetchEarningsAdmin, fetchCash, fetchPayouts];
 const replaceIn = (list, item) => (list || []).map((x) => (x.id === item.id ? item : x));
 
 const adminSlice = createSlice({
   name: 'admin',
-  initialState: { sla: null, orders: [], riders: [], sellers: [], reconciliation: [], complaints: [], fines: [], policy: null, audit: [], earnings: [], cash: null },
+  initialState: { sla: null, orders: [], riders: [], sellers: [], reconciliation: [], complaints: [], fines: [], policy: null, audit: [], earnings: [], cash: null, payouts: null },
   reducers: {},
   extraReducers: (builder) => {
     fetchers.forEach((f) =>

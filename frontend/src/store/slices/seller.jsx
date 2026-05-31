@@ -7,6 +7,8 @@ export const updateShop = apiThunk('seller/updateShop', async (changes, { apiFet
 export const fetchSellerOrders = apiThunk('seller/fetchOrders', async (_, { apiFetch }) => apiFetch('/seller/orders'));
 // action: accept | reject | start | packed
 export const sellerOrderAction = apiThunk('seller/orderAction', async ({ id, action }, { apiFetch }) => apiFetch(`/seller/orders/${id}/${action}`, { method: 'POST' }));
+// what the shop is owed and its statements
+export const fetchPayouts = apiThunk('seller/fetchPayouts', async (_, { apiFetch }) => apiFetch('/seller/payouts'));
 export const fetchSellerProducts = apiThunk('seller/fetchProducts', async (_, { apiFetch }) => apiFetch('/seller/products'));
 // Stock edits are adjustments (plus or minus, with a reason), never a replacement (doc 10.8)
 export const adjustStock = apiThunk('seller/adjustStock', async ({ id, delta, reason }, { apiFetch }) => apiFetch(`/seller/products/${id}/stock`, { method: 'PATCH', body: { delta, reason } }));
@@ -22,7 +24,7 @@ const replaceProduct = (state, p) => {
 
 const sellerSlice = createSlice({
   name: 'seller',
-  initialState: { shop: null, orders: [], ordersLoaded: false, products: [], productsLoaded: false, pending: {} },
+  initialState: { shop: null, orders: [], ordersLoaded: false, products: [], productsLoaded: false, pending: {}, payouts: null },
   reducers: {
     resetSeller: () => ({ shop: null, orders: [], ordersLoaded: false, products: [], productsLoaded: false, pending: {} }),
   },
@@ -30,6 +32,9 @@ const sellerSlice = createSlice({
     builder
       .addCase(fetchShopProfile.fulfilled, (state, action) => {
         state.shop = action.payload;
+      })
+      .addCase(fetchPayouts.fulfilled, (state, action) => {
+        state.payouts = action.payload;
       })
       .addCase(updateShop.fulfilled, (state, action) => {
         state.shop = { ...state.shop, ...action.payload };

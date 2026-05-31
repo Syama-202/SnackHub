@@ -235,6 +235,13 @@ take orders.
   rider holds, with a recent second factor; append only, a mistake is reversed). At the
   policy's cash limit (Rs 2,000 by default) a rider gets no new pay-on-delivery offers until
   they deposit; prepaid orders still reach them. The rider sees it on the Earnings page.
+- Seller payouts: a shop is owed the food value of its delivered orders, less SnackHub's
+  commission (10% by default) and applied fines, once each order's 24-hour complaint window
+  has passed; a fine reversed after it was deducted is given back on the next statement.
+  Admins draft a statement on the Seller payouts page, make the bank transfer, then record its
+  reference (or cancel, which frees the orders). Each order and fine can be on one statement
+  only, enforced by MySQL. Sellers see what is due, when the next order becomes payable, and
+  their statements on the Payouts tab. No money moves through SnackHub: it records transfers.
 - Favourites are saved to the customer's account (the heart on every snack, and a Favourites
   page), and "Order again" on a finished order refills the cart at today's prices, naming
   anything sold out or off the menu.

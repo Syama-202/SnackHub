@@ -26,6 +26,9 @@ export const DEFAULT_POLICY = {
   codEnabled: true,
   // cash a rider may hold before handing it in; at or above it, no new pay-on-delivery offers
   cashLimitPaise: 200000,
+  // SnackHub's share of each order's food value, and how long after delivery an order is payable
+  commissionPct: 10,
+  payoutHoldHours: 24,
 };
 
 export const tempRules = (policy, temp) => (temp === 'HOT' ? policy.hot : policy.ambient);

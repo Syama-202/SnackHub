@@ -10,6 +10,7 @@ import { computeEarning } from '@shared/domain/penalty';
 import { KIND_LABEL, addressSummary } from '@shared/domain/addresses';
 import { CITIES } from '@shared/domain/cities';
 import { scheduleOf, openState, hoursLabel } from '@shared/domain/hours';
+import { statement } from '@shared/domain/payouts';
 
 const API = '/api/v1';
 let reqSeq = 1;
@@ -201,6 +202,16 @@ const cashOf = (db, riderId) => {
   const collected = db.orders.filter((o) => o.riderId === riderId && o.paymentMode === 'COD' && o.status === 'DELIVERED').reduce((t, o) => t + (o.collectedPaise ?? o.totalPaise), 0);
   const deposited = (db.cashDeposits ?? []).filter((d) => d.riderId === riderId).reduce((t, d) => t + (d.kind === 'DEPOSIT' ? d.amountPaise : -d.amountPaise), 0);
   return { collected, deposited, held: collected - deposited };
+};
+
+// demo payouts: read only (demo shops take no real money); 10% commission, 24-hour hold
+const demoDue = (db, sellerId) => {
+  const cutoff = Date.now() - 24 * 3_600_000;
+  const delivered = db.orders.filter((o) => o.sellerId === sellerId && o.status === 'DELIVERED');
+  const ready = delivered.filter((o) => (o.deliveredAt ?? o.placedAt) <= cutoff);
+  const waiting = delivered.filter((o) => (o.deliveredAt ?? o.placedAt) > cutoff);
+  const st = statement({ orders: ready.map((o) => ({ id: o.id, subtotalPaise: o.subtotalPaise })) }, 10);
+  return { netPaise: st.netPaise, grossPaise: st.grossPaise, commissionPaise: st.commissionPaise, finesPaise: 0, returnedPaise: 0, ordersCount: ready.length, waitingCount: waiting.length, waitingGrossPaise: waiting.reduce((t, o) => t + o.subtotalPaise, 0), nextPayableAt: waiting.length ? Math.min(...waiting.map((o) => (o.deliveredAt ?? o.placedAt) + 24 * 3_600_000)) : null };
 };
 
 export const handlers = [
@@ -690,6 +701,13 @@ export const handlers = [
     ['busyExtraMin', 'paused', 'openHours', 'radiusKm', 'weeklyHours', 'closedDates', 'pincodes'].forEach((k) => k in b && (s[k] = b[k]));
     return ok(withHours(s));
   })),
+  http.get(`${API}/seller/payouts`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = guard(request, ['seller']);
+    if (g.res) return g.res;
+    const sellerId = db.users.find((u) => u.id === g.u.userId).sellerId;
+    return ok({ commissionPct: 10, holdHours: 24, due: demoDue(db, sellerId), bank: { holder: 'Ravi (demo)', ifsc: 'DEMO0000001', last4: '0000' }, payouts: [] });
+  })),
   http.get(`${API}/seller/products`, withDb(({ request, db }) => {
     if (!isDemoToken(request)) return passthrough();
     const g = guard(request, ['seller']);
@@ -1095,6 +1113,14 @@ export const handlers = [
     const r = { id: (db.seq.cash = (db.seq.cash ?? 0) + 1), riderId: d.riderId, kind: 'REVERSAL', amountPaise: d.amountPaise, reversesId: d.id, note: body.reason, at: Date.now() };
     list.push(r);
     return ok({ id: r.id }, 201);
+  })),
+  http.get(`${API}/admin/payouts`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = adminGuard(request);
+    if (g.res) return g.res;
+    const ids = [...new Set(db.orders.filter((o) => o.status === 'DELIVERED').map((o) => o.sellerId))];
+    const sellers = ids.map((id) => ({ sellerId: id, shopName: db.sellers.find((x) => x.id === id)?.shopName, demo: true, due: demoDue(db, id), openPayoutId: null, bank: null }));
+    return ok({ commissionPct: 10, holdHours: 24, sellers, payouts: [] });
   })),
   http.get(`${API}/admin/audit`, withDb(({ request, db }) => {
     // a real staff session reads the backend's audit log

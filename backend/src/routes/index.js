@@ -15,6 +15,7 @@ import { shopRoutes } from './shop.js';
 import { deliveryRoutes } from './delivery.js';
 import { complaintsRoutes } from './complaints.js';
 import { operationsRoutes } from './operations.js';
+import { payoutsRoutes } from './payouts.js';
 
 export function routes(deps) {
   const router = Router();
@@ -33,6 +34,7 @@ export function routes(deps) {
   api.use(deliveryRoutes(deps));
   api.use(complaintsRoutes(deps));
   api.use(operationsRoutes(deps));
+  api.use(payoutsRoutes(deps));
   router.use('/api/v1', api);
   return router;
 }

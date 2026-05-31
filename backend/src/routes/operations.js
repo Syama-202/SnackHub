@@ -38,6 +38,8 @@ const policyChanges = z
     deliveryFeePaise: int(0, 20_000),
     codEnabled: z.boolean(),
     cashLimitPaise: int(10_000, 2_000_000),
+    commissionPct: z.number().min(0).max(30),
+    payoutHoldHours: int(0, 168),
   })
   .partial()
   .strict()

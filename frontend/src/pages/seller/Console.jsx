@@ -6,10 +6,12 @@ import Notifications from '../common/Notifications';
 import SellerOrders from './Orders';
 import SellerProducts from './Products';
 import SellerShop from './Shop';
+import SellerPayouts from './Payouts';
 
 const TABS = [
   { to: '/seller', label: 'Orders', icon: 'list', end: true },
   { to: '/seller/products', label: 'Products', icon: 'box' },
+  { to: '/seller/payouts', label: 'Payouts', icon: 'wallet' },
   { to: '/seller/shop', label: 'Shop', icon: 'settings' },
 ];
 
@@ -25,6 +27,7 @@ const SellerConsole = () => {
       <Route index element={<>{!demo && <Standing compact />}<SellerOrders /></>} />
       <Route path="products" element={<SellerProducts />} />
       <Route path="shop" element={<>{!demo && <Standing />}<SellerShop /></>} />
+      <Route path="payouts" element={<SellerPayouts />} />
       <Route path="notifications" element={<Notifications />} />
       {/* an unknown address inside the console goes back to its first screen */}
       <Route path="*" element={<Navigate to="/seller" replace />} />

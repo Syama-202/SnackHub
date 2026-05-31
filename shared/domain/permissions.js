@@ -49,6 +49,7 @@ export const ROLE_PERMISSIONS = {
     'fines.reverse',
     'earnings.resolve',
     'cash.record',
+    'payouts.manage',
     'policy.write',
   ],
 };
