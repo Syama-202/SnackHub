@@ -29,6 +29,8 @@ const toPaise = (r) => Math.round(Number(r) * 100);
  */
 export default function ProductForm({ product, onSave, onCancel }) {
   const editing = Boolean(product);
+  // a catalogue snack: its name and details are the catalogue's, the shop sets the rest
+  const locked = Boolean(product?.catalogItemId);
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(Schema),
     defaultValues: {
@@ -47,14 +49,10 @@ export default function ProductForm({ product, onSave, onCancel }) {
 
   const submit = async (v) => {
     const body = {
-      title: v.title,
-      category: v.category,
-      servingTemp: v.servingTemp,
+      ...(!locked && { title: v.title, category: v.category, servingTemp: v.servingTemp, spice: v.spice, shape: v.shape }),
       prepMinutes: v.prepMinutes,
       pricePaise: toPaise(v.price),
-      spice: v.spice,
-      shape: v.shape,
-      ...(v.weight ? { weight: v.weight } : {}),
+      ...(v.weight && !locked ? { weight: v.weight } : {}),
       ...(v.description ? { description: v.description } : {}),
       ...(v.mrp !== '' && v.mrp !== undefined ? { mrpPaise: toPaise(v.mrp) } : editing ? { mrpPaise: null } : {}),
     };
@@ -70,24 +68,38 @@ export default function ProductForm({ product, onSave, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit(submit)} className="grid gap-3 sm:grid-cols-2" noValidate>
-      <Input className="sm:col-span-2" label="Name" placeholder="Mirchi bajji" {...register('title')} error={errors.title?.message} />
-      <Select label="Kind" {...register('category')} error={errors.category?.message}>
-        {CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
-      </Select>
-      <Select label="Served" {...register('servingTemp')} error={errors.servingTemp?.message} hint="Hot snacks go only up to 3 km">
-        <option value="AMBIENT">Sweet or dry (room temperature)</option>
-        <option value="HOT">Hot</option>
-      </Select>
+      {locked ? (
+        // the catalogue's fields are shown, not edited; they keep their values for the form
+        <div className="sm:col-span-2 rounded-xl bg-sun/15 p-3 text-sm">
+          <p className="font-bold">{product.title} · {CATEGORY_LABELS[product.category]} · {product.servingTemp === 'HOT' ? 'Hot' : 'Room temperature'}{product.weight ? ` · ${product.weight}` : ''}</p>
+          <p className="mt-1 text-grey-600">From the SnackHub catalogue: the name and details are the same at every shop. You set the price, MRP, prep time and description.</p>
+        </div>
+      ) : (
+        <>
+          <Input className="sm:col-span-2" label="Name" placeholder="Mirchi bajji" {...register('title')} error={errors.title?.message} />
+          <Select label="Kind" {...register('category')} error={errors.category?.message}>
+            {CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
+          </Select>
+          <Select label="Served" {...register('servingTemp')} error={errors.servingTemp?.message} hint="Hot snacks go only up to 3 km">
+            <option value="AMBIENT">Sweet or dry (room temperature)</option>
+            <option value="HOT">Hot</option>
+          </Select>
+        </>
+      )}
       <Input label="Price (₹)" inputMode="decimal" {...register('price')} error={errors.price?.message} />
       <Input label="MRP (₹, optional)" inputMode="decimal" {...register('mrp')} error={errors.mrp?.message} />
       <Input label="Prep time (minutes)" inputMode="numeric" {...register('prepMinutes')} error={errors.prepMinutes?.message} />
-      <Input label="Pack size (optional)" placeholder="200 g or 4 pcs" {...register('weight')} error={errors.weight?.message} />
-      <Select label="Spice" {...register('spice')} error={errors.spice?.message}>
-        {['None', 'Mild', 'Medium', 'Hot'].map((l, i) => <option key={l} value={i}>{l}</option>)}
-      </Select>
-      <Select label="Drawing (until you add a photo)" {...register('shape')} error={errors.shape?.message}>
-        {SHAPES.map((s) => <option key={s} value={s}>{s}</option>)}
-      </Select>
+      {!locked && (
+        <>
+          <Input label="Pack size (optional)" placeholder="200 g or 4 pcs" {...register('weight')} error={errors.weight?.message} />
+          <Select label="Spice" {...register('spice')} error={errors.spice?.message}>
+            {['None', 'Mild', 'Medium', 'Hot'].map((l, i) => <option key={l} value={i}>{l}</option>)}
+          </Select>
+          <Select label="Drawing (until you add a photo)" {...register('shape')} error={errors.shape?.message}>
+            {SHAPES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </Select>
+        </>
+      )}
       <Input className="sm:col-span-2" label="Description (optional)" {...register('description')} error={errors.description?.message} />
       {errors.root && <p role="alert" className="sm:col-span-2 rounded-xl bg-red/10 p-3 text-sm font-semibold text-red-text">{errors.root.message}</p>}
       <div className="flex flex-wrap gap-2 sm:col-span-2">

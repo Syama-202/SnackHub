@@ -157,6 +157,9 @@ export function buildSeed() {
   const rand = rng(42);
   const sellers = [];
   const products = [];
+  // the shared catalogue: one entry per snack, numbered in the order snacks first appear
+  const catalogItems = [];
+  const itemOf = new Map();
   let pid = 1;
   let sid = 1;
   // original: a shop from seed.js, which carries the built-in test cases by city and index
@@ -193,6 +196,11 @@ export function buildSeed() {
     names.forEach((name, j) => {
       const d = SNACKS[name];
       const slug = slugify(name);
+      if (!itemOf.has(name)) {
+        const item = { id: catalogItems.length + 1, slug, title: name, category: d.cat, servingTemp: d.temp, weight: d.w, spice: d.spice, tags: d.tags, collections: UI_COLLECTIONS(d), art: { shape: d.shape, colors: d.c }, allergens: allergensFor(d), vegetarian: true, description: describeItem(name, d) };
+        catalogItems.push(item);
+        itemOf.set(name, item.id);
+      }
       const price = Math.round((d.p * (0.9 + rand() * 0.25)) / 500) * 500;
       const discounted = rand() < 0.35;
       let stock = 8 + Math.floor(rand() * 30);
@@ -202,6 +210,7 @@ export function buildSeed() {
       products.push({
         id: pid++,
         sellerId: id,
+        catalogItemId: itemOf.get(name),
         slug,
         title: name,
         category: d.cat,
@@ -265,6 +274,7 @@ export function buildSeed() {
   return {
     cities: CITIES,
     sellers,
+    catalogItems,
     products,
     riders,
     addresses,
@@ -286,6 +296,11 @@ function allergensFor(d) {
   if (d.cat === 'baked') a.push('wheat');
   if (d.shape === 'pile') a.push('peanuts');
   return a;
+}
+
+function describeItem(name, d) {
+  const temp = d.temp === 'HOT' ? 'Best eaten hot' : 'Travels well';
+  return `${name}: ${d.cat === 'sweet' ? 'a sweet' : 'a savoury'} ${d.cat === 'namkeen' ? 'namkeen' : d.cat === 'baked' ? 'bake' : d.cat === 'fried' ? 'fried snack' : 'treat'}. ${temp}.`;
 }
 
 function describe(name, d, city) {

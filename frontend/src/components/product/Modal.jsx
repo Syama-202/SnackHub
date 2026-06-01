@@ -1,7 +1,11 @@
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { rupees } from '@shared/domain/money';
 import { Modal, CloseButton, Pill, Price, SpiceMeter, TempBadge, QtyControl, Icon } from '../ui';
 import SnackImage from '../ui/SnackImage';
-import { closeProduct } from '../../store/slices/ui';
+import { closeProduct, openProduct } from '../../store/slices/ui';
+import { fetchOffers } from '../../store/slices/products';
+import { selectDeliveryPoint } from '../../store/slices/profile';
 import { updateQuantity } from '../../store/slices/cart';
 
 /** Product details in a modal (master prompt 6), opened with openProduct(product). */
@@ -46,9 +50,50 @@ export default function ProductModal() {
               </div>
               <QtyControl qty={qty} onChange={(q) => dispatch(updateQuantity(p, q))} max={p.stock} disabled={p.stock === 0} label={p.title} />
             </div>
+            {p.catalogItemId && <OtherShops product={p} />}
           </div>
         </div>
       )}
     </Modal>
+  );
+}
+
+/**
+ * The same catalogue snack at the other open shops that deliver here (shared catalogue),
+ * cheapest first; picking one opens it. Nothing shows when no other shop sells it.
+ */
+function OtherShops({ product }) {
+  const dispatch = useDispatch();
+  const point = useSelector(selectDeliveryPoint);
+  const [offers, setOffers] = useState([]);
+  const { catalogItemId: itemId, id } = product;
+  const { lat, lng, pincode } = point;
+  useEffect(() => {
+    let live = true;
+    dispatch(fetchOffers({ itemId, point: { lat, lng, pincode } })).unwrap().then((list) => live && setOffers(list), () => live && setOffers([]));
+    return () => {
+      live = false;
+    };
+  }, [dispatch, itemId, lat, lng, pincode]);
+  const others = offers.filter((o) => o.id !== id);
+  if (!others.length) return null;
+  const cheapest = others[0].pricePaise < product.pricePaise;
+  return (
+    <section className="mt-5 border-t border-grey-800/10 pt-4" aria-labelledby="other-shops">
+      <h3 id="other-shops" className="text-sm font-extrabold">Also at {others.length} other shop{others.length === 1 ? '' : 's'} near you{cheapest ? `, from ${rupees(others[0].pricePaise)}` : ''}</h3>
+      <ul className="mt-2 space-y-1.5">
+        {others.slice(0, 4).map((o) => (
+          <li key={o.id}>
+            <button type="button" onClick={() => dispatch(openProduct(o))} className="flex w-full items-center justify-between gap-3 rounded-xl bg-grey-50 px-3 py-2 text-left text-sm hover:bg-sun/15">
+              <span className="min-w-0">
+                <span className="block truncate font-bold">{o.shopName}</span>
+                <span className="block text-xs text-grey-600">{o.distanceKm} km{o.window ? ` · ${o.window[0]} to ${o.window[1]} min` : ''}</span>
+              </span>
+              <span className="shrink-0 font-extrabold">{rupees(o.pricePaise)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

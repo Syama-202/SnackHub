@@ -9,7 +9,7 @@ let mem = null;
 // browser that kept the old mock data rebuilds it, so new products can go in the cart.
 const seedShape = () => {
   const s = buildSeed();
-  return `${s.cities.length}.${s.sellers.length}.${s.products.length}.${s.riders.length}`;
+  return `${s.cities.length}.${s.sellers.length}.${s.products.length}.${s.riders.length}.${s.catalogItems.length}`;
 };
 let shape = null;
 const currentShape = () => (shape ??= seedShape());

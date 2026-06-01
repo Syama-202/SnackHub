@@ -45,6 +45,19 @@ export const productModel = {
           .whereIn(`${TABLE}.id`, ids)
           .then((rows) => rows.map(parse))
       : Promise.resolve([]),
+  /** The shop's row for a catalogue entry, if it already sells it. */
+  findForSellerItem: (db, sellerId, itemId) => db(TABLE).where({ seller_id: sellerId, catalog_item_id: itemId }).first().then(parse),
+  /** Listed products of these catalogue entries, for price spreads; one city when given. */
+  pricesForItems: (db, itemIds, { city } = {}) =>
+    itemIds.length
+      ? db(TABLE)
+          .join('sellers', 'sellers.id', `${TABLE}.seller_id`)
+          .whereIn(`${TABLE}.catalog_item_id`, itemIds)
+          .andWhere(`${TABLE}.active`, true)
+          .modify((q) => city && q.where('sellers.city', city))
+          .select(`${TABLE}.catalog_item_id`, `${TABLE}.price_paise`)
+      : Promise.resolve([]),
+  linkedTo: (db, itemId) => db(TABLE).where({ catalog_item_id: itemId }).then((rows) => rows.map(parse)),
   slugsForSeller: (db, sellerId) => db(TABLE).where({ seller_id: sellerId }).pluck('slug'),
   create: (db, sellerId, p) => db(TABLE).insert({ ...p, seller_id: sellerId, attrs: p.attrs ? JSON.stringify(p.attrs) : null }).then(([id]) => id),
   updateForSeller: (db, id, sellerId, changes) => db(TABLE).where({ id, seller_id: sellerId }).update(changes.attrs ? { ...changes, attrs: JSON.stringify(changes.attrs) } : changes),

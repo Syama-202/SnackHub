@@ -10,6 +10,8 @@
 //   POST  /seller/products               add a snack (unlisted until published)
 //   PATCH /seller/products/:id           edit it, list it ({ active: true }) or hide it
 //   PATCH /seller/products/:id/stock     { delta, reason }: an adjustment, never a replacement
+//   GET   /seller/catalogue              the shared catalogue, with what shops in the city charge
+//   POST  /seller/products/from-catalogue  { catalogItemId, pricePaise, ... } sell an entry at your price
 import { hoursOf } from '../models/catalog/seller.js';
 import { hoursView } from './catalog.js';
 import { AppError } from '../utils/AppError.js';
@@ -24,6 +26,9 @@ import { stockAdjustmentModel } from '../models/catalog/stockAdjustment.js';
 import { orderModel } from '../models/ordering/order.js';
 import { auditLogModel } from '../models/identity/auditLog.js';
 import { artFor, slugFor, MAX_STOCK } from '../../../shared/domain/menu.js';
+import { ownedFieldsIn } from '../../../shared/domain/catalogue.js';
+import { catalogItemModel } from '../models/catalog/catalogItem.js';
+import { copyOfItem, itemView, spreadsFor } from './catalogue.js';
 
 const refuse = (verdict) => new AppError(403, 'NOT_ELIGIBLE', verdict.reasons[0]?.message ?? 'Not allowed yet', { reasons: verdict.reasons });
 const ACTIONS = { accept: 'ACCEPTED', reject: 'REJECTED', start: 'PACKING', packed: 'PACKED' };
@@ -170,6 +175,9 @@ export function shopController({ dbs }) {
     const s = await ownShop(userId);
     const p = await productOf(s, req.params.id);
     const b = req.body;
+    // a catalogue snack's name and details are the catalogue's; the shop sets price, prep and words
+    const owned = p.catalog_item_id ? ownedFieldsIn(b) : [];
+    if (owned.length) throw new AppError(422, 'CATALOGUE_OWNED', 'The name and details of a catalogue snack come from the SnackHub catalogue. Change the price, prep time, MRP or description instead.', { fields: owned });
     if (b.active === true && !p.active) await mustBeEligible(userId);
     const mrp = b.mrpPaise !== undefined ? b.mrpPaise : p.mrp_paise;
     const price = b.pricePaise ?? p.price_paise;
@@ -180,6 +188,50 @@ export function shopController({ dbs }) {
     if (b.active !== undefined && b.active !== Boolean(p.active)) await audit(userId, b.active ? 'product.publish' : 'product.unpublish', `product:${p.id}`);
     else await audit(userId, 'product.update', `product:${p.id}`, null, Object.keys(b));
     res.json((await menuView(s, [await productModel.findWithStock(dbs.catalog, p.id)]))[0]);
+  }
+
+  // ---------- the shared catalogue
+  async function catalogue(req, res) {
+    const s = await ownShop(req.user.userId);
+    const items = await catalogItemModel.search(dbs.catalog, { q: req.query.q });
+    const spreads = await spreadsFor(dbs.catalog, items.map((i) => i.id), { city: s.city });
+    const mine = new Map((await productModel.listBySeller(dbs.catalog, s.id, { activeOnly: false })).filter((p) => p.catalog_item_id).map((p) => [Number(p.catalog_item_id), p.id]));
+    res.json(items.map((i) => itemView(i, { pricesInCity: spreads.get(i.id), onMenu: mine.get(i.id) ?? null })));
+  }
+
+  async function addFromCatalogue(req, res) {
+    const userId = req.user.userId;
+    const s = await ownShop(userId);
+    const b = req.body;
+    const item = await catalogItemModel.findById(dbs.catalog, b.catalogItemId);
+    if (!item || !item.active) throw new AppError(404, 'NOT_FOUND', 'That snack is not in the catalogue');
+    if (await productModel.findForSellerItem(dbs.catalog, s.id, item.id)) throw new AppError(409, 'ALREADY_ON_MENU', `${item.title} is already on your menu`);
+    // the catalogue's slug (and so its picture) when the shop has no snack by that slug yet
+    const taken = await productModel.slugsForSeller(dbs.catalog, s.id);
+    const slug = taken.includes(item.slug) ? slugFor(item.title, taken) : item.slug;
+    const c = copyOfItem(item);
+    const id = await dbs.catalog
+      .transaction(async (trx) => {
+        const pid = await productModel.create(trx, s.id, {
+          ...c,
+          catalog_item_id: item.id,
+          slug,
+          region: s.region,
+          active: false,
+          description: b.description || item.description,
+          prep_minutes: b.prepMinutes,
+          price_paise: b.pricePaise,
+          mrp_paise: b.mrpPaise ?? null,
+        });
+        await stockModel.set(trx, pid, 0);
+        return pid;
+      })
+      // the unique (shop, entry) key settles two adds racing
+      .catch((e) => {
+        throw e.code === 'ER_DUP_ENTRY' ? new AppError(409, 'ALREADY_ON_MENU', `${item.title} is already on your menu`) : e;
+      });
+    await audit(userId, 'product.create', `product:${id}`, null, { catalogueId: item.id, title: item.title, pricePaise: b.pricePaise });
+    res.status(201).json((await menuView(s, [await productModel.findWithStock(dbs.catalog, id)]))[0]);
   }
 
   async function adjustStock(req, res) {
@@ -196,5 +248,5 @@ export function shopController({ dbs }) {
     res.json((await menuView(s, [await productModel.findWithStock(dbs.catalog, p.id)]))[0]);
   }
 
-  return { shop, updateShop, orders, orderAction, products, createProduct, updateProduct, adjustStock };
+  return { shop, updateShop, orders, orderAction, products, createProduct, updateProduct, adjustStock, catalogue, addFromCatalogue };
 }

@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
 import { shopController } from '../controllers/shop.js';
-import { validateBody, validateParams } from '../middleware/validate.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { limit, byUser } from '../middleware/rateLimit.js';
 import { CATEGORIES, SHAPES, STOCK_REASONS, MIN_PRICE_PAISE, MAX_PRICE_PAISE, MAX_STOCK } from '../../../shared/domain/menu.js';
@@ -62,6 +62,12 @@ const productChanges = z
   .object({ ...optional(menuFields), active: z.boolean().optional() })
   .strict()
   .refine(atLeastOne, 'Nothing to change');
+// a catalogue snack at the shop's own price; the name and details come from the entry
+const fromCatalogue = z
+  .object({ catalogItemId: id, pricePaise: price, mrpPaise: price.nullable().optional(), prepMinutes: menuFields.prepMinutes, description: menuFields.description.optional() })
+  .strict()
+  .refine((b) => b.mrpPaise == null || b.mrpPaise >= b.pricePaise, { message: 'The MRP cannot be below the price', path: ['mrpPaise'] });
+const catalogueQuery = z.object({ q: z.string().trim().max(60).optional() }).strict();
 const stock = z
   .object({ delta: z.number().int().min(-MAX_STOCK).max(MAX_STOCK).refine((d) => d !== 0, 'A change of zero changes nothing'), reason: z.enum(STOCK_REASONS) })
   .strict();
@@ -83,6 +89,8 @@ export function shopRoutes(deps) {
   router.post('/seller/orders/:id/:action', ...can('seller.orders.accept'), actions, validateParams(orderAction), validateBody(z.object({}).strict()), wrap(c.orderAction));
   router.get('/seller/products', ...can('seller.products.read'), wrap(c.products));
   router.post('/seller/products', ...can('seller.products.write'), creates, validateBody(newProduct), wrap(c.createProduct));
+  router.get('/seller/catalogue', ...can('seller.products.read'), validateQuery(catalogueQuery), wrap(c.catalogue));
+  router.post('/seller/products/from-catalogue', ...can('seller.products.write'), creates, validateBody(fromCatalogue), wrap(c.addFromCatalogue));
   router.patch('/seller/products/:id', ...can('seller.products.write'), edits, validateParams(idParams), validateBody(productChanges), wrap(c.updateProduct));
   router.patch('/seller/products/:id/stock', ...can('seller.products.write'), edits, validateParams(idParams), validateBody(stock), wrap(c.adjustStock));
   return router;

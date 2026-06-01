@@ -21,6 +21,7 @@ import Users from './pages/Users';
 import Complaints from './pages/Complaints';
 import Cash from './pages/Cash';
 import Payouts from './pages/Payouts';
+import Catalogue from './pages/Catalogue';
 import PolicyEditor from './pages/PolicyEditor';
 import AuditLog from './pages/AuditLog';
 import Enrol from './pages/Enrol';
@@ -40,6 +41,7 @@ const TABS = [
   { to: '/complaints', label: 'Complaints', icon: 'flag', roles: ['admin'] },
   { to: '/cash', label: 'Cash in hand', icon: 'wallet', roles: ['admin'] },
   { to: '/payouts', label: 'Seller payouts', icon: 'wallet', roles: ['admin'] },
+  { to: '/catalogue', label: 'Catalogue', icon: 'list', roles: ['admin'] },
   { to: '/policy', label: 'Delivery policy', icon: 'settings', roles: ['admin'] },
   { to: '/audit', label: 'Audit log', icon: 'list', roles: ['admin'] },
 ];
@@ -138,6 +140,7 @@ const AdminApp = () => {
                       <Route path="complaints" element={<Complaints />} />
                       <Route path="cash" element={<Cash />} />
                       <Route path="payouts" element={<Payouts />} />
+                      <Route path="catalogue" element={<Catalogue />} />
                       <Route path="policy" element={<PolicyEditor />} />
                       <Route path="audit" element={<AuditLog />} />
                     </>

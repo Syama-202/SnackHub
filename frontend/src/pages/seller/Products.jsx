@@ -4,15 +4,16 @@ import { adjustStock, createProduct, fetchSellerProducts, updateProduct } from '
 import { addToast } from '../../store/slices/toast';
 import { isDemoSession } from '../../store/slices/auth';
 import { rupees } from '@shared/domain/money';
-import { Button, Card, CloseButton, Icon, Modal, TempBadge, Skeleton, cx } from '../../components/ui';
+import { Button, Card, CloseButton, Icon, Modal, Pill, TempBadge, Skeleton, cx } from '../../components/ui';
 import SnackImage from '../../components/ui/SnackImage';
 import ProductForm from '../../components/product/Form';
+import CataloguePicker from '../../components/product/CataloguePicker';
 
 /** Products and stock adjustments (doc 11.2, 10.8); real sellers also add and edit snacks. */
 const SellerProducts = () => {
   const dispatch = useDispatch();
   const { products, productsLoaded } = useSelector((state) => state.seller);
-  const [editing, setEditing] = useState(null); // null | 'new' | product
+  const [editing, setEditing] = useState(null); // null | 'catalogue' | 'new' (own recipe) | product
   const canEdit = !isDemoSession();
 
   useEffect(() => {
@@ -37,6 +38,11 @@ const SellerProducts = () => {
     setEditing(null);
   };
 
+  const added = (p) => {
+    dispatch(addToast({ type: 'success', title: 'Snack added', message: `${p.title} is on your menu, unlisted. Add stock, then list it.` }));
+    setEditing(null);
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -44,14 +50,14 @@ const SellerProducts = () => {
           <h1 className="text-3xl font-extrabold">Products and stock</h1>
           <p className="mt-1 text-sm text-grey-600">Stock edits are adjustments (plus or minus, with a reason) applied to the live count, so orders arriving at the same time are never overwritten.</p>
         </div>
-        {canEdit && <Button onClick={() => setEditing('new')}><Icon name="plus" className="h-4 w-4" /> Add a snack</Button>}
+        {canEdit && <Button onClick={() => setEditing('catalogue')}><Icon name="plus" className="h-4 w-4" /> Add a snack</Button>}
       </div>
       <div className="mt-6 grid gap-3 md:grid-cols-2">
         {!productsLoaded && [0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-32" />)}
         {productsLoaded && products.length === 0 && (
           <Card className="p-6 text-center text-grey-600 md:col-span-2">
             <p className="font-bold text-grey-800">No snacks on your menu yet</p>
-            <p className="mt-1 text-sm">Add your first snack, give it some stock and list it.</p>
+            <p className="mt-1 text-sm">Pick your first snack from the SnackHub catalogue (or add your own recipe), give it some stock and list it.</p>
           </Card>
         )}
         {products.map((p) => (
@@ -63,6 +69,7 @@ const SellerProducts = () => {
               <div className="flex flex-wrap items-center gap-1.5">
                 <p className="font-bold">{p.title}</p>
                 <TempBadge temp={p.servingTemp} />
+                {p.catalogItemId ? <Pill tone="grey">Catalogue</Pill> : <Pill tone="sun">Own recipe</Pill>}
                 {canEdit && <button onClick={() => setEditing(p)} className="ml-auto h-8 rounded-full px-3 text-xs font-bold text-orange-text hover:bg-sun/20" aria-label={`Edit ${p.title}`}>Edit</button>}
               </div>
               <p className="text-sm text-grey-600">{[rupees(p.pricePaise), p.weight, `prep ${p.prepMinutes} min`].filter(Boolean).join(' · ')}</p>
@@ -84,11 +91,15 @@ const SellerProducts = () => {
         ))}
       </div>
 
-      <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title={editing === 'new' ? 'Add a snack' : 'Edit snack'} wide>
+      <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title={editing === 'catalogue' ? 'Add from the catalogue' : editing === 'new' ? 'Add your own recipe' : 'Edit snack'} wide>
         <div className="relative p-5 sm:p-7">
           <CloseButton onClick={() => setEditing(null)} className="absolute right-3 top-3" />
-          <h2 className="pr-10 text-2xl font-extrabold">{editing === 'new' ? 'Add a snack' : `Edit ${editing?.title ?? ''}`}</h2>
-          <div className="mt-4">{editing && <ProductForm key={editing === 'new' ? 'new' : editing.id} product={editing === 'new' ? null : editing} onSave={save} onCancel={() => setEditing(null)} />}</div>
+          <h2 className="pr-10 text-2xl font-extrabold">{editing === 'catalogue' ? 'Add from the catalogue' : editing === 'new' ? 'Add your own recipe' : `Edit ${editing?.title ?? ''}`}</h2>
+          {editing === 'catalogue' && <p className="mt-1 text-sm text-grey-600">Snacks every shop can sell at its own price. Customers see your price beside other shops near them.</p>}
+          <div className="mt-4">
+            {editing === 'catalogue' && <CataloguePicker onAdded={added} onOwnRecipe={() => setEditing('new')} />}
+            {editing && editing !== 'catalogue' && <ProductForm key={editing === 'new' ? 'new' : editing.id} product={editing === 'new' ? null : editing} onSave={save} onCancel={() => setEditing(null)} />}
+          </div>
         </div>
       </Modal>
     </div>

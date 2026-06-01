@@ -11,6 +11,7 @@ import { KIND_LABEL, addressSummary } from '@shared/domain/addresses';
 import { CITIES } from '@shared/domain/cities';
 import { scheduleOf, openState, hoursLabel } from '@shared/domain/hours';
 import { statement } from '@shared/domain/payouts';
+import { priceSpread } from '@shared/domain/catalogue';
 
 const API = '/api/v1';
 let reqSeq = 1;
@@ -415,6 +416,21 @@ export const handlers = [
         return { ...p, shopName: s.shopName, shopKind: s.kind, serviceable: Boolean(pr?.serviceable), window: pr?.window, distanceKm: s.distanceKm };
       })
       .filter((p) => p.serviceable);
+    return ok(list);
+  }))),
+  // the same catalogue snack at the other open shops near the point, cheapest first
+  http.get(`${API}/catalogue/:id/offers`, fromBackend(withDb(({ request, params, db }) => {
+    const url = new URL(request.url);
+    const near = new Map(serviceableSellers(db, Number(url.searchParams.get('lat')), Number(url.searchParams.get('lng'))).map((s) => [s.id, s]));
+    const list = db.products
+      .filter((p) => p.active && p.stock > 0 && p.catalogItemId === Number(params.id) && near.has(p.sellerId))
+      .map((p) => {
+        const s = near.get(p.sellerId);
+        const pr = s.promise[p.servingTemp];
+        return { ...p, shopName: s.shopName, shopKind: s.kind, serviceable: Boolean(pr?.serviceable), window: pr?.window, distanceKm: s.distanceKm };
+      })
+      .filter((p) => p.serviceable)
+      .sort((a, b) => a.pricePaise - b.pricePaise || a.distanceKm - b.distanceKm);
     return ok(list);
   }))),
   // Search: Elasticsearch in the real stack; the same ranking as the API on MySQL (shared/domain/search)
@@ -1113,6 +1129,15 @@ export const handlers = [
     const r = { id: (db.seq.cash = (db.seq.cash ?? 0) + 1), riderId: d.riderId, kind: 'REVERSAL', amountPaise: d.amountPaise, reversesId: d.id, note: body.reason, at: Date.now() };
     list.push(r);
     return ok({ id: r.id }, 201);
+  })),
+  // demo catalogue: read only, built from the demo snacks (shared/seed catalogItems)
+  http.get(`${API}/admin/catalogue`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = adminGuard(request);
+    if (g.res) return g.res;
+    const q = (new URL(request.url).searchParams.get('q') || '').toLowerCase();
+    const items = db.catalogItems.filter((i) => i.title.toLowerCase().includes(q)).sort((a, b) => a.title.localeCompare(b.title)).slice(0, 100);
+    return ok(items.map((i) => ({ ...i, active: true, prices: priceSpread(db.products.filter((p) => p.catalogItemId === i.id && p.active).map((p) => p.pricePaise)) })));
   })),
   http.get(`${API}/admin/payouts`, withDb(({ request, db }) => {
     if (!isDemoToken(request)) return passthrough();

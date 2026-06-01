@@ -37,7 +37,7 @@ export default defineConfig({
     // and rider consoles, a real admin), and the catalog reads. Demo sessions stay in the mock.
     // Live updates (Socket.IO) take the WebSocket upgrade through the same origin.
     proxy: {
-      ...Object.fromEntries(['auth', 'me', 'cities', 'sellers', 'products', 'search', 'admin', 'files', 'seller', 'rider', 'cart', 'orders'].map((p) => [`/api/v1/${p}`, backend])),
+      ...Object.fromEntries(['auth', 'me', 'cities', 'sellers', 'products', 'catalogue', 'search', 'admin', 'files', 'seller', 'rider', 'cart', 'orders'].map((p) => [`/api/v1/${p}`, backend])),
       '/api/v1/socket': { target: backend, ws: true },
     },
   },

@@ -21,6 +21,8 @@ export function productView(row, seller) {
   return {
     id: row.id,
     sellerId: row.seller_id,
+    // the shared catalogue entry, or null for the shop's own recipe
+    catalogItemId: row.catalog_item_id == null ? null : Number(row.catalog_item_id),
     slug: row.slug,
     title: row.title,
     description: row.description,
@@ -130,9 +132,8 @@ export function catalogController({ dbs }) {
     res.json({ ...sellerView(row, products), promise, products });
   }
 
-  async function products(req, res) {
-    const { lat, lng, pincode } = req.query;
-    const list = (await nearby({ lat, lng, pincode })).filter((s) => s.hours.openNow).flatMap((s) =>
+  const orderable = (shops) =>
+    shops.filter((s) => s.hours.openNow).flatMap((s) =>
       s.products
         .map((p) => {
           const pr = s.promise[p.servingTemp];
@@ -140,7 +141,18 @@ export function catalogController({ dbs }) {
         })
         .filter((p) => p.serviceable),
     );
-    res.json(list.sort((a, b) => a.id - b.id));
+
+  async function products(req, res) {
+    const { lat, lng, pincode } = req.query;
+    res.json(orderable(await nearby({ lat, lng, pincode })).sort((a, b) => a.id - b.id));
+  }
+
+  /** One catalogue snack at every open shop that delivers here, cheapest first. */
+  async function offers(req, res) {
+    const { lat, lng, pincode } = req.query;
+    const itemId = req.params.id;
+    const list = orderable(await nearby({ lat, lng, pincode })).filter((p) => p.catalogItemId === itemId && p.stock > 0);
+    res.json(list.sort((a, b) => a.pricePaise - b.pricePaise || a.distanceKm - b.distanceKm));
   }
 
   async function search(req, res) {
@@ -153,5 +165,5 @@ export function catalogController({ dbs }) {
     res.json({ q: q.toLowerCase(), results, provider: 'mysql' });
   }
 
-  return { cities, sellers, seller, products, search };
+  return { cities, sellers, seller, products, offers, search };
 }

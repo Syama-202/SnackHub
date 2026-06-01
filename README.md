@@ -242,6 +242,15 @@ take orders.
   reference (or cancel, which frees the orders). Each order and fine can be on one statement
   only, enforced by MySQL. Sellers see what is due, when the next order becomes payable, and
   their statements on the Payouts tab. No money moves through SnackHub: it records transfers.
+- Shared catalogue: one entry per snack (name, kind, pack size, spice, picture) that any shop
+  sells at its own price. Sellers add snacks with **Add a snack**: search the catalogue, see
+  what shops in their city charge, set their price, MRP, prep time and description. The
+  entry's name and details are the same at every shop and cannot be changed from a shop; a
+  shop can still add a recipe of its own. Admins keep the entries on the Catalogue page: an
+  edit reaches every shop's copy (prices stay the shops'), a retired entry leaves the picker,
+  and a shop's own recipe can be linked to an entry. A shop sells each entry once, enforced by
+  MySQL. On a snack, customers see the other open shops near them that sell it, cheapest first
+  (`/catalogue/:id/offers`).
 - Favourites are saved to the customer's account (the heart on every snack, and a Favourites
   page), and "Order again" on a finished order refills the cart at today's prices, naming
   anything sold out or off the menu.
@@ -362,6 +371,7 @@ From the repository root:
 - The same Idempotency-Key from one customer can never create two orders.
 - Each payment webhook event is processed once; the payment ledger can only be added to.
 - Foreign keys stay inside a module; references to another module's rows are plain ids.
+- A shop lists each catalogue entry at most once (a unique key on shop and entry).
 
 ## Status
 
@@ -376,7 +386,7 @@ From the repository root:
   delivery policy and the live operations board (see "Ordering" above), with live updates over
   Socket.IO and shared rate limits in Redis (see "Live updates and rate limits"). Online payment runs
   through PhonePe's sandbox once its test keys are set; there is no live payment. Passkeys are not built yet.
-- The demo catalogue has 201 snacks in 28 cities, most of them from the Telugu states, Tamil
+- The demo catalogue has 201 snacks (one shared catalogue entry each) in 28 cities, most of them from the Telugu states, Tamil
   Nadu, Karnataka, Kerala and Maharashtra (`shared/seed/regional.js`).
 - Every shop is a shop, a street stall (a cart, bandi or kadai) or a home kitchen (`catalog.sellers.kind`):
   24 demo street stalls and 8 demo home kitchens, all fictional, with badges and filters on the site.

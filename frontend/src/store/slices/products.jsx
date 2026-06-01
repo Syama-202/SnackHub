@@ -35,6 +35,9 @@ export const searchProducts = apiThunk('products/search', async ({ q, point }, {
   apiFetch(`/search?q=${encodeURIComponent(q)}&${near(point)}`),
 );
 
+// one catalogue snack at every open shop that delivers here, cheapest first
+export const fetchOffers = apiThunk('products/fetchOffers', async ({ itemId, point }, { apiFetch }) => apiFetch(`/catalogue/${itemId}/offers?${near(point)}`));
+
 const productsSlice = createSlice({
   name: 'products',
   initialState: {

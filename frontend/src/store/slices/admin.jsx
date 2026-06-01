@@ -17,6 +17,11 @@ export const fetchAudit = get('audit', '/admin/audit');
 export const fetchEarningsAdmin = get('earnings', '/admin/earnings');
 export const fetchCash = get('cash', '/admin/cash');
 export const fetchPayouts = get('payouts', '/admin/payouts');
+// the shared catalogue: search, add, edit or retire an entry (every shop's copy follows), link a shop's own recipe
+export const fetchCatalogue = apiThunk('admin/fetchCatalogue', async ({ q = '', all = false } = {}, { apiFetch }) => apiFetch(`/admin/catalogue?${new URLSearchParams({ ...(q && { q }), ...(all && { all: '1' }) })}`));
+export const createEntry = apiThunk('admin/createEntry', async (fields, { apiFetch }) => apiFetch('/admin/catalogue', { method: 'POST', body: fields }));
+export const updateEntry = apiThunk('admin/updateEntry', async ({ id, ...changes }, { apiFetch }) => apiFetch(`/admin/catalogue/${id}`, { method: 'PATCH', body: changes }));
+export const linkProduct = apiThunk('admin/linkProduct', async ({ id, productId }, { apiFetch }) => apiFetch(`/admin/catalogue/${id}/link`, { method: 'POST', body: { productId } }));
 export const fetchPayout = apiThunk('admin/fetchPayout', async (id, { apiFetch }) => apiFetch(`/admin/payouts/${id}`));
 // a statement of everything payable to a shop; then paid (with the bank reference) or cancelled
 export const draftPayout = apiThunk('admin/draftPayout', async (sellerId, { apiFetch }) => apiFetch('/admin/payouts', { method: 'POST', body: { sellerId } }));

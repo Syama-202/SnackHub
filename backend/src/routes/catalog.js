@@ -30,6 +30,7 @@ export function catalogRoutes(deps) {
   router.get('/sellers', browse, validateQuery(sellersQuery), wrap(c.sellers));
   router.get('/sellers/:id', browse, validateParams(idParams), validateQuery(shopQuery), wrap(c.seller));
   router.get('/products', browse, validateQuery(nearQuery), wrap(c.products));
+  router.get('/catalogue/:id/offers', browse, validateParams(idParams), validateQuery(nearQuery), wrap(c.offers));
   router.get('/search', search, validateQuery(searchQuery), wrap(c.search));
   return router;
 }

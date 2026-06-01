@@ -14,6 +14,9 @@ export const fetchSellerProducts = apiThunk('seller/fetchProducts', async (_, { 
 export const adjustStock = apiThunk('seller/adjustStock', async ({ id, delta, reason }, { apiFetch }) => apiFetch(`/seller/products/${id}/stock`, { method: 'PATCH', body: { delta, reason } }));
 export const updateProduct = apiThunk('seller/updateProduct', async ({ id, ...changes }, { apiFetch }) => apiFetch(`/seller/products/${id}`, { method: 'PATCH', body: changes }));
 // A new snack starts unlisted with no stock; listing it needs an approved shop with valid documents
+// the shared catalogue, with what shops in the city charge; then one entry at the shop's own price
+export const fetchCatalogue = apiThunk('seller/fetchCatalogue', async (q, { apiFetch }) => apiFetch(`/seller/catalogue${q ? `?q=${encodeURIComponent(q)}` : ''}`));
+export const addFromCatalogue = apiThunk('seller/addFromCatalogue', async (fields, { apiFetch }) => apiFetch('/seller/products/from-catalogue', { method: 'POST', body: fields }));
 export const createProduct = apiThunk('seller/createProduct', async (fields, { apiFetch }) => apiFetch('/seller/products', { method: 'POST', body: fields }));
 // Demo only: an order arrives at this shop, to be run by hand
 export const simulateIncomingOrder = apiThunk('seller/simulateOrder', async (_, { apiFetch }) => apiFetch('/dev/incoming-order', { method: 'POST' }));
@@ -60,6 +63,9 @@ const sellerSlice = createSlice({
       .addCase(adjustStock.fulfilled, (state, action) => replaceProduct(state, action.payload))
       .addCase(updateProduct.fulfilled, (state, action) => replaceProduct(state, action.payload))
       .addCase(createProduct.fulfilled, (state, action) => {
+        state.products = [...state.products, action.payload];
+      })
+      .addCase(addFromCatalogue.fulfilled, (state, action) => {
         state.products = [...state.products, action.payload];
       });
   },
