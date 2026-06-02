@@ -1,4 +1,4 @@
-// Sends the emails, texts and inbox messages waiting in the module outboxes (doc 12.1). Each row is claimed
+// Sends the emails, texts and inbox messages (with their push copies) waiting in the module outboxes (doc 12.1). Each row is claimed
 // with FOR UPDATE SKIP LOCKED, sent, then marked published in the same transaction; a failed
 // send waits longer each time (1, 2, 4 ... minutes) and gives up after 8 tries. The message
 // id is the outbox row, so a retry that did reach the provider is recognisable there. The
@@ -8,10 +8,11 @@ import { render } from '../utils/emails.js';
 import { outboxModel } from '../models/outbox.js';
 import { notificationModel, portalOfType } from '../models/notify/notification.js';
 import { realtime } from '../utils/realtime.js';
+import { pushToDevices } from '../utils/push.js';
 
 const MODULES = ['identity', 'catalog', 'dispatch', 'ordering'];
 
-export function createOutboxRelay({ env, dbs, mailer, sms, logger }) {
+export function createOutboxRelay({ env, dbs, mailer, sms, push, logger }) {
   // inbox messages need no provider, so they always go out
   const types = () => ['notify.inbox', ...(mailer.enabled ? ['email.send', 'admin.alert'] : []), ...(sms.enabled ? ['sms.send'] : [])];
 
@@ -27,7 +28,11 @@ export function createOutboxRelay({ env, dbs, mailer, sms, logger }) {
       // the unique (order, type, person) key makes a second delivery of the same row harmless
       const created = await notificationModel.create(dbs.notify, { userId: p.userId, orderId: p.orderId ?? null, type: p.type, body: p.body });
       // the bell (and the seller's and rider's boards) refresh at once; a re-delivery says nothing
-      if (created) realtime.publish([{ userId: p.userId, role: portalOfType(p.type) }], 'notification', { orderId: p.orderId });
+      // and the person's phones and computers that asked for push; only for a new message
+      if (created) {
+        realtime.publish([{ userId: p.userId, role: portalOfType(p.type) }], 'notification', { orderId: p.orderId });
+        await pushToDevices(dbs, push, { userId: p.userId, portal: portalOfType(p.type), message: p });
+      }
       return;
     }
     if (row.type === 'admin.alert') {

@@ -103,6 +103,12 @@ const server = database.extend({
   // how long the customer has to finish paying (PhonePe allows 5 to 60 minutes)
   PAYMENT_WINDOW_MIN: z.coerce.number().int().min(5).max(60).default(15),
 
+  // Push notifications (utils/push.js): a VAPID key pair from `npx web-push generate-vapid-keys`.
+  // Leave both empty to keep push off; the in-app inbox works either way. The subject is how a
+  // push service can reach whoever runs this server (mailto: or https:).
+  VAPID_PUBLIC_KEY: z.string().regex(/^[A-Za-z0-9_-]{87}$/, 'A VAPID public key is 87 base64url characters').or(z.literal('')).default(''),
+  VAPID_PRIVATE_KEY: z.string().regex(/^[A-Za-z0-9_-]{43}$/, 'A VAPID private key is 43 base64url characters').or(z.literal('')).default(''),
+  VAPID_SUBJECT: z.string().regex(/^(mailto:\S+@\S+|https:\/\/\S+)$/).default('mailto:no-reply@snackhub.test'),
 });
 
 function parse(schema, source) {

@@ -1,4 +1,5 @@
 import { createSlice, isAnyOf } from '@reduxjs/toolkit';
+import { unsubscribeDevice } from '../../utils/push';
 import { apiThunk } from '../apiThunk';
 import { getAccessToken, getApiHost, refreshAccessToken, setAccessToken } from '../../services/api';
 import { deviceId } from '../../utils/device';
@@ -113,6 +114,11 @@ export const adminStepUp = apiThunk('auth/adminStepUp', async ({ code }, { apiFe
 
 // The admin console only offers "sign out everywhere" (doc 16.3)
 export const logoutUser = apiThunk('auth/logout', async (_, { apiFetch }) => {
+  // this device stops getting push messages for the account (the server also drops them once the session ends)
+  if (getApiHost() !== 'admin') {
+    const endpoint = await unsubscribeDevice().catch(() => null);
+    if (endpoint) await apiFetch('/auth/push/unsubscribe', { method: 'POST', body: { endpoint }, retry: false }).catch(() => {});
+  }
   await apiFetch(getApiHost() === 'admin' ? '/admin/auth/logout-all' : '/auth/logout', { method: 'POST', retry: false }).catch(() => {});
   setAccessToken(null);
   hint.set(false);

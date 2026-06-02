@@ -19,6 +19,7 @@ import { memoryCounter, redisCounter } from './utils/rateLimit.js';
 import { createGeocoder } from './utils/geocoder.js';
 import { createPhonePe } from './utils/phonepe.js';
 import { gateway } from './utils/payments.js';
+import { createPush } from './utils/push.js';
 import { webhookRoutes } from './routes/webhooks.js';
 import { limit, byIp } from './middleware/rateLimit.js';
 
@@ -31,6 +32,8 @@ export function createApp({
   scanner = createScanner(env),
   mailer = createMailer(env),
   sms = createSms(env, mailer),
+  // push notifications (off without VAPID keys); tests pass a fake sender
+  push = createPush(env, { logger }),
   // rate-limit counters: Redis when the server passes a client, so every process shares them
   redis = null,
   rateStore = redis ? redisCounter(redis, { logger }) : memoryCounter(),
@@ -48,7 +51,7 @@ export function createApp({
   // exact origins only, never a wildcard with credentials (doc 16.2)
   app.use(cors({ origin: env.CORS_ORIGINS, credentials: true, exposedHeaders: ['X-Request-Id', 'Retry-After', 'RateLimit-Remaining'] }));
   // every API request from one address, before the body is even read (health checks are outside /api)
-  const deps = { env, dbs, logger, verifyGoogle, storage, scanner, mailer, sms, rateStore, geocoder };
+  const deps = { env, dbs, logger, verifyGoogle, storage, scanner, mailer, sms, push, rateStore, geocoder };
   app.use('/api/v1', limit(deps, 'api.ip', { minutes: 1, max: env.RATE_LIMIT_IP_PER_MIN }, byIp, 'Too many requests from your network. Wait a minute and try again.'));
   // webhooks read their raw body, so they come before the JSON parser
   app.use(webhookRoutes(deps));

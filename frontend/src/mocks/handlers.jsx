@@ -365,6 +365,11 @@ export const handlers = [
     if (gone?.isDefault && db.addresses.length) makeDefault(db, [...db.addresses].sort((x, y) => x.id - y.id)[0].id);
     return ok({ deleted: true });
   })),
+  // demo sessions get no push messages: the demo runs in this browser only
+  http.post(`${API}/auth/push/status`, ({ request }) => {
+    if (!isDemoToken(request)) return passthrough();
+    return ok({ enabled: false, publicKey: null, subscribed: false, devices: 0 });
+  }),
   http.get(`${API}/me/notifications`, withDb(({ request, db }) => {
     if (!isDemoToken(request)) return passthrough();
     const g = guard(request);

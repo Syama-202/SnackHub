@@ -9,6 +9,7 @@ import { moduleDbs, closeAll } from '../src/db/connection.js';
 import { createMailer } from '../src/utils/mailer.js';
 import { createSms } from '../src/utils/sms.js';
 import { createOutboxRelay } from '../src/jobs/outboxRelay.js';
+import { createPush } from '../src/utils/push.js';
 import { runDocumentExpiry } from '../src/jobs/documentExpiry.js';
 import { runOrderTimers } from '../src/jobs/orderTimers.js';
 import { Emitter } from '@socket.io/redis-emitter';
@@ -32,7 +33,7 @@ try {
   const expiry = await runDocumentExpiry({ env, dbs, logger });
   const timers = await runOrderTimers({ dbs, logger });
   const mailer = createMailer(env);
-  const relay = createOutboxRelay({ env, dbs, mailer, sms: createSms(env, mailer), logger });
+  const relay = createOutboxRelay({ env, dbs, mailer, sms: createSms(env, mailer), push: createPush(env, { logger }), logger });
   let sent = 0;
   for (let n = await relay.runOnce(); n > 0; n = await relay.runOnce()) sent += n;
   console.log(`expiry: ${JSON.stringify(expiry)}; orders: ${JSON.stringify(timers)}; messages sent: ${sent}`);

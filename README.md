@@ -251,6 +251,15 @@ take orders.
   and a shop's own recipe can be linked to an entry. A shop sells each entry once, enforced by
   MySQL. On a snack, customers see the other open shops near them that sell it, cheapest first
   (`/catalogue/:id/offers`).
+- Push notifications: customers, sellers and riders can turn on alerts for a device on their
+  Notifications page. Every new inbox message is then also shown on that phone or computer
+  (Web Push, even when SnackHub is closed), and tapping it opens the order, the board or the
+  payouts. Alerts follow the portal (a seller's phone gets shop messages only) and the sign-in:
+  signing out of that device, "sign out other devices" or a password reset stops them. The
+  server sends only to the browsers' own push services. To switch it on, run
+  `npx web-push generate-vapid-keys` and put the two keys in `backend/.env` as
+  `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`, then restart the API. Push needs https (or
+  localhost); on iPhone, SnackHub must first be added to the home screen.
 - Favourites are saved to the customer's account (the heart on every snack, and a Favourites
   page), and "Order again" on a finished order refills the cart at today's prices, naming
   anything sold out or off the menu.

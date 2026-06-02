@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { healthRoutes } from './health.js';
 import { authRoutes } from './auth.js';
 import { securityRoutes } from './security.js';
+import { pushRoutes } from './push.js';
 import { meRoutes } from './me.js';
 import { catalogRoutes } from './catalog.js';
 import { onboardingRoutes } from './onboarding.js';
@@ -24,6 +25,7 @@ export function routes(deps) {
   const api = Router();
   api.use(authRoutes(deps));
   api.use(securityRoutes(deps));
+  api.use(pushRoutes(deps));
   api.use(meRoutes(deps));
   api.use(catalogRoutes(deps));
   api.use(onboardingRoutes(deps));
