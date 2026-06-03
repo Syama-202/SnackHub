@@ -6,6 +6,7 @@ import { createMailer } from './utils/mailer.js';
 import { createSms } from './utils/sms.js';
 import { createOutboxRelay } from './jobs/outboxRelay.js';
 import { createPush } from './utils/push.js';
+import { describeError, recordError } from './utils/errors.js';
 import { runDocumentExpiry } from './jobs/documentExpiry.js';
 import { createOrderTimers } from './jobs/orderTimers.js';
 import { createRedis, closeRedis } from './utils/redis.js';
@@ -39,7 +40,11 @@ let expiryTimer;
 if (env.RUN_JOBS) {
   relay.start();
   orderTimers.start();
-  const expiry = () => runDocumentExpiry({ env, dbs, logger }).catch((err) => logger.error({ reason: err.code ?? err.message }, 'document expiry failed'));
+  const expiry = () =>
+    runDocumentExpiry({ env, dbs, logger }).catch((err) => {
+      logger.error({ reason: err.code ?? err.message }, 'document expiry failed');
+      recordError(dbs, { source: 'job', ...describeError(err), where: 'document expiry', release: env.RELEASE }, { logger });
+    });
   setTimeout(expiry, 15_000).unref();
   expiryTimer = setInterval(expiry, 6 * 3600_000);
   expiryTimer.unref();
@@ -57,5 +62,17 @@ async function shutdown(signal) {
   await closeRedis(redis);
   process.exit(0);
 }
+// a promise nobody caught is recorded and the server keeps going; an uncaught exception
+// leaves the process in an unknown state, so it is recorded and the process exits (the
+// process manager starts a fresh one)
+process.on('unhandledRejection', (err) => {
+  logger.error({ reason: err?.code ?? err?.message }, 'unhandled rejection');
+  recordError(dbs, { source: 'job', ...describeError(err), where: 'unhandled promise', release: env.RELEASE }, { logger });
+});
+process.on('uncaughtException', (err) => {
+  logger.fatal({ reason: err?.code ?? err?.message }, 'uncaught exception');
+  recordError(dbs, { source: 'job', ...describeError(err), where: 'uncaught exception', release: env.RELEASE }, { logger }).finally(() => process.exit(1));
+  setTimeout(() => process.exit(1), 3000).unref();
+});
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

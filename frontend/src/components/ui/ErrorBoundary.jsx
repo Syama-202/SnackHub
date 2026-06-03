@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import { Button, EmptyState } from './index';
 import SnackArt from './SnackArt';
+import { reportError } from '../../services/errors';
 
 // a page chunk from an older build that the server no longer has
 const isStaleChunk = (error) => /dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(String(error?.message ?? error?.name ?? ''));
@@ -25,6 +26,8 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, info) {
     // the message and where it happened only; never state or props, which can hold personal data
     console.error('page crashed:', error?.message, info?.componentStack?.split('\n').slice(0, 4).join('\n'));
+    // and to the error log, with the same limits (no state or props)
+    reportError(error, { kind: error?.name ?? 'PageCrash' });
   }
 
   render() {

@@ -19,6 +19,8 @@ const database = z.object({
 const server = database.extend({
   PORT: z.coerce.number().int().positive().default(4000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  // the build or version running, shown on each recorded error (for example a git commit)
+  RELEASE: z.string().regex(/^[\w.+-]{1,40}$/).default('dev'),
   CORS_ORIGINS: csv.pipe(z.array(z.string().url()).min(1)),
   // Google sign-in (doc 16.1): only the OAuth client ID, no client secret. Empty until set up;
   // POST /auth/google then answers 503 GOOGLE_NOT_CONFIGURED.

@@ -1135,6 +1135,13 @@ export const handlers = [
     list.push(r);
     return ok({ id: r.id }, 201);
   })),
+  // the demo has no error log of its own: the admin console shows an empty one
+  http.get(`${API}/admin/errors`, ({ request }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = adminGuard(request);
+    if (g.res) return g.res;
+    return ok({ groups: [], counts: {} });
+  }),
   // demo catalogue: read only, built from the demo snacks (shared/seed catalogItems)
   http.get(`${API}/admin/catalogue`, withDb(({ request, db }) => {
     if (!isDemoToken(request)) return passthrough();

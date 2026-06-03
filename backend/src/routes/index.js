@@ -5,6 +5,7 @@ import { healthRoutes } from './health.js';
 import { authRoutes } from './auth.js';
 import { securityRoutes } from './security.js';
 import { pushRoutes } from './push.js';
+import { errorsRoutes } from './errors.js';
 import { meRoutes } from './me.js';
 import { catalogRoutes } from './catalog.js';
 import { onboardingRoutes } from './onboarding.js';
@@ -26,6 +27,7 @@ export function routes(deps) {
   api.use(authRoutes(deps));
   api.use(securityRoutes(deps));
   api.use(pushRoutes(deps));
+  api.use(errorsRoutes(deps));
   api.use(meRoutes(deps));
   api.use(catalogRoutes(deps));
   api.use(onboardingRoutes(deps));

@@ -260,6 +260,14 @@ take orders.
   `npx web-push generate-vapid-keys` and put the two keys in `backend/.env` as
   `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`, then restart the API. Push needs https (or
   localhost); on iPhone, SnackHub must first be added to the home screen.
+- Error monitoring: crashes in the API (every 500), the background jobs and both websites are
+  kept in MySQL, one row per cause with a count, first and last seen, the route or page, the
+  latest stack and request id, and the release (`RELEASE`, and `VITE_RELEASE` for the sites).
+  Emails, phone numbers, codes, tokens, long ids and query strings are removed before anything
+  is stored, and a database error keeps MySQL's message without the SQL or its values. Admins
+  read them on the Errors page and mark each resolved or ignored; a new error, or a resolved
+  one that comes back, emails the admins (at most once an hour each). Browsers report through
+  `POST /client-errors`, limited per address, once per error per page load.
 - Favourites are saved to the customer's account (the heart on every snack, and a Favourites
   page), and "Order again" on a finished order refills the cart at today's prices, naming
   anything sold out or off the menu.

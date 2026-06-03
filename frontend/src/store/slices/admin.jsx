@@ -17,6 +17,10 @@ export const fetchAudit = get('audit', '/admin/audit');
 export const fetchEarningsAdmin = get('earnings', '/admin/earnings');
 export const fetchCash = get('cash', '/admin/cash');
 export const fetchPayouts = get('payouts', '/admin/payouts');
+// the error log: groups by status and source, one with its stack, and closing or reopening one
+export const fetchErrors = apiThunk('admin/fetchErrors', async ({ status = 'open', source = '' } = {}, { apiFetch }) => apiFetch(`/admin/errors?${new URLSearchParams({ status, ...(source && { source }) })}`));
+export const fetchError = apiThunk('admin/fetchError', async (id, { apiFetch }) => apiFetch(`/admin/errors/${id}`));
+export const setErrorStatus = apiThunk('admin/setErrorStatus', async ({ id, status }, { apiFetch }) => apiFetch(`/admin/errors/${id}/status`, { method: 'POST', body: { status } }));
 // the shared catalogue: search, add, edit or retire an entry (every shop's copy follows), link a shop's own recipe
 export const fetchCatalogue = apiThunk('admin/fetchCatalogue', async ({ q = '', all = false } = {}, { apiFetch }) => apiFetch(`/admin/catalogue?${new URLSearchParams({ ...(q && { q }), ...(all && { all: '1' }) })}`));
 export const createEntry = apiThunk('admin/createEntry', async (fields, { apiFetch }) => apiFetch('/admin/catalogue', { method: 'POST', body: fields }));

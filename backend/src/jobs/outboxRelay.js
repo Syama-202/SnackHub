@@ -9,6 +9,7 @@ import { outboxModel } from '../models/outbox.js';
 import { notificationModel, portalOfType } from '../models/notify/notification.js';
 import { realtime } from '../utils/realtime.js';
 import { pushToDevices } from '../utils/push.js';
+import { describeError, recordError } from '../utils/errors.js';
 
 const MODULES = ['identity', 'catalog', 'dispatch', 'ordering'];
 
@@ -38,8 +39,9 @@ export function createOutboxRelay({ env, dbs, mailer, sms, push, logger }) {
     if (row.type === 'admin.alert') {
       const to = await adminEmails();
       if (!to.length) return;
-      const text = `SnackHub admin alert: ${p.type} for user ${p.userId}${p.orderId ? ` on order #${p.orderId}` : ''}${p.left !== undefined ? ` (${p.left} recovery codes left)` : ''}. Check the audit log.`;
-      await mailer.send({ to, subject: `Admin alert: ${p.type.replaceAll('_', ' ')}`, text, messageId, name });
+      // a recorded error carries its own (already scrubbed) summary
+      const text = p.summary ? `SnackHub admin alert: ${p.summary}. Open the Errors page in the admin console (error #${p.errorId}).` : `SnackHub admin alert: ${p.type} for user ${p.userId}${p.orderId ? ` on order #${p.orderId}` : ''}${p.left !== undefined ? ` (${p.left} recovery codes left)` : ''}. Check the audit log.`;
+      await mailer.send({ to, subject: p.summary ? `Admin alert: error #${p.errorId}` : `Admin alert: ${p.type.replaceAll('_', ' ')}`, text, messageId, name });
       return;
     }
     const secret = p.sealed ? JSON.parse(open(env, 'outbox', p.sealed)) : {};
@@ -84,6 +86,7 @@ export function createOutboxRelay({ env, dbs, mailer, sms, push, logger }) {
           await runOnce();
         } catch (err) {
           logger?.error({ reason: err.code ?? err.message }, 'outbox relay pass failed');
+          recordError(dbs, { source: 'job', ...describeError(err), where: 'outbox relay', release: env.RELEASE }, { logger });
         } finally {
           running = false;
         }

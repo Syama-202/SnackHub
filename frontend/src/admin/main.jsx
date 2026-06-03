@@ -6,10 +6,12 @@ import { BrowserRouter } from 'react-router-dom';
 import '../styles/index.css';
 import store from './store';
 import { setApiHost, setApiReady } from '../services/api';
+import { watchErrors } from '../services/errors';
 import AdminApp from './App';
 
 // Every admin request carries the admin host marker; the public host answers 404 (doc 16.3)
 setApiHost('admin');
+watchErrors('admin');
 
 if (import.meta.env.VITE_USE_MOCKS !== 'false') {
   setApiReady(import('../mocks/browser').then((m) => m.startMocks()));

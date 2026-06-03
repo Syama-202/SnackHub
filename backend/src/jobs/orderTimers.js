@@ -7,6 +7,7 @@
 //   abandoned payments expired (the order cancelled, stock back), refunds asked about again
 // Every step is safe to run twice: changes go through the status the job saw.
 import { closeOrder, policyOf } from '../utils/orders.js';
+import { describeError, recordError } from '../utils/errors.js';
 import { expireOffers, offerNext } from '../utils/dispatch.js';
 import { orderModel } from '../models/ordering/order.js';
 import { stockHoldModel } from '../models/catalog/stockHold.js';
@@ -56,6 +57,7 @@ export function createOrderTimers(deps) {
           await runOrderTimers(deps);
         } catch (err) {
           deps.logger?.error({ reason: err.code ?? err.message }, 'order timers pass failed');
+          recordError(deps.dbs, { source: 'job', ...describeError(err), where: 'order timers' }, deps);
         } finally {
           running = false;
         }

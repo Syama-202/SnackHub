@@ -51,6 +51,7 @@ export const ROLE_PERMISSIONS = {
     'cash.record',
     'payouts.manage',
     'catalogue.manage',
+    'errors.manage',
     'policy.write',
   ],
 };

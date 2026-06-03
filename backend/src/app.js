@@ -61,6 +61,6 @@ export function createApp({
   app.use(routes(deps));
 
   app.use(notFound);
-  app.use(errorHandler);
+  app.use(errorHandler(deps));
   return app;
 }
