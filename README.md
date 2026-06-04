@@ -363,6 +363,16 @@ frontend/
 shared/            domain/ (business rules: permissions, verification, documents, eligibility, passwords, ...), seed/ (demo data)
 ```
 
+## API docs
+
+With the API running, open http://localhost:4000/api/docs for Swagger UI, or fetch the OpenAPI
+3.1 document from `/api/v1/openapi.json`. It is built from the routers themselves: every route,
+its zod schemas (body, query and path), whether it needs a sign-in, which permission, the admin
+host or a recent second factor, and its rate limits. So it cannot drift from the code, and a
+test fails if a write route has no body schema (apart from a short reviewed list that takes
+none). Summaries come from the route lists at the top of each controller. The docs are on by
+default outside production; set `API_DOCS=true` or `false` to choose.
+
 ## Everyday commands
 
 From the repository root:

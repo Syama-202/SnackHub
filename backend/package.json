@@ -39,6 +39,7 @@
     "pino-http": "^10.3.0",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.4",
+    "swagger-ui-dist": "5.33.3",
     "web-push": "3.6.7",
     "zod": "^4.6.7"
   },

@@ -21,6 +21,8 @@ const server = database.extend({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   // the build or version running, shown on each recorded error (for example a git commit)
   RELEASE: z.string().regex(/^[\w.+-]{1,40}$/).default('dev'),
+  // the API docs (/api/docs and /api/v1/openapi.json). Unset: on outside production
+  API_DOCS: bool.optional(),
   CORS_ORIGINS: csv.pipe(z.array(z.string().url()).min(1)),
   // Google sign-in (doc 16.1): only the OAuth client ID, no client secret. Empty until set up;
   // POST /auth/google then answers 503 GOOGLE_NOT_CONFIGURED.
@@ -145,6 +147,7 @@ export function loadEnv(source = process.env) {
     ...env,
     COOKIE_SECURE: env.COOKIE_SECURE ?? env.NODE_ENV === 'production',
     RUN_JOBS: env.RUN_JOBS ?? env.NODE_ENV !== 'test',
+    API_DOCS: env.API_DOCS ?? env.NODE_ENV !== 'production',
     SMTP_HOST: env.SMTP_HOST ?? '',
     MAIL_TRANSPORT: env.MAIL_TRANSPORT ?? (env.SMTP_HOST ? 'smtp' : dev ? 'file' : 'off'),
     SMS_PROVIDER: env.SMS_PROVIDER ?? (dev ? 'dev-mail' : ''),

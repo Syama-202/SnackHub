@@ -1,8 +1,10 @@
 // Every route validates its input with zod (CLAUDE.md). The parsed value replaces the body (or query or params),
 // so unknown fields never reach a controller.
 import { AppError } from '../utils/AppError.js';
+import { documented } from '../utils/apiDocs.js';
 
-const validate = (part) => (schema) => (req, res, next) => {
+// the schema rides on the middleware, so the API docs are built from what is really checked
+const validate = (part) => (schema) => documented({ part, schema }, (req, res, next) => {
   const parsed = schema.safeParse(req[part] ?? {});
   if (!parsed.success) {
     const details = parsed.error.issues.map((i) => ({ field: i.path.join('.'), message: i.message }));
@@ -10,7 +12,7 @@ const validate = (part) => (schema) => (req, res, next) => {
   }
   req[part] = parsed.data;
   next();
-};
+});
 
 export const validateBody = validate('body');
 export const validateQuery = validate('query');

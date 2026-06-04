@@ -4,13 +4,14 @@
 // suspension works at once, not only at the next refresh; a token whose role the account does
 // not hold (a forged or stale claim) is refused.
 import { AppError } from '../utils/AppError.js';
+import { documented } from '../utils/apiDocs.js';
 import { verifyAccessToken } from '../utils/tokens.js';
 import { userModel } from '../models/identity/user.js';
 import { userRoleModel } from '../models/identity/userRole.js';
 import { can, mfaRequiredFor } from '../../../shared/domain/permissions.js';
 
 export function requireAuth(env) {
-  return (req, res, next) => {
+  return documented({ auth: true }, (req, res, next) => {
     const [scheme, token] = (req.headers.authorization || '').split(' ');
     if (scheme !== 'Bearer' || !token) return next(new AppError(401, 'UNAUTHENTICATED', 'Sign in first'));
     try {
@@ -19,7 +20,7 @@ export function requireAuth(env) {
     } catch {
       next(new AppError(401, 'UNAUTHENTICATED', 'Your sign-in has expired'));
     }
-  };
+  });
 }
 
 /** The account and the membership behind req.user, both active, or a 403. Cached per request. */
@@ -35,7 +36,7 @@ async function activeMembership(dbs, req) {
 
 /** The token is for one of these portals, and the account still holds that role. */
 export function requireRole(dbs, ...roles) {
-  return async (req, res, next) => {
+  return documented({ roles }, async (req, res, next) => {
     try {
       if (!req.user || !roles.includes(req.user.role)) throw new AppError(403, 'FORBIDDEN', 'Your role cannot do this');
       await activeMembership(dbs, req);
@@ -43,7 +44,7 @@ export function requireRole(dbs, ...roles) {
     } catch (err) {
       next(err);
     }
-  };
+  });
 }
 
 /**
@@ -53,7 +54,7 @@ export function requireRole(dbs, ...roles) {
  */
 export function requirePermission(deps, permission) {
   const { dbs, env } = deps;
-  return async (req, res, next) => {
+  return documented({ permission }, async (req, res, next) => {
     try {
       if (!req.user || !can(req.user.role, permission)) throw new AppError(403, 'FORBIDDEN', 'Your role cannot do this');
       await activeMembership(dbs, req);
@@ -62,7 +63,7 @@ export function requirePermission(deps, permission) {
     } catch (err) {
       next(err);
     }
-  };
+  });
 }
 
 /**
@@ -70,29 +71,29 @@ export function requirePermission(deps, permission) {
  * so the public site does not even confirm them. Outside production the local console, which
  * shares the dev server, says so with X-SnackHub-Host: admin.
  */
-export const adminHostOnly = (env) => (req, res, next) => {
+export const adminHostOnly = (env) => documented({ adminHost: true }, (req, res, next) => {
   const onAdminHost = env.ADMIN_HOSTS.includes(req.get('host')) || (env.NODE_ENV !== 'production' && req.get('X-SnackHub-Host') === 'admin');
   if (!onAdminHost) return next(new AppError(404, 'NOT_FOUND', 'Not found'));
   next();
-};
+});
 
 /**
  * Staff routes need a recent second factor (doc 16.3): 8 hours for the console, 5 minutes
  * for decisions that grant, suspend or move money (step-up). The time comes from the token.
  */
-export const requireFreshMfa = (maxMinutes) => (req, res, next) => {
+export const requireFreshMfa = (maxMinutes) => documented({ freshMfaMinutes: maxMinutes }, (req, res, next) => {
   const at = req.user?.mfaAt;
   if (!at || Date.now() - at > maxMinutes * 60_000) {
     return next(new AppError(401, 'MFA_REQUIRED', maxMinutes <= 5 ? 'Confirm your code again for this action' : 'Second factor required'));
   }
   next();
-};
+});
 
 /**
  * Cookie-only routes (refresh, logout) also need this header. A form or link on another
  * site cannot add a custom header, so a forged cross-site request is refused (doc 16.2).
  */
-export function requireClientHeader(req, res, next) {
+export const requireClientHeader = documented({ clientHeader: true }, (req, res, next) => {
   if (req.get('X-SnackHub-Client') !== 'web') return next(new AppError(403, 'CLIENT_HEADER_MISSING', 'Request refused'));
   next();
-}
+});

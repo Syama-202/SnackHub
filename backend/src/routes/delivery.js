@@ -5,6 +5,7 @@ import { deliveryController } from '../controllers/delivery.js';
 import { validateBody, validateParams } from '../middleware/validate.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { limit, byUser } from '../middleware/rateLimit.js';
+import { documented } from '../utils/apiDocs.js';
 
 const id = z.coerce.number().int().positive();
 const status = z.object({ status: z.enum(['ONLINE', 'OFFLINE']) }).strict();
@@ -17,8 +18,8 @@ const STEP_BODY = {
   emergency: z.object({ note: z.string().trim().max(200).optional() }).strict(),
   unreachable: z.object({}).strict(),
 };
-// the step decides which body is valid
-const stepBody = (req, res, next) => validateBody(STEP_BODY[req.params.step])(req, res, next);
+// the step decides which body is valid (the docs list each step's body)
+const stepBody = documented({ part: 'body', schema: z.union(Object.values(STEP_BODY)).describe('picked-up: { sealed }, deliver: { code, collectedPaise? }, emergency: { note? }, unreachable: {}') }, (req, res, next) => validateBody(STEP_BODY[req.params.step])(req, res, next));
 
 export function deliveryRoutes(deps) {
   const router = Router();

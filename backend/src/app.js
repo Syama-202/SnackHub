@@ -54,11 +54,12 @@ export function createApp({
   const deps = { env, dbs, logger, verifyGoogle, storage, scanner, mailer, sms, push, rateStore, geocoder };
   app.use('/api/v1', limit(deps, 'api.ip', { minutes: 1, max: env.RATE_LIMIT_IP_PER_MIN }, byIp, 'Too many requests from your network. Wait a minute and try again.'));
   // webhooks read their raw body, so they come before the JSON parser
-  app.use(webhookRoutes(deps));
+  const webhooks = webhookRoutes(deps);
+  app.use(webhooks);
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
 
-  app.use(routes(deps));
+  app.use(routes(deps, { extra: [['', webhooks]] }));
 
   app.use(notFound);
   app.use(errorHandler(deps));

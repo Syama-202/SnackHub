@@ -19,10 +19,13 @@ import { complaintsRoutes } from './complaints.js';
 import { operationsRoutes } from './operations.js';
 import { payoutsRoutes } from './payouts.js';
 import { catalogueRoutes } from './catalogue.js';
+import { docsRoutes } from './docs.js';
 
-export function routes(deps) {
+// extra: [[prefix, router]] mounted elsewhere (the webhooks), so the API docs list them too
+export function routes(deps, { extra = [] } = {}) {
   const router = Router();
-  router.use(healthRoutes(deps));
+  const health = healthRoutes(deps);
+  router.use(health);
   const api = Router();
   api.use(authRoutes(deps));
   api.use(securityRoutes(deps));
@@ -42,5 +45,6 @@ export function routes(deps) {
   api.use(payoutsRoutes(deps));
   api.use(catalogueRoutes(deps));
   router.use('/api/v1', api);
+  router.use(docsRoutes(deps, () => [['', health], ...extra, ['/api/v1', api]]));
   return router;
 }
