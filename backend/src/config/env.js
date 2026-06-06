@@ -3,7 +3,9 @@
 import { z } from 'zod';
 
 const csv = z.string().transform((s) => s.split(',').map((x) => x.trim()).filter(Boolean));
-const bool = z.enum(['true', 'false']).transform((v) => v === 'true');
+// 'true' or 'false' from the environment; an already-read true or false passes as it is, so
+// settings read once can be checked again (the tests do)
+const bool = z.union([z.boolean(), z.enum(['true', 'false']).transform((v) => v === 'true')]);
 
 // What migrations, the seed and the database tests need
 const database = z.object({
@@ -52,7 +54,7 @@ const server = database.extend({
   // the terms and privacy version a new account accepts
   TERMS_VERSION: z.string().regex(/^[\w.-]{1,20}$/).default('2026-03'),
   // check new passwords against Have I Been Pwned (only a 5-character hash prefix is sent)
-  PASSWORD_BREACH_CHECK: bool.default('false'),
+  PASSWORD_BREACH_CHECK: bool.prefault('false'),
 
   // Email with nodemailer: smtp (your provider), file (each message saved as an .eml file in
   // MAIL_DIR, development only) or off. Unset: smtp when SMTP_HOST is set, otherwise file in
@@ -61,7 +63,7 @@ const server = database.extend({
   MAIL_DIR: z.string().min(1).default('storage/mail'),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
-  SMTP_SECURE: bool.default('false'),
+  SMTP_SECURE: bool.prefault('false'),
   SMTP_USER: z.string().default(''),
   SMTP_PASS: z.string().default(''),
   MAIL_FROM: z.string().min(3).default('SnackHub (demo) <no-reply@snackhub.test>'),
