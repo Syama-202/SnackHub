@@ -25,7 +25,8 @@ const rateStore = redis ? redisCounter(redis, { logger }) : memoryCounter();
 if (!redis) logger.warn('REDIS_URL is empty: rate limits and live updates are per process');
 const app = createApp({ env, logger, dbs, mailer, sms, push, redis, rateStore });
 
-const server = app.listen(env.PORT, '127.0.0.1', () =>
+// 127.0.0.1 on a laptop; a container sets HOST=0.0.0.0 so its platform can reach it
+const server = app.listen(env.PORT, env.HOST, () =>
   logger.info({ port: env.PORT, mail: mailer.kind, ...(mailer.kind === 'file' ? { mailDir: mailer.dir } : {}), sms: sms.enabled, push: push.enabled, redis: Boolean(redis) }, 'api listening'),
 );
 // live updates on the same port, at /api/v1/socket

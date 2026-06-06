@@ -29,6 +29,8 @@ export function knexOptions(env, { user, password, database, max }) {
       // DECIMAL lat/lng come back as numbers; money is INT paise so no precision is lost
       decimalNumbers: true,
       supportBigNumbers: true,
+      // a hosted MySQL over TLS, the server's certificate always checked
+      ...(env.DB_SSL && { ssl: { rejectUnauthorized: true, ...(env.DB_SSL_CA && { ca: env.DB_SSL_CA.replace(/\\n/g, '\n') }) } }),
     },
     // every session in UTC so NOW() and DATETIME columns agree with the app
     pool: { min: 0, max, afterCreate: (conn, done) => conn.query("SET time_zone = '+00:00'", (err) => done(err, conn)) },

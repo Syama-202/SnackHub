@@ -1,0 +1,41 @@
+# The admin console on its own Netlify site (doc 15.0, 16.3): a separate build and address,
+# never linked from the public site. Base directory: frontend/deploy/admin (this folder).
+# /api/* is proxied to the API with a signature (PROXY_SIGNING_SECRET, Runtime scope, the
+# same value as on Render); the API accepts admin routes only from requests this site signed.
+# If your Render service has another name, change the onrender.com address below and
+# VITE_SOCKET_URL.
+
+[build]
+  command = "cd ../.. && npm ci --no-audit --no-fund && npm run build:admin"
+  publish = "../../dist-admin"
+
+[build.environment]
+  NODE_VERSION = "22"
+  VITE_SOCKET_URL = "https://snackhub-api.onrender.com"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://snackhub-api.onrender.com/api/:splat"
+  status = 200
+  force = true
+  signed = "PROXY_SIGNING_SECRET"
+
+[[redirects]]
+  from = "/*"
+  to = "/admin.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    # a private console: not for search engines
+    X-Robots-Tag = "noindex, nofollow"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

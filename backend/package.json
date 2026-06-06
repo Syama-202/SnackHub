@@ -17,9 +17,14 @@
     "test": "vitest run",
     "db:local": "node scripts/local-db-init.js",
     "create-admin": "node --env-file=.env scripts/create-admin.js",
+    "db:hosted": "node --env-file=.env.production scripts/hosted-db-init.js",
+    "migrate:hosted": "node --env-file=.env.production scripts/migrate.js latest",
+    "seed:hosted": "node --env-file=.env.production scripts/seed.js",
+    "create-admin:hosted": "node --env-file=.env.production scripts/create-admin.js",
     "jobs": "node --env-file=.env scripts/jobs.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1154.0",
     "@socket.io/redis-adapter": "^8.3.0",
     "@socket.io/redis-emitter": "^5.1.0",
     "argon2": "^0.41.1",

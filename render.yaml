@@ -1,0 +1,56 @@
+# Render Blueprint for the API (doc 15.0): one free web service built from backend/Dockerfile,
+# with the background jobs inside it and Socket.IO on the same service. Secrets are never in
+# this file: "sync: false" values are typed into Render's dashboard when the Blueprint is
+# created, "generateValue" ones Render makes itself. Check Render's current Blueprint syntax
+# and free-plan limits before relying on them. The README's "Deploying" section has the steps.
+services:
+  - type: web
+    name: snackhub-api
+    runtime: docker
+    plan: free
+    # nearest to India; put the database and Redis in the same region
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: HOST, value: 0.0.0.0 }
+      # MySQL (Aiven): host, port and the CA certificate from the Aiven console
+      - { key: DB_HOST, sync: false }
+      - { key: DB_PORT, sync: false }
+      - { key: DB_SSL, value: "true" }
+      - { key: DB_SSL_CA, sync: false }
+      - { key: DB_MIGRATOR_USER, value: sh_migrator }
+      - { key: DB_MIGRATOR_PASSWORD, sync: false }
+      - { key: DB_MODULE_PASSWORD, sync: false }
+      # Redis (Upstash or Render Key Value): a rediss:// URL
+      - { key: REDIS_URL, sync: false }
+      # the two Netlify sites, e.g. https://snackhub.netlify.app and https://snackhub-admin.netlify.app/
+      - { key: APP_URL, sync: false }
+      - { key: ADMIN_CONSOLE_URL, sync: false }
+      - { key: CORS_ORIGINS, sync: false }
+      # copied into both Netlify sites as PROXY_SIGNING_SECRET (scope: Runtime)
+      - { key: PROXY_SIGNING_SECRET, generateValue: true }
+      - { key: JWT_SECRET, generateValue: true }
+      # 32 random bytes, base64url (43 characters): node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+      - { key: MFA_KEY, sync: false }
+      # private bucket (Cloudflare R2)
+      - { key: STORAGE_DRIVER, value: s3 }
+      - { key: S3_ENDPOINT, sync: false }
+      - { key: S3_BUCKET, sync: false }
+      - { key: S3_ACCESS_KEY_ID, sync: false }
+      - { key: S3_SECRET_ACCESS_KEY, sync: false }
+      # email through a provider's SMTP
+      - { key: SMTP_HOST, sync: false }
+      - { key: SMTP_PORT, sync: false }
+      - { key: SMTP_USER, sync: false }
+      - { key: SMTP_PASS, sync: false }
+      - { key: MAIL_FROM, sync: false }
+      # optional: Google sign-in, PhonePe sandbox, push alerts
+      - { key: GOOGLE_CLIENT_ID, sync: false }
+      - { key: PHONEPE_CLIENT_ID, sync: false }
+      - { key: PHONEPE_CLIENT_SECRET, sync: false }
+      - { key: VAPID_PUBLIC_KEY, sync: false }
+      - { key: VAPID_PRIVATE_KEY, sync: false }

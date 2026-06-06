@@ -72,7 +72,8 @@ export function requirePermission(deps, permission) {
  * shares the dev server, says so with X-SnackHub-Host: admin.
  */
 export const adminHostOnly = (env) => documented({ adminHost: true }, (req, res, next) => {
-  const onAdminHost = env.ADMIN_HOSTS.includes(req.get('host')) || (env.NODE_ENV !== 'production' && req.get('X-SnackHub-Host') === 'admin');
+  // the admin host by name, or a request the admin Netlify site signed (middleware/proxy.js)
+  const onAdminHost = env.ADMIN_HOSTS.includes(req.get('host')) || req.viaSite === 'admin' || (env.NODE_ENV !== 'production' && req.get('X-SnackHub-Host') === 'admin');
   if (!onAdminHost) return next(new AppError(404, 'NOT_FOUND', 'Not found'));
   next();
 });

@@ -1,0 +1,26 @@
+# Keeps the free Render API awake (doc 15.0): a free web service sleeps after 15 minutes
+# without traffic, which pauses the order timers, offers and payment checks. Set the
+# repository variable API_URL (Settings > Secrets and variables > Actions > Variables), e.g.
+# https://snackhub-api.onrender.com; without it this does nothing. GitHub runs schedules on
+# the default branch only, may run them late, and pauses them in repositories with no activity
+# for 60 days. Check Render's terms allow keeping a free service awake this way.
+name: Keep the API awake
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    if: vars.API_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping the health check
+        # a sleeping service takes up to a minute to wake
+        run: curl --fail --silent --show-error --max-time 120 --retry 2 --output /dev/null "${API_URL}/health"
+        env:
+          API_URL: ${{ vars.API_URL }}

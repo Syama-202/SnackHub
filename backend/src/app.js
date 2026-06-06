@@ -9,6 +9,7 @@ import cookieParser from 'cookie-parser';
 import { requestLogger } from './middleware/requestLogger.js';
 import { notFound } from './middleware/notFound.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { netlifyProxy } from './middleware/proxy.js';
 import { routes } from './routes/index.js';
 import { createGoogleVerifier } from './utils/google.js';
 import { createStorage } from './utils/storage.js';
@@ -50,6 +51,8 @@ export function createApp({
   app.use(helmet());
   // exact origins only, never a wildcard with credentials (doc 16.2)
   app.use(cors({ origin: env.CORS_ORIGINS, credentials: true, exposedHeaders: ['X-Request-Id', 'Retry-After', 'RateLimit-Remaining'] }));
+  // which Netlify site a request came through, and the visitor's own address (doc 15.0)
+  app.use(netlifyProxy(env));
   // every API request from one address, before the body is even read (health checks are outside /api)
   const deps = { env, dbs, logger, verifyGoogle, storage, scanner, mailer, sms, push, rateStore, geocoder };
   app.use('/api/v1', limit(deps, 'api.ip', { minutes: 1, max: env.RATE_LIMIT_IP_PER_MIN }, byIp, 'Too many requests from your network. Wait a minute and try again.'));

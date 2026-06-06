@@ -34,6 +34,10 @@ const emit = (topic, event) => {
 };
 
 function endpoint() {
+  // hosted: the sites proxy /api through Netlify, which cannot carry sockets, so live updates
+  // go straight to the API (VITE_SOCKET_URL, e.g. https://snackhub-api.onrender.com)
+  const direct = import.meta.env.VITE_SOCKET_URL;
+  if (direct) return { url: new URL(direct).origin, path: '/api/v1/socket' };
   if (/^https?:\/\//.test(API_URL)) {
     const u = new URL(API_URL);
     return { url: u.origin, path: `${u.pathname.replace(/\/$/, '')}/socket` };

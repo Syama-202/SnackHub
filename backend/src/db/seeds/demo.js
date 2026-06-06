@@ -7,13 +7,12 @@
 // have their details and placeholder PDFs (each says it is a demo, not a real document) in
 // private storage, waiting for review.
 import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { buildSeed } from '../../../../shared/seed/seed.js';
 import { DEFAULT_POLICY } from '../../../../shared/domain/policy.js';
 import { emptyChecks } from '../../../../shared/domain/verification.js';
 import { DOC_TYPES } from '../../../../shared/domain/documents.js';
 import { demoPdf } from './demoPdf.js';
+import { createStorage } from '../../utils/storage.js';
 
 // demo shops were verified at a fixed, fake date so every run writes the same value
 const VERIFIED_AT = '2026-01-15 10:00:00';
@@ -245,19 +244,26 @@ const TARGETS = [
   ['ordering.delivery_policy', 'policies'],
 ];
 
-/** The placeholder PDFs, in private storage under their fixed keys. */
-async function writeDemoFiles(rows, storageDir) {
-  const root = path.resolve(storageDir);
-  for (const d of [...rows.sellerDocuments, ...rows.riderDocuments]) {
-    const file = path.join(root, d.storage_key.slice(0, 2), d.storage_key);
-    await mkdir(path.dirname(file), { recursive: true });
-    await writeFile(file, demoFile(DOC_TYPES[d.doc_type].label), { mode: 0o600 });
-  }
+/** The placeholder PDFs, in private storage (disk or the bucket) under their fixed keys. */
+async function writeDemoFiles(rows, storage) {
+  for (const d of [...rows.sellerDocuments, ...rows.riderDocuments]) await storage.write(d.storage_key, demoFile(DOC_TYPES[d.doc_type].label));
 }
 
-export async function seed(db, { storageDir = process.env.STORAGE_DIR || 'storage/private' } = {}) {
+// the storage settings from the environment, the same ones the API uses (utils/storage.js)
+const storageFromEnv = () =>
+  createStorage({
+    STORAGE_DRIVER: process.env.STORAGE_DRIVER || 'disk',
+    STORAGE_DIR: process.env.STORAGE_DIR || 'storage/private',
+    S3_ENDPOINT: process.env.S3_ENDPOINT,
+    S3_REGION: process.env.S3_REGION || 'auto',
+    S3_BUCKET: process.env.S3_BUCKET,
+    S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID,
+    S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY,
+  });
+
+export async function seed(db, { storage = storageFromEnv() } = {}) {
   const rows = seedRows();
-  await writeDemoFiles(rows, storageDir);
+  await writeDemoFiles(rows, storage);
   await db.transaction(async (trx) => {
     for (const [table, key] of TARGETS) {
       for (let i = 0; i < rows[key].length; i += 200) {

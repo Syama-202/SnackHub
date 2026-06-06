@@ -1,0 +1,17 @@
+# The API image needs backend/ (src, scripts, package files) and shared/ only. Never secrets,
+# uploads, dependencies from this machine or the frontend.
+**/node_modules
+**/.env
+**/.env.*
+!**/.env.example
+backend/storage
+backend/coverage
+frontend
+folder
+infra
+docs
+.git
+.github
+.claude
+**/*.log
+**/*.md

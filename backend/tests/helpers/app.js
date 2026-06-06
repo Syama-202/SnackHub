@@ -40,6 +40,7 @@ export async function openHarness(overrides = {}) {
     ...dbEnv,
     NODE_ENV: 'test',
     DB_PORT: String(dbEnv.DB_PORT),
+    DB_SSL: String(dbEnv.DB_SSL),
     CORS_ORIGINS: 'http://localhost:5180',
     JWT_SECRET: 'test-only-secret-that-is-at-least-32-characters',
     MFA_KEY: 'dGVzdC1vbmx5LW1mYS1rZXktMzItYnl0ZXMtbG9uZyE',

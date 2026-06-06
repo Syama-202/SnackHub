@@ -15,6 +15,10 @@ const database = z.object({
   DB_MIGRATOR_USER: z.string().min(1),
   DB_MIGRATOR_PASSWORD: z.string().min(8),
   DB_MODULE_PASSWORD: z.string().min(8),
+  // TLS to a hosted MySQL (Aiven requires it). DB_SSL_CA is the provider's CA certificate,
+  // the PEM text itself (newlines may be written as \n); without it the system's CAs are used.
+  DB_SSL: bool.prefault('false'),
+  DB_SSL_CA: z.string().default(''),
 });
 
 // What the running server needs on top of that
@@ -74,8 +78,18 @@ const server = database.extend({
   TWILIO_AUTH_TOKEN: z.string().default(''),
   TWILIO_FROM: z.string().default(''),
 
-  // Private document storage, outside every public folder; relative paths are from backend/
+  // Private document storage (utils/storage.js): 'disk' (STORAGE_DIR, outside every public
+  // folder; relative paths are from backend/) or 's3', a private bucket at any S3-compatible
+  // service (Cloudflare R2, Backblaze B2, AWS S3). Hosts whose disk is wiped on restart, such
+  // as Render's free plan, need 's3'.
+  STORAGE_DRIVER: z.enum(['disk', 's3']).default('disk'),
   STORAGE_DIR: z.string().min(1).default('storage/private'),
+  // R2: https://<account id>.r2.cloudflarestorage.com with region auto
+  S3_ENDPOINT: z.string().url().or(z.literal('')).default(''),
+  S3_REGION: z.string().max(40).default('auto'),
+  S3_BUCKET: z.string().max(63).default(''),
+  S3_ACCESS_KEY_ID: z.string().max(200).default(''),
+  S3_SECRET_ACCESS_KEY: z.string().max(200).default(''),
   // ClamAV daemon for upload scanning; empty stores uploads as not scanned
   CLAMAV_HOST: z.string().default(''),
   CLAMAV_PORT: z.coerce.number().int().positive().default(3310),
@@ -89,6 +103,15 @@ const server = database.extend({
   REDIS_URL: z.string().regex(/^rediss?:\/\/\S+$/).or(z.literal('')).optional(),
   // every /api/v1 request from one IP address, per minute, on top of the per-route limits
   RATE_LIMIT_IP_PER_MIN: z.coerce.number().int().min(60).max(100_000).default(600),
+
+  // Hosting (doc 15.0): the address to listen on (0.0.0.0 in a container), and the secret the
+  // Netlify sites sign their proxied requests with (middleware/proxy.js). With the secret set,
+  // a signed request names its site (APP_URL or ADMIN_CONSOLE_URL), so the admin routes know
+  // the admin site and the rate limits see each visitor's own address. REQUIRE_PROXY then turns
+  // away API requests that did not come through a site (webhooks and health checks excepted).
+  HOST: z.string().min(1).default('127.0.0.1'),
+  PROXY_SIGNING_SECRET: z.string().min(32).or(z.literal('')).default(''),
+  REQUIRE_PROXY: bool.optional(),
 
   // Place search for the address pin (utils/geocoder.js): a Nominatim-compatible server.
   // Unset: the public OpenStreetMap Nominatim in development, off in tests and production
@@ -141,6 +164,10 @@ export function loadEnv(source = process.env) {
   if (env.MAIL_TRANSPORT === 'file' && env.NODE_ENV === 'production') throw new Error('Invalid settings: MAIL_TRANSPORT=file is for development only.');
   if (env.MAIL_TRANSPORT === 'smtp' && !env.SMTP_HOST) throw new Error('Invalid or missing settings: SMTP_HOST. See backend/.env.example.');
   if (env.PHONEPE_CLIENT_ID && !env.PHONEPE_CLIENT_SECRET) throw new Error('Invalid or missing settings: PHONEPE_CLIENT_SECRET. See backend/.env.example.');
+  if (env.STORAGE_DRIVER === 's3' && !(env.S3_ENDPOINT && env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY)) {
+    throw new Error('Invalid or missing settings: S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY. See backend/.env.example.');
+  }
+  if (env.REQUIRE_PROXY && !env.PROXY_SIGNING_SECRET) throw new Error('Invalid or missing settings: PROXY_SIGNING_SECRET. See backend/.env.example.');
   if (env.SMS_PROVIDER === 'twilio' && !(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_FROM)) {
     throw new Error('Invalid or missing settings: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM. See backend/.env.example.');
   }
@@ -150,6 +177,7 @@ export function loadEnv(source = process.env) {
     COOKIE_SECURE: env.COOKIE_SECURE ?? env.NODE_ENV === 'production',
     RUN_JOBS: env.RUN_JOBS ?? env.NODE_ENV !== 'test',
     API_DOCS: env.API_DOCS ?? env.NODE_ENV !== 'production',
+    REQUIRE_PROXY: env.REQUIRE_PROXY ?? Boolean(env.PROXY_SIGNING_SECRET && env.NODE_ENV === 'production'),
     SMTP_HOST: env.SMTP_HOST ?? '',
     MAIL_TRANSPORT: env.MAIL_TRANSPORT ?? (env.SMTP_HOST ? 'smtp' : dev ? 'file' : 'off'),
     SMS_PROVIDER: env.SMS_PROVIDER ?? (dev ? 'dev-mail' : ''),

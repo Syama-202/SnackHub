@@ -373,6 +373,61 @@ test fails if a write route has no body schema (apart from a short reviewed list
 none). Summaries come from the route lists at the top of each controller. The docs are on by
 default outside production; set `API_DOCS=true` or `false` to choose.
 
+## Deploying
+
+Free hosting, as planned in doc 15.0. Every account below is yours to create; nothing here
+needs a secret in the repository. Put each service in or near Singapore.
+
+| Part | Where | In the repository |
+| --- | --- | --- |
+| Customer, seller and rider site | Netlify, base directory `frontend` | `frontend/netlify.toml` |
+| Admin console | A second Netlify site, base directory `frontend/deploy/admin` | `frontend/deploy/admin/netlify.toml` |
+| API with the background jobs and live updates | Render, free web service from `backend/Dockerfile` | `render.yaml` |
+| MySQL 8 | Aiven, free plan | `npm run db:hosted` |
+| Redis | Upstash free (or Render Key Value) | |
+| Seller and rider documents, complaint photos | Cloudflare R2, a private bucket | `STORAGE_DRIVER=s3` |
+| Keeping the free API awake | GitHub Actions, every 10 minutes | `.github/workflows/keepalive.yml` |
+
+1. **Database.** Create an Aiven for MySQL service (free plan). In `backend/`, create
+   `.env.production` (git ignores it) with `DB_HOST`, `DB_PORT`, `DB_SSL=true`, `DB_SSL_CA`
+   (the CA certificate from the Aiven console), `DB_ADMIN_USER=avnadmin`, and new strong
+   values for `DB_MIGRATOR_USER=sh_migrator`, `DB_MIGRATOR_PASSWORD` and `DB_MODULE_PASSWORD`.
+   Then run `npm run db:hosted` (it asks for the avnadmin password, hidden), `npm run
+   migrate:hosted` and `npm run seed:hosted`. The setup checks that triggers are allowed and
+   says what to change if not.
+2. **Redis and the bucket.** Create an Upstash Redis database (copy its `rediss://` URL) and a
+   private R2 bucket with an API token limited to that bucket (copy the endpoint, bucket name,
+   access key id and secret).
+3. **API.** On Render, New > Blueprint, pick this repository: `render.yaml` creates
+   `snackhub-api` and asks for each value. If Render gives the service another address, use it
+   in both `netlify.toml` files. Make an MFA key with
+   `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`. Copy the
+   `PROXY_SIGNING_SECRET` Render generated. `https://<api>.onrender.com/health` should answer.
+4. **Sites.** On Netlify, add two sites from this repository: base directory `frontend` for the
+   shop, `frontend/deploy/admin` for the console. In each, add the environment variable
+   `PROXY_SIGNING_SECRET` with the value from Render and the Runtime scope, and
+   `VITE_GOOGLE_CLIENT_ID` if Google sign-in is used. Then set Render's `APP_URL` (the shop),
+   `ADMIN_CONSOLE_URL` (the console, with a trailing `/`) and `CORS_ORIGINS` (both, comma
+   separated) to the two Netlify addresses.
+5. **First admin.** Add to `.env.production` the same `MFA_KEY` as on Render (the admin's
+   authenticator secret is encrypted with it, so a different key locks them out), the
+   `JWT_SECRET` and the `CORS_ORIGINS`, then run `npm run create-admin:hosted` from `backend/`.
+6. **Awake.** In GitHub, Settings > Secrets and variables > Actions > Variables, add `API_URL`
+   with the Render address. Check Render's terms allow it.
+
+How the pieces trust each other: each Netlify site proxies `/api/*` to Render and signs every
+proxied request (Netlify's signed proxy redirects, HS256 with `PROXY_SIGNING_SECRET`). The API
+reads the signature to know the site: admin routes answer only requests the admin site signed,
+and the rate limits count each visitor's own address. In production the API refuses calls that
+did not come through a site, except the PhonePe webhook (point it straight at
+`https://<api>.onrender.com/api/v1/webhooks/phonepe`) and the health checks. Live updates
+connect straight to Render (`VITE_SOCKET_URL`), because Netlify cannot carry sockets; staff
+updates there need the admin console's own page address and a staff sign-in with a second factor.
+
+Free-plan limits to expect: the API takes about a minute to wake after a quiet spell, Netlify's
+free credits stop the sites when used up, and Aiven's free MySQL is small (about 1 GB disk) and
+may be powered off when unused. Check each provider's current limits.
+
 ## Everyday commands
 
 From the repository root:

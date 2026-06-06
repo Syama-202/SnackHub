@@ -58,8 +58,19 @@ export function createSocketServer(httpServer, { env, dbs, logger, redis = null,
       if (mfaRequiredFor(user.role, env.MFA_REQUIRED_ROLES) && !user.mfaAt) throw refuse('MFA_REQUIRED', 'Set up two-step sign-in to continue');
       const rooms = [roomOf(user), personRoom(user.userId)];
       if (STAFF_ROLES.includes(user.role)) {
-        // staff events only on the admin host, as for the /admin routes
-        const onAdminHost = env.ADMIN_HOSTS.includes(handshake.headers.host) || (env.NODE_ENV !== 'production' && handshake.auth?.host === 'admin');
+        // staff events only on the admin host, as for the /admin routes. Netlify cannot carry
+        // sockets, so the hosted admin console connects straight to the API; its page origin
+        // (the browser sets it on the handshake) stands in for the host. The staff token with a
+        // second factor is still required either way.
+        const adminOrigin = (() => {
+          try {
+            return new URL(env.ADMIN_CONSOLE_URL).origin;
+          } catch {
+            return null;
+          }
+        })();
+        const fromAdminPage = env.NODE_ENV === 'production' && Boolean(env.PROXY_SIGNING_SECRET) && handshake.headers.origin === adminOrigin;
+        const onAdminHost = env.ADMIN_HOSTS.includes(handshake.headers.host) || fromAdminPage || (env.NODE_ENV !== 'production' && handshake.auth?.host === 'admin');
         if (!onAdminHost) throw refuse('FORBIDDEN', 'Your role cannot do this');
         for (const [room, permission] of Object.entries(STAFF_ROOMS)) if (can(user.role, permission)) rooms.push(roomOf(room));
       }
