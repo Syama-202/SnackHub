@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { apiFetch, getAccessToken } from '../../services/api';
+import { mocksRunning } from '../../utils/demo';
 
 /** "Show a Demo data banner in the app" (doc 23). */
 export default function DemoBanner({ tone = 'light' }) {
   const [busy, setBusy] = useState(false);
   // a real account's orders, payments on delivery and GPS are real; only the seeded demo shops are not
-  const real = Boolean(getAccessToken()) && !getAccessToken().startsWith('demo.');
+  // (without the demo's mock, everything shown comes from the real API)
+  const real = !mocksRunning() || (Boolean(getAccessToken()) && !getAccessToken().startsWith('demo.'));
   const reset = async () => {
     setBusy(true);
     await apiFetch('/dev/reset', { method: 'POST' }).catch(() => {});

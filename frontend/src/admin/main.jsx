@@ -5,7 +5,8 @@ import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import '../styles/index.css';
 import store from './store';
-import { setApiHost, setApiReady } from '../services/api';
+import { setApiHost } from '../services/api';
+import { startMocksAtBoot } from '../utils/demo';
 import { watchErrors } from '../services/errors';
 import AdminApp from './App';
 
@@ -13,9 +14,8 @@ import AdminApp from './App';
 setApiHost('admin');
 watchErrors('admin');
 
-if (import.meta.env.VITE_USE_MOCKS !== 'false') {
-  setApiReady(import('../mocks/browser').then((m) => m.startMocks()));
-}
+// the demo admin's in-browser mock API: always in development, in production only once chosen
+startMocksAtBoot();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
