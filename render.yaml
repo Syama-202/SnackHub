@@ -25,6 +25,8 @@ services:
       - { key: DB_MIGRATOR_USER, value: sh_migrator }
       - { key: DB_MIGRATOR_PASSWORD, sync: false }
       - { key: DB_MODULE_PASSWORD, sync: false }
+      # six module pools of 3 connections: well under a small plan's connection limit
+      - { key: DB_POOL_MAX, value: "3" }
       # Redis (Upstash or Render Key Value): a rediss:// URL
       - { key: REDIS_URL, sync: false }
       # the two Netlify sites, e.g. https://snackhub.netlify.app and https://snackhub-admin.netlify.app/

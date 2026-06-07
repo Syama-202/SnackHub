@@ -19,6 +19,8 @@ const database = z.object({
   // the PEM text itself (newlines may be written as \n); without it the system's CAs are used.
   DB_SSL: bool.prefault('false'),
   DB_SSL_CA: z.string().default(''),
+  // connections per module pool (six modules share the server's limit): small on a free host
+  DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(8),
 });
 
 // What the running server needs on top of that

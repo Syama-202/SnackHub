@@ -14,7 +14,7 @@ export function migratorDb(env) {
 export function moduleDb(env, name) {
   const m = MODULES[name];
   if (!m) throw new Error(`Unknown module "${name}"`);
-  return knex(knexOptions(env, { user: m.user, password: env.DB_MODULE_PASSWORD, database: m.database, max: 8 }));
+  return knex(knexOptions(env, { user: m.user, password: env.DB_MODULE_PASSWORD, database: m.database, max: env.DB_POOL_MAX ?? 8 }));
 }
 
 export function moduleDbs(env) {

@@ -61,6 +61,10 @@ describe('settings', () => {
     const base = { DB_HOST: 'h', DB_PORT: '3306', DB_MIGRATOR_USER: 'm', DB_MIGRATOR_PASSWORD: 'password1', DB_MODULE_PASSWORD: 'password2' };
     expect(loadDbEnv(base).DB_SSL).toBe(false);
     expect(loadDbEnv({ ...base, DB_SSL: 'true' }).DB_SSL).toBe(true);
+    // pool size: 8 by default, smaller on a free host, never zero
+    expect(loadDbEnv(base).DB_POOL_MAX).toBe(8);
+    expect(loadDbEnv({ ...base, DB_POOL_MAX: '3' }).DB_POOL_MAX).toBe(3);
+    expect(() => loadDbEnv({ ...base, DB_POOL_MAX: '0' })).toThrow();
     const full = { ...base, CORS_ORIGINS: 'http://localhost:5180', JWT_SECRET: 'x'.repeat(40), MFA_KEY: 'a'.repeat(43) };
     const e = loadEnv(full);
     expect(e).toMatchObject({ PASSWORD_BREACH_CHECK: false, SMTP_SECURE: false, DB_SSL: false, HOST: '127.0.0.1', REQUIRE_PROXY: false, STORAGE_DRIVER: 'disk' });
