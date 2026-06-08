@@ -32,6 +32,10 @@ const Security = lazy(() => import('./pages/common/Security'));
 const SellerOnboarding = lazy(() => import('./pages/seller/Onboarding'));
 const RiderOnboarding = lazy(() => import('./pages/rider/Onboarding'));
 const DesignSystem = lazy(() => import('./pages/common/DesignSystem'));
+const Terms = lazy(() => import('./pages/common/Terms'));
+const Privacy = lazy(() => import('./pages/common/Privacy'));
+const Refunds = lazy(() => import('./pages/common/Refunds'));
+const Contact = lazy(() => import('./pages/common/Contact'));
 const NotFound = lazy(() => import('./pages/common/NotFound'));
 const SellerConsole = lazy(() => import('./pages/seller/Console'));
 const RiderConsole = lazy(() => import('./pages/rider/Console'));
@@ -90,6 +94,10 @@ function AppRoutes() {
             <Route path="seller/onboarding" element={<RequireRole role="seller"><SellerOnboarding /></RequireRole>} />
             <Route path="rider/onboarding" element={<RequireRole role="rider"><RiderOnboarding /></RequireRole>} />
             <Route path="design" element={<DesignSystem />} />
+            <Route path="terms" element={<Terms />} />
+            <Route path="privacy" element={<Privacy />} />
+            <Route path="refunds" element={<Refunds />} />
+            <Route path="contact" element={<Contact />} />
             <Route path="*" element={<NotFound />} />
           </Route>
           <Route path="seller/*" element={<RequireRole role="seller"><SellerConsole /></RequireRole>} />
