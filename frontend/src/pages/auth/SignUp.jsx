@@ -109,7 +109,9 @@ export default function SignUp({ portal }) {
           error={errors.acceptTerms?.message}
           label={
             <>
-              I accept the SnackHub terms and privacy policy (demo). We use your details only to run your account{portal !== 'customer' ? ' and to verify you' : ''}.
+              I accept the SnackHub{' '}
+              <Link to="/terms" target="_blank" className="font-bold text-orange-text hover:underline">terms of use</Link> and{' '}
+              <Link to="/privacy" target="_blank" className="font-bold text-orange-text hover:underline">privacy policy</Link> (demo). We use your details only to run your account{portal !== 'customer' ? ' and to verify you' : ''}.
             </>
           }
         />
