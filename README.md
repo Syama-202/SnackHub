@@ -413,7 +413,23 @@ needs a secret in the repository. Put each service in or near Singapore.
    authenticator secret is encrypted with it, so a different key locks them out), the
    `JWT_SECRET` and the `CORS_ORIGINS`, then run `npm run create-admin:hosted` from `backend/`.
 6. **Awake.** In GitHub, Settings > Secrets and variables > Actions > Variables, add `API_URL`
-   with the Render address. Check Render's terms allow it.
+   with the Render address. GitHub runs scheduled jobs late at busy times and pauses them after
+   60 days without a commit, so add a second free pinger too (for example an UptimeRobot HTTP
+   monitor on `https://<api>.onrender.com/health` every 5 minutes, which also emails you when
+   the API is down). Check Render's terms allow it.
+7. **Before applying to PhonePe.** Replace the demo business details in
+   `frontend/src/constants/business.jsx` (name, address, support and grievance contacts). They
+   appear on the Terms, Privacy, Cancellations and refunds, and Contact pages, which PhonePe
+   checks against your registration.
+
+The database pools: `render.yaml` sets `DB_POOL_MAX=3`, so the six module pools use at most 18
+connections. Check the plan's limit with `SHOW VARIABLES LIKE 'max_connections'` in the Aiven
+console's query editor, and keep `6 × DB_POOL_MAX` well under it.
+
+The demo: the hosted sites show the real API's data (the seeded demo shops are labelled). The
+one-tap demo accounts still work there: choosing one loads the in-browser mock for that browser
+only, until the demo session signs out. A build with `VITE_USE_MOCKS=true` starts the mock on
+every page (a demo-only site); development starts it unless `VITE_USE_MOCKS=false`.
 
 How the pieces trust each other: each Netlify site proxies `/api/*` to Render and signs every
 proxied request (Netlify's signed proxy redirects, HS256 with `PROXY_SIGNING_SECRET`). The API
