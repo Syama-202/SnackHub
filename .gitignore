@@ -5,6 +5,7 @@
 
 # Local tool settings
 /.claude/
+file.txt
 
 # Dependencies, builds, logs
 node_modules/
