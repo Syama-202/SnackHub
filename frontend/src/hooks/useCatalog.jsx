@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts, fetchSellers } from '../store/slices/products';
 import { selectDeliveryPoint } from '../store/slices/profile';
@@ -9,11 +9,12 @@ export function useNearbyProducts() {
   const point = useSelector(selectDeliveryPoint);
   const { items, itemsKey, isLoading, error } = useSelector((state) => state.products);
   const key = `${point.lat},${point.lng},${point.pincode ?? ''}`;
+  const load = useCallback(() => dispatch(fetchProducts({ lat: point.lat, lng: point.lng, pincode: point.pincode })), [dispatch, point.lat, point.lng, point.pincode]);
   useEffect(() => {
-    dispatch(fetchProducts({ lat: point.lat, lng: point.lng, pincode: point.pincode }));
-  }, [dispatch, point.lat, point.lng, point.pincode]);
+    load();
+  }, [load]);
   const current = itemsKey === key;
-  return { items: current ? items : [], isLoading: isLoading || (!current && !error), error, point };
+  return { items: current ? items : [], isLoading: isLoading || (!current && !error), error, point, retry: load };
 }
 
 /** Verified shops that can reach the selected delivery point. */

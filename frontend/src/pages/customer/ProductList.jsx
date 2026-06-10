@@ -17,7 +17,7 @@ const ProductList = () => {
   const kind = params.get('kind');
   const q = params.get('q') || '';
   const sort = params.get('sort') || 'relevance';
-  const { items: products, isLoading, error, point } = useNearbyProducts();
+  const { items: products, isLoading, error, point, retry } = useNearbyProducts();
   const sellers = useNearbySellers();
   const reduced = useReducedMotion();
 
@@ -50,7 +50,7 @@ const ProductList = () => {
 
   return (
     <div className="page pt-6">
-      <Spotlight eyebrow={`Near ${point.label}`} title={q ? <>Results for “{q}”</> : region ? <>{region} snacks,</> : <>Hometown snacks,</>} shops={sellers.length} snacks={products.length} fastest={fastest}>
+      <Spotlight eyebrow={`Near ${point.label}`} title={q ? <>Results for “{q}”</> : region ? <>{region} snacks,</> : <>Hometown snacks,</>} shops={error ? null : sellers.length} snacks={error ? null : products.length} fastest={fastest}>
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 rounded-full border border-white/60 bg-white/55 py-1 pl-4 pr-1 text-sm font-bold text-grey-900 backdrop-blur-md">
             Sort
@@ -137,7 +137,12 @@ const ProductList = () => {
         </div>
       )}
 
-      {error && <p className="mt-8 rounded-2xl bg-red/10 p-4 font-semibold text-red-text">Could not load snacks. {error}</p>}
+      {error && (
+        <div role="alert" className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-red/10 p-4">
+          <p className="font-semibold text-red-text">We could not load the snacks just now. Check your connection, or try again in a minute.</p>
+          <Button variant="ghost" onClick={retry}>Try again</Button>
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5">
         {isLoading && !list.length && Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)}
@@ -149,7 +154,7 @@ const ProductList = () => {
           ))}
         </AnimatePresence>
       </div>
-      {!isLoading && list.length === 0 && (
+      {!isLoading && !error && list.length === 0 && (
         <EmptyState title="Nothing here near you yet" body="Try another category or mood, or pick a different delivery address." action={<Button variant="ghost" onClick={() => setParams({})}>Show all snacks</Button>} />
       )}
     </div>

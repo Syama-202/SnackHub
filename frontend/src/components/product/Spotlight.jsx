@@ -59,7 +59,7 @@ export default function Spotlight({ eyebrow, title, shops, snacks, fastest, chil
               .filter(Boolean)
               .map(([n, label]) => (
                 <span key={label} className="rounded-2xl border border-white/60 bg-white/45 px-2.5 py-2 backdrop-blur-md xs:px-3 sm:px-4 sm:py-2.5">
-                  <span className="block whitespace-nowrap font-display text-lg font-extrabold leading-none text-grey-900 xs:text-xl sm:text-2xl">{n}</span>
+                  <span className="block whitespace-nowrap font-display text-lg font-extrabold leading-none text-grey-900 xs:text-xl sm:text-2xl">{n ?? '–'}</span>
                   <span className="mt-1 block text-[0.75rem] font-bold leading-tight text-grey-800 sm:text-xs">{label}</span>
                 </span>
               ))}
