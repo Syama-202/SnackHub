@@ -94,7 +94,8 @@ function AppRoutes() {
             <Route path="account/security" element={<RequireRole role={['customer', 'seller', 'rider']}><Security /></RequireRole>} />
             <Route path="seller/onboarding" element={<RequireRole role="seller"><SellerOnboarding /></RequireRole>} />
             <Route path="rider/onboarding" element={<RequireRole role="rider"><RiderOnboarding /></RequireRole>} />
-            <Route path="design" element={<DesignSystem />} />
+            {/* the design system page is for building the app, not for visitors */}
+            {import.meta.env.DEV && <Route path="design" element={<DesignSystem />} />}
             <Route path="terms" element={<Terms />} />
             <Route path="privacy" element={<Privacy />} />
             <Route path="refunds" element={<Refunds />} />

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Logo, Icon } from '../ui';
+import { Logo } from '../ui';
 import { PROMISE_WORDING } from '@shared/domain/promise';
 import { BUSINESS } from '../../constants/business';
 import { POLICY_LINKS } from './Policy';
@@ -19,13 +19,6 @@ export default function Footer() {
           <Logo tone="light" />
           <p className="mt-4 max-w-xs text-[#FFF3E0]/80">India's regional flavours from verified local shops near you.</p>
           <p className="mt-3 max-w-xs text-sm text-[#FFF3E0]/60">{PROMISE_WORDING}</p>
-          <div className="mt-5 flex gap-2">
-            {['instagram', 'youtube', 'twitter'].map((n) => (
-              <a key={n} href="#" onClick={(e) => e.preventDefault()} aria-label={`SnackHub on ${n} (placeholder)`} className="grid h-11 w-11 place-items-center rounded-full bg-white/10 transition hover:bg-sun hover:text-grey-800">
-                <Icon name={n} className="h-5 w-5" />
-              </a>
-            ))}
-          </div>
         </div>
         {COLS.map((c) => (
           <div key={c.title}>
