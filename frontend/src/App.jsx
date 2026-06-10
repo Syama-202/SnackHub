@@ -9,6 +9,7 @@ import { useRealtime } from './hooks';
 import CustomerLayout from './components/layout/Customer';
 import { PageFallback, RequireRole } from './routes/Guards';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import WakingNotice from './components/layout/WakingNotice';
 // The landing page is the first screen most visitors see, so it ships in the entry bundle
 import Home from './pages/customer/Home';
 
@@ -114,6 +115,7 @@ function App() {
       <Router>
         <ScrollToTop />
         <SessionBootstrap />
+        <WakingNotice />
         <AppRoutes />
       </Router>
     </Provider>
