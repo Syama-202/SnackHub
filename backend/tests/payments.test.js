@@ -5,7 +5,7 @@
 import { createHash } from 'node:crypto';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openHarness, beginTest, request } from './helpers/app.js';
-import { staffToken } from './helpers/onboarding.js';
+import { admin, staffToken } from './helpers/onboarding.js';
 import { AppError } from '../src/utils/AppError.js';
 import { createPhonePe } from '../src/utils/phonepe.js';
 import { reconcilePayments, refundOrder } from '../src/utils/payments.js';
@@ -264,6 +264,33 @@ describe.skipIf(h.skip)('online payment', () => {
     expect(await t.trx.ordering('outbox').where('dedupe_key', 'like', `inbox:${order.id}:refund.delayed:%`).first()).toBeTruthy();
     // the failed one does not count: the whole amount can still be refunded
     expect(await refundOrder(t.trx, order.id, order.totalPaise, 'Retry')).toBeTruthy();
+  });
+
+  it('lists refused refunds for admins, sends one again with a fresh code, and then drops it from the list', async () => {
+    const { c, order, merchantOrderId } = await onlineOrder();
+    pp.orders.get(merchantOrderId).state = 'PAID';
+    await c.api.post(`/orders/${order.id}/payment/check`).expect(200);
+    await refundOrder(t.trx, order.id, 1500, 'Missing item');
+    for (const r of pp.refunds.values()) r.state = 'FAILED';
+    await t.trx.payment('refunds').update({ created_at: new Date(Date.now() - 60_000) });
+    await reconcilePayments(t.trx);
+
+    const boss = await staffToken(t, 'admin');
+    const queue = (await admin(t, boss.token).get('/refunds/failed').expect(200)).body;
+    expect(queue.refunds).toEqual([expect.objectContaining({ orderId: order.id, amountPaise: 1500, reason: 'Missing item' })]);
+    // reviewers cannot see it; the public site gets a 404; an old code is not enough to send money
+    await admin(t, staff.token).get('/refunds/failed').expect(403);
+    await request(t.app).get('/api/v1/admin/refunds/failed').set('Authorization', `Bearer ${boss.token}`).expect(404);
+    const stale = t.tokenFor(boss.user, 'admin', { mfa: false });
+    await admin(t, stale).post(`/refunds/${queue.refunds[0].id}/retry`).expect(401);
+
+    const sent = (await admin(t, boss.token).post(`/refunds/${queue.refunds[0].id}/retry`).expect(200)).body;
+    expect(sent).toMatchObject({ status: 'PENDING', amountPaise: 1500 });
+    expect(pp.calls.filter((x) => x[0] === 'refund').map((x) => x[3])).toEqual([1500, 1500]);
+    expect(new Set(pp.calls.filter((x) => x[0] === 'refund').map((x) => x[1])).size).toBe(2);
+    expect((await admin(t, boss.token).get('/refunds/failed').expect(200)).body.refunds).toEqual([]);
+    await admin(t, boss.token).post(`/refunds/${queue.refunds[0].id}/retry`).expect(409);
+    expect(await t.trx.identity('audit_log').where({ action: 'refund.retry', actor_id: boss.user.id }).first()).toBeTruthy();
   });
 });
 

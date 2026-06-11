@@ -50,6 +50,7 @@ export const ROLE_PERMISSIONS = {
     'earnings.resolve',
     'cash.record',
     'payouts.manage',
+    'refunds.manage',
     'catalogue.manage',
     'errors.manage',
     'policy.write',

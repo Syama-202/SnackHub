@@ -187,6 +187,31 @@ export async function refundRemaining(dbs, orderId, reason) {
   return refundOrder(dbs, orderId, (await capturedPaise(dbs.payment, p)) - Number(used ?? 0), reason);
 }
 
+/** Refunds PhonePe refused that no admin has sent again yet, oldest first. */
+export async function failedRefunds(dbs, { limit = 100 } = {}) {
+  const rows = await dbs.payment('refunds as r').join('payments as p', 'p.id', 'r.payment_id').where({ 'r.status': 'FAILED' }).whereNull('r.retried_by').orderBy('r.id').limit(limit)
+    .select('r.id', 'r.amount_paise', 'r.reason', 'r.failure_code', 'r.created_at', 'r.updated_at', 'r.complaint_id', 'p.order_id', 'p.amount_paise as paid_paise', 'p.status as payment_status');
+  return rows.map((r) => ({ id: r.id, orderId: Number(r.order_id), amountPaise: r.amount_paise, paidPaise: r.paid_paise, paymentStatus: r.payment_status, reason: r.reason, failureCode: r.failure_code, complaintId: r.complaint_id, createdAt: new Date(r.created_at).getTime(), failedAt: r.updated_at ? new Date(r.updated_at).getTime() : null }));
+}
+
+/**
+ * An admin sends a refused refund again: a new refund for the same amount (or whatever can
+ * still be refunded, if less), with a new refund id, linked from the failed one so it leaves
+ * the queue. Returns the new refund's id, or null when nothing is left to refund.
+ */
+export async function retryRefund(dbs, refundId) {
+  const r = await dbs.payment('refunds').where({ id: refundId }).first();
+  if (!r) throw new AppError(404, 'NOT_FOUND', 'Refund not found');
+  if (r.status !== 'FAILED' || r.retried_by) throw new AppError(409, 'REFUND_NOT_FAILED', 'This refund is not waiting for a retry');
+  const p = await dbs.payment('payments').where({ id: r.payment_id }).first();
+  const [{ used }] = await dbs.payment('refunds').where({ payment_id: p.id }).whereNot({ status: 'FAILED' }).sum({ used: 'amount_paise' });
+  const amount = Math.min(r.amount_paise, (await capturedPaise(dbs.payment, p)) - Number(used ?? 0));
+  const newId = amount > 0 ? await refundOrder(dbs, p.order_id, amount, `Sent again by an admin: ${r.reason ?? 'refund'}`, { complaintId: r.complaint_id }) : null;
+  // nothing left to refund still clears it from the queue (it is linked to itself)
+  await dbs.payment('refunds').where({ id: r.id, status: 'FAILED' }).whereNull('retried_by').update({ retried_by: newId ?? r.id, updated_at: new Date() });
+  return newId;
+}
+
 /** Sends a pending refund to the provider (again, if a send was lost) and records the answer. */
 async function sendRefund(dbs, refundId) {
   const provider = gateway.provider;
