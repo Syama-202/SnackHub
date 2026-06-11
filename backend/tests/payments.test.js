@@ -203,6 +203,22 @@ describe.skipIf(h.skip)('online payment', () => {
     expect(await orderStatus(order.id)).toBe('CANCELLED');
     const p = await paymentOf(order.id);
     expect(p).toMatchObject({ status: 'REFUND_PENDING', failure_code: 'AMOUNT_MISMATCH' });
+    // the refund is what PhonePe actually took, not the order total
+    expect(pp.calls.filter((x) => x[0] === 'refund').map((x) => x[3])).toEqual([order.totalPaise - 100]);
+  });
+
+  it('refunds a paid order that closed without its refund starting (a crash between the two steps)', async () => {
+    const { c, order, merchantOrderId } = await onlineOrder();
+    pp.orders.get(merchantOrderId).state = 'PAID';
+    await c.api.post(`/orders/${order.id}/payment/check`).expect(200);
+    // the order closed, then the process stopped before the refund: no refund row exists
+    await t.trx.ordering('orders').where({ id: order.id }).update({ status: 'CANCELLED', closed_at: new Date(Date.now() - 5 * 60_000) });
+    await reconcilePayments(t.trx);
+    expect(pp.calls.filter((x) => x[0] === 'refund').map((x) => x[3])).toEqual([order.totalPaise]);
+    expect((await paymentOf(order.id)).status).toBe('REFUND_PENDING');
+    // later passes do not send it again
+    await reconcilePayments(t.trx);
+    expect(pp.count('refund')).toBe(1);
   });
 
   it('when PhonePe is down at checkout, the order is cancelled, the stock returned and the customer told', async () => {

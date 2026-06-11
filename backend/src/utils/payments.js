@@ -145,6 +145,15 @@ export async function settlePayment(dbs, payment) {
 // ---------- refunds
 
 /**
+ * What the provider actually took for a payment: its CHARGE ledger rows. Refunds are capped
+ * by this, not by the order total, so a payment for a different amount is refunded exactly.
+ */
+async function capturedPaise(db, payment) {
+  const [{ charged }] = await db('ledger_entries').where({ payment_id: payment.id, entry_type: 'CHARGE' }).sum({ charged: 'amount_paise' });
+  return Number(charged ?? 0) || payment.amount_paise;
+}
+
+/**
  * Refunds part or all of an order's captured payment. The total of refunds never exceeds
  * what was captured: the payment row is locked while the new refund is added.
  * Returns the refund id, or null when there is nothing to refund.
@@ -155,7 +164,7 @@ export async function refundOrder(dbs, orderId, amountPaise, reason, { complaint
     const p = await trx('payments').where({ order_id: orderId }).forUpdate().first();
     if (!p || p.method === 'COD' || !['CAPTURED', 'PARTIALLY_REFUNDED', 'REFUND_PENDING'].includes(p.status)) return null;
     const [{ used }] = await trx('refunds').where({ payment_id: p.id }).whereNot({ status: 'FAILED' }).sum({ used: 'amount_paise' });
-    const left = p.amount_paise - Number(used ?? 0);
+    const left = (await capturedPaise(trx, p)) - Number(used ?? 0);
     if (amountPaise > left) throw new AppError(409, 'REFUND_TOO_LARGE', `Only ${left} paise can still be refunded on this order`);
     if (amountPaise <= 0) return null;
     const [{ n }] = await trx('refunds').where({ payment_id: p.id }).count({ n: '*' });
@@ -175,7 +184,7 @@ export async function refundRemaining(dbs, orderId, reason) {
   const p = await paymentModel.findByOrder(dbs.payment, orderId);
   if (!p || p.method === 'COD' || !['CAPTURED', 'PARTIALLY_REFUNDED', 'REFUND_PENDING'].includes(p.status)) return null;
   const [{ used }] = await dbs.payment('refunds').where({ payment_id: p.id }).whereNot({ status: 'FAILED' }).sum({ used: 'amount_paise' });
-  return refundOrder(dbs, orderId, p.amount_paise - Number(used ?? 0), reason);
+  return refundOrder(dbs, orderId, (await capturedPaise(dbs.payment, p)) - Number(used ?? 0), reason);
 }
 
 /** Sends a pending refund to the provider (again, if a send was lost) and records the answer. */
@@ -283,6 +292,23 @@ export async function reconcilePayments(dbs, { limit = 20 } = {}) {
   for (const r of await dbs.payment('refunds').where({ status: 'PENDING' }).andWhere('created_at', '<', new Date(Date.now() - 30_000)).orderBy('id').limit(limit)) {
     await sendRefund(dbs, r.id);
     out.refunds += 1;
+  }
+  // paid orders that closed but whose refund never started (the process stopped between
+  // closing the order and starting the refund): closed online orders of the last week whose
+  // payment is still fully captured with no refund at all. A refused refund is left to the
+  // admins (the failed-refunds queue), never resent here.
+  const closed = await dbs.ordering('orders').whereIn('status', ['CANCELLED', 'REJECTED']).where({ payment_mode: 'ONLINE' })
+    .andWhere('placed_at', '>', new Date(Date.now() - 7 * 86_400_000)).andWhere('closed_at', '<', new Date(Date.now() - 2 * 60_000)).orderBy('placed_at', 'desc').limit(200).pluck('id');
+  if (closed.length) {
+    const stuck = await dbs.payment('payments as p').whereIn('p.order_id', closed).where({ 'p.status': 'CAPTURED' })
+      .whereNotExists((q) => q.select(dbs.payment.raw('1')).from('refunds as r').whereRaw('r.payment_id = p.id')).limit(limit).pluck('p.order_id');
+    for (const orderId of stuck) {
+      try {
+        if (await refundRemaining(dbs, orderId, 'The order was cancelled or rejected')) out.refunds += 1;
+      } catch {
+        // next pass
+      }
+    }
   }
   return out;
 }
