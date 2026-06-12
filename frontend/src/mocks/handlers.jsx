@@ -1159,6 +1159,13 @@ export const handlers = [
     const sellers = ids.map((id) => ({ sellerId: id, shopName: db.sellers.find((x) => x.id === id)?.shopName, demo: true, due: demoDue(db, id), openPayoutId: null, bank: null }));
     return ok({ commissionPct: 10, holdHours: 24, sellers, payouts: [] });
   })),
+  // the demo takes no online payments, so no refund ever fails
+  http.get(`${API}/admin/refunds/failed`, ({ request }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = adminGuard(request);
+    if (g.res) return g.res;
+    return ok({ providerEnabled: false, refunds: [] });
+  }),
   http.get(`${API}/admin/audit`, withDb(({ request, db }) => {
     // a real staff session reads the backend's audit log
     if (!isDemoToken(request)) return passthrough();

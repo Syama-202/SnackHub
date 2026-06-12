@@ -21,6 +21,7 @@ import Users from './pages/Users';
 import Complaints from './pages/Complaints';
 import Cash from './pages/Cash';
 import Payouts from './pages/Payouts';
+import Refunds from './pages/Refunds';
 import Catalogue from './pages/Catalogue';
 import Errors from './pages/Errors';
 import PolicyEditor from './pages/PolicyEditor';
@@ -42,6 +43,7 @@ const TABS = [
   { to: '/complaints', label: 'Complaints', icon: 'flag', roles: ['admin'] },
   { to: '/cash', label: 'Cash in hand', icon: 'wallet', roles: ['admin'] },
   { to: '/payouts', label: 'Seller payouts', icon: 'wallet', roles: ['admin'] },
+  { to: '/refunds', label: 'Failed refunds', icon: 'wallet', roles: ['admin'] },
   { to: '/catalogue', label: 'Catalogue', icon: 'list', roles: ['admin'] },
   { to: '/policy', label: 'Delivery policy', icon: 'settings', roles: ['admin'] },
   { to: '/errors', label: 'Errors', icon: 'flag', roles: ['admin'] },
@@ -142,6 +144,7 @@ const AdminApp = () => {
                       <Route path="complaints" element={<Complaints />} />
                       <Route path="cash" element={<Cash />} />
                       <Route path="payouts" element={<Payouts />} />
+                      <Route path="refunds" element={<Refunds />} />
                       <Route path="catalogue" element={<Catalogue />} />
                       <Route path="errors" element={<Errors />} />
                       <Route path="policy" element={<PolicyEditor />} />

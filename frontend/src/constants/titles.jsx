@@ -46,6 +46,7 @@ export const ADMIN_TITLES = [
   ['/complaints', 'Complaints'],
   ['/cash', 'Cash in hand'],
   ['/payouts', 'Seller payouts'],
+  ['/refunds', 'Failed refunds'],
   ['/catalogue', 'Catalogue'],
   ['/errors', 'Errors'],
   ['/policy', 'Delivery policy'],
