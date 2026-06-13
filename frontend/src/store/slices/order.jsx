@@ -14,6 +14,9 @@ export const placeOrder = apiThunk('orders/place', async ({ addressId, paymentMo
 export const checkPayment = apiThunk('orders/checkPayment', async (orderId, { apiFetch }) => apiFetch(`/orders/${orderId}/payment/check`, { method: 'POST' }));
 
 export const fetchOrders = apiThunk('orders/fetchAll', async (_, { apiFetch }) => apiFetch('/orders'));
+// older history, a page at a time, after the last order shown
+export const OLDER_PAGE = 20;
+export const fetchOlderOrders = apiThunk('orders/fetchOlder', async (before, { apiFetch }) => apiFetch(`/orders?before=${before}&limit=${OLDER_PAGE}`));
 export const fetchOrder = apiThunk('orders/fetchOne', async (id, { apiFetch }) => apiFetch(`/orders/${id}`));
 
 // Stand-in for the socket events order:update and rider:location (doc 10.4)
@@ -43,6 +46,9 @@ const orderSlice = createSlice({
   initialState: {
     list: [],
     listLoaded: false,
+    // older pages of the history, loaded on request
+    older: [],
+    olderDone: false,
     byId: {},
     tracking: {},
     trackingErrors: {},
@@ -55,6 +61,8 @@ const orderSlice = createSlice({
     resetOrders: (state) => {
       state.list = [];
       state.listLoaded = false;
+      state.older = [];
+      state.olderDone = false;
       state.byId = {};
       state.tracking = {};
       state.otp = {};
@@ -91,6 +99,11 @@ const orderSlice = createSlice({
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.list = action.payload;
         state.listLoaded = true;
+      })
+      .addCase(fetchOlderOrders.fulfilled, (state, action) => {
+        const known = new Set([...state.list, ...state.older].map((o) => o.id));
+        state.older.push(...action.payload.filter((o) => !known.has(o.id)));
+        state.olderDone = action.payload.length < OLDER_PAGE;
       })
       .addCase(fetchOrder.fulfilled, (state, action) => {
         state.byId[action.payload.id] = action.payload;

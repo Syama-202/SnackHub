@@ -163,8 +163,16 @@ export function ordersController({ env, dbs }) {
     res.status(201).json({ order: await viewOrder(dbs, await orderModel.findById(dbs.ordering, orderId), 'customer') });
   }
 
+  /** The newest 30, or with ?before=<order id> the next older page (an order of someone else's gives nothing). */
   async function list(req, res) {
-    res.json(await viewOrders(dbs, await orderModel.listForCustomer(dbs.ordering, req.user.userId, 30), 'customer'));
+    const { before, limit = 30 } = req.query;
+    let cursor = null;
+    if (before) {
+      const last = await orderModel.findForCustomer(dbs.ordering, before, req.user.userId);
+      if (!last) return res.json([]);
+      cursor = { placedAt: last.placed_at, id: last.id };
+    }
+    res.json(await viewOrders(dbs, await orderModel.listForCustomer(dbs.ordering, req.user.userId, limit, cursor), 'customer'));
   }
 
   async function show(req, res) {

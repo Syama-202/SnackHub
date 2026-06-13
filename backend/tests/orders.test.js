@@ -336,4 +336,21 @@ describe.skipIf(h.skip)('the order flow', () => {
       expect((await c.api.put('/cart', { productId: draft.id, qty: 1 }).expect(404)).body.error.code).toBe('NOT_FOUND');
     });
   });
+
+  it('pages the order history: the newest first, then older pages after the last one shown', async () => {
+    const shop = await H.openShop(t, staff, { stock: 10 });
+    const c = await H.customerAt(t);
+    const ids = [];
+    for (let i = 0; i < 3; i += 1) ids.push((await H.placeOrder(c, shop, 1)).id);
+    const newestFirst = [...ids].reverse();
+    expect((await c.api.get('/orders').expect(200)).body.map((o) => o.id)).toEqual(newestFirst);
+    const first = (await c.api.get('/orders?limit=2').expect(200)).body.map((o) => o.id);
+    expect(first).toEqual(newestFirst.slice(0, 2));
+    expect((await c.api.get(`/orders?before=${first[1]}&limit=2`).expect(200)).body.map((o) => o.id)).toEqual(newestFirst.slice(2));
+    // someone else's order is no cursor; nonsense is refused
+    const other = await H.customerAt(t);
+    expect((await other.api.get(`/orders?before=${ids[0]}`).expect(200)).body).toEqual([]);
+    await c.api.get('/orders?limit=500').expect(400);
+    await c.api.get('/orders?role=admin').expect(400);
+  });
 });

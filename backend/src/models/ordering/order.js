@@ -18,7 +18,15 @@ export const orderModel = {
   findForCustomer: (db, id, customerId) => db(TABLE).where({ id, customer_id: customerId }).first().then(strip),
   /** Same customer, same Idempotency-Key: the order made the first time (doc 10.8). */
   findByIdempotencyKey: (db, customerId, idemKey) => db(TABLE).where({ customer_id: customerId, idem_key: idemKey }).first().then(strip),
-  listForCustomer: (db, customerId, limit = 20) => db(TABLE).where({ customer_id: customerId }).orderBy('placed_at', 'desc').limit(limit).then((rows) => rows.map(strip)),
+  /** Newest first; with before ({ placedAt, id } of the last one shown), the page after it. */
+  listForCustomer: (db, customerId, limit = 20, before = null) =>
+    db(TABLE)
+      .where({ customer_id: customerId })
+      .modify((q) => before && q.andWhere((w) => w.where('placed_at', '<', before.placedAt).orWhere((x) => x.where('placed_at', before.placedAt).andWhere('id', '<', before.id))))
+      .orderBy('placed_at', 'desc')
+      .orderBy('id', 'desc')
+      .limit(limit)
+      .then((rows) => rows.map(strip)),
   listForSeller: (db, sellerId, statuses) => db(TABLE).where({ seller_id: sellerId }).whereIn('status', statuses).orderBy('placed_at').then((rows) => rows.map(strip)),
   /** The seller's board: the latest orders that reached the shop (unpaid ones never do). */
   listRecentForSeller: (db, sellerId, limit = 40) =>

@@ -5,7 +5,7 @@ import { asyncHandler as wrap } from '../utils/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
 import { cartController } from '../controllers/cart.js';
 import { ordersController } from '../controllers/orders.js';
-import { validateBody, validateParams } from '../middleware/validate.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { limit, byUser } from '../middleware/rateLimit.js';
 
@@ -13,6 +13,8 @@ const id = z.coerce.number().int().positive();
 const idParams = z.object({ id }).strict();
 const cartLine = z.object({ productId: id, qty: z.number().int().min(0).max(20), replace: z.boolean().optional().default(false) }).strict();
 const forAddress = z.object({ addressId: id }).strict();
+// order history pages: the newest 30, then older ones before the last order shown
+const listQuery = z.object({ before: z.coerce.number().int().positive().optional(), limit: z.coerce.number().int().min(1).max(50).optional() }).strict();
 const productParams = z.object({ productId: z.coerce.number().int().positive() }).strict();
 const checkout = z.object({ addressId: id, paymentMode: z.enum(['COD', 'ONLINE']).default('COD') }).strict();
 const review = z
@@ -47,7 +49,7 @@ export function ordersRoutes(deps) {
 
   router.post('/orders/quote', ...asCustomer('orders.self'), perUser('quote', 1, 60), validateBody(forAddress), wrap(c.quote));
   router.post('/orders', ...asCustomer('orders.self'), perUser('checkout', 10, 10, 'Too many orders in a few minutes. Wait a little and try again.'), idempotencyKey, validateBody(checkout), wrap(c.place));
-  router.get('/orders', ...asCustomer('orders.self'), wrap(c.list));
+  router.get('/orders', ...asCustomer('orders.self'), validateQuery(listQuery), wrap(c.list));
   router.get('/orders/:id', ...asCustomer('orders.self'), validateParams(idParams), wrap(c.show));
   router.get('/orders/:id/track', ...asCustomer('orders.self'), perUser('track', 1, 120), validateParams(idParams), wrap(c.track));
   router.get('/orders/:id/otp', ...asCustomer('orders.self'), perUser('otp', 1, 30), validateParams(idParams), wrap(c.otp));
