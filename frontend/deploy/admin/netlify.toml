@@ -2,8 +2,8 @@
 # never linked from the public site. Base directory: frontend/deploy/admin (this folder).
 # /api/* is proxied to the API with a signature (PROXY_SIGNING_SECRET, Runtime scope, the
 # same value as on Render); the API accepts admin routes only from requests this site signed.
-# If your Render service has another name, change the onrender.com address below and
-# VITE_SOCKET_URL.
+# If your Render service has another name, change the onrender.com address below,
+# VITE_SOCKET_URL and the Content-Security-Policy.
 
 [build]
   command = "cd ../.. && npm ci --no-audit --no-fund && npm run build:admin"
@@ -31,6 +31,12 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer"
+    # what the pages may load (checked with the map, Google sign-in, the fonts and the demo):
+    # inline style attributes are allowed, scripts only from this site and Google sign-in, plus
+    # the one hashed inline handler that loads the fonts without blocking the first paint.
+    # A new outside service (analytics, another map) must be added here first.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-1jAmyYXcRq6zFldLe/GCgIDJBiOONdXjTLgEFMDnDSM=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://snackhub-api.onrender.com wss://snackhub-api.onrender.com https://tiles.openfreemap.org https://accounts.google.com/gsi/; worker-src 'self' blob:; frame-src https://accounts.google.com/gsi/; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; manifest-src 'self'"
+    Strict-Transport-Security = "max-age=31536000"
     # a private console: not for search engines
     X-Robots-Tag = "noindex, nofollow"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
