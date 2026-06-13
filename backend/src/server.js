@@ -8,6 +8,7 @@ import { createOutboxRelay } from './jobs/outboxRelay.js';
 import { createPush } from './utils/push.js';
 import { describeError, recordError } from './utils/errors.js';
 import { runDocumentExpiry } from './jobs/documentExpiry.js';
+import { runPurge } from './jobs/purge.js';
 import { createOrderTimers } from './jobs/orderTimers.js';
 import { createRedis, closeRedis } from './utils/redis.js';
 import { redisCounter, memoryCounter } from './utils/rateLimit.js';
@@ -34,18 +35,23 @@ const sockets = createSocketServer(server, { env, dbs, logger, redis, rateStore 
 
 // background work in the same process: emails, texts and inbox messages every few seconds,
 // the order clocks (shop accept timeout, rider offers) every five, document expiry every six
-// hours (all safe to run twice; `npm run jobs` runs them once from cron)
+// hours with the clear-out of old sessions, notifications and GPS fixes (all safe to run
+// twice; `npm run jobs` runs them once from cron)
 const relay = createOutboxRelay({ env, dbs, mailer, sms, push, logger });
 const orderTimers = createOrderTimers({ dbs, logger });
 let expiryTimer;
 if (env.RUN_JOBS) {
   relay.start();
   orderTimers.start();
-  const expiry = () =>
-    runDocumentExpiry({ env, dbs, logger }).catch((err) => {
-      logger.error({ reason: err.code ?? err.message }, 'document expiry failed');
-      recordError(dbs, { source: 'job', ...describeError(err), where: 'document expiry', release: env.RELEASE }, { logger });
+  const job = (where, run) =>
+    run().catch((err) => {
+      logger.error({ reason: err.code ?? err.message }, `${where} failed`);
+      recordError(dbs, { source: 'job', ...describeError(err), where, release: env.RELEASE }, { logger });
     });
+  const expiry = async () => {
+    await job('document expiry', () => runDocumentExpiry({ env, dbs, logger }));
+    await job('purge', async () => logger.info({ purged: await runPurge({ dbs }) }, 'old rows cleared'));
+  };
   setTimeout(expiry, 15_000).unref();
   expiryTimer = setInterval(expiry, 6 * 3600_000);
   expiryTimer.unref();

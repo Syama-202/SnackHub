@@ -3,6 +3,7 @@
 //   - the document expiry job (reminders, hiding shops and taking riders offline on expiry)
 //   - the order clocks (shop accept timeout, rider offers, stale stock holds, payment checks)
 //   - the outbox relay (emails, texts and inbox messages), until nothing more is due
+//   - the clear-out of expired sessions, old notifications and old rider GPS fixes
 import { loadEnv } from '../src/config/env.js';
 import { createLogger } from '../src/utils/logger.js';
 import { moduleDbs, closeAll } from '../src/db/connection.js';
@@ -12,6 +13,7 @@ import { createOutboxRelay } from '../src/jobs/outboxRelay.js';
 import { createPush } from '../src/utils/push.js';
 import { runDocumentExpiry } from '../src/jobs/documentExpiry.js';
 import { runOrderTimers } from '../src/jobs/orderTimers.js';
+import { runPurge } from '../src/jobs/purge.js';
 import { Emitter } from '@socket.io/redis-emitter';
 import { createRedis, closeRedis, safePublisher } from '../src/utils/redis.js';
 import { realtime } from '../src/utils/realtime.js';
@@ -36,7 +38,8 @@ try {
   const relay = createOutboxRelay({ env, dbs, mailer, sms: createSms(env, mailer), push: createPush(env, { logger }), logger });
   let sent = 0;
   for (let n = await relay.runOnce(); n > 0; n = await relay.runOnce()) sent += n;
-  console.log(`expiry: ${JSON.stringify(expiry)}; orders: ${JSON.stringify(timers)}; messages sent: ${sent}`);
+  const purged = await runPurge({ dbs });
+  console.log(`expiry: ${JSON.stringify(expiry)}; orders: ${JSON.stringify(timers)}; messages sent: ${sent}; purged: ${JSON.stringify(purged)}`);
 } catch (err) {
   console.error(err.message);
   process.exitCode = 1;
