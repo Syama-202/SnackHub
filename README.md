@@ -385,7 +385,7 @@ needs a secret in the repository. Put each service in or near Singapore.
 | API with the background jobs and live updates | Render, free web service from `backend/Dockerfile` | `render.yaml` |
 | MySQL 8 | Aiven, free plan | `npm run db:hosted` |
 | Redis | Upstash free (or Render Key Value) | |
-| Seller and rider documents, complaint photos | Cloudflare R2, a private bucket | `STORAGE_DRIVER=s3` |
+| Seller and rider documents, complaint photos | A private S3-compatible bucket: Backblaze B2 free (no card), or Cloudflare R2 | `STORAGE_DRIVER=s3` |
 | Keeping the free API awake | GitHub Actions, every 10 minutes | `.github/workflows/keepalive.yml` |
 
 1. **Database.** Create an Aiven for MySQL service (free plan). In `backend/`, create
@@ -396,8 +396,11 @@ needs a secret in the repository. Put each service in or near Singapore.
    migrate:hosted` and `npm run seed:hosted`. The setup checks that triggers are allowed and
    says what to change if not.
 2. **Redis and the bucket.** Create an Upstash Redis database (copy its `rediss://` URL) and a
-   private R2 bucket with an API token limited to that bucket (copy the endpoint, bucket name,
-   access key id and secret).
+   private bucket with a key limited to that bucket. Backblaze B2 needs no card for its free
+   10 GB: copy the S3 endpoint, its region (the part after `s3.`, e.g. `us-west-004`), the
+   bucket name, the key id and the application key into `S3_ENDPOINT`, `S3_REGION`,
+   `S3_BUCKET`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`. Cloudflare R2 works the same way
+   with `S3_REGION=auto`.
 3. **API.** On Render, New > Blueprint, pick this repository: `render.yaml` creates
    `snackhub-api` and asks for each value. If Render gives the service another address, use it
    in both `netlify.toml` files. Make an MFA key with

@@ -38,9 +38,11 @@ services:
       - { key: JWT_SECRET, generateValue: true }
       # 32 random bytes, base64url (43 characters): node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
       - { key: MFA_KEY, sync: false }
-      # private bucket (Cloudflare R2)
+      # private S3-compatible bucket (Backblaze B2, Cloudflare R2 or Supabase Storage); the region
+      # is the one in the endpoint (B2: e.g. us-west-004), or "auto" for R2
       - { key: STORAGE_DRIVER, value: s3 }
       - { key: S3_ENDPOINT, sync: false }
+      - { key: S3_REGION, sync: false }
       - { key: S3_BUCKET, sync: false }
       - { key: S3_ACCESS_KEY_ID, sync: false }
       - { key: S3_SECRET_ACCESS_KEY, sync: false }
