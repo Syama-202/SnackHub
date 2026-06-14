@@ -12,7 +12,7 @@ repository are demo data.
 | `frontend/` | React 19 + Redux Toolkit + Tailwind CSS v4 app (customer, seller, rider) and the admin console as a separate build. Runs today on a mock API in the browser. See [frontend/README.md](frontend/README.md) |
 | `backend/` | Express modular monolith on MySQL 8: Identity, Catalog, Order, Dispatch, Payment and Notify, each with its own schema and database user |
 | `shared/` | Business rules used by both the frontend and the backend (delivery promise, rider pay, order states, complaint triage) and the demo seed data |
-| `infra/` | Docker Compose for the full local stack (MySQL, Redis, RabbitMQ, Elasticsearch, MinIO, Mailpit), for later phases |
+| `infra/` | Docker Compose for the local stack: MySQL, Redis and Mailpit; RabbitMQ, Elasticsearch and MinIO only with `--profile later`, since the code does not use them yet |
 | `scripts/` | Repository setup helpers |
 
 ## First run
