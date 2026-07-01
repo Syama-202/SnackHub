@@ -2,6 +2,7 @@
 // plus the migrator pool for migrations and the seed.
 import knex from 'knex';
 import { MODULES, MIGRATIONS_DIR, knexOptions } from '../config/database.js';
+import { withDeadlockRetry } from './retry.js';
 
 export function migratorDb(env) {
   return knex({
@@ -14,7 +15,8 @@ export function migratorDb(env) {
 export function moduleDb(env, name) {
   const m = MODULES[name];
   if (!m) throw new Error(`Unknown module "${name}"`);
-  return knex(knexOptions(env, { user: m.user, password: env.DB_MODULE_PASSWORD, database: m.database, max: env.DB_POOL_MAX ?? 8 }));
+  // a transaction that loses a deadlock is run again (db/retry.js)
+  return withDeadlockRetry(knex(knexOptions(env, { user: m.user, password: env.DB_MODULE_PASSWORD, database: m.database, max: env.DB_POOL_MAX ?? 8 })));
 }
 
 export function moduleDbs(env) {
