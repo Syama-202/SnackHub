@@ -1,148 +1,279 @@
 # SnackHub
 
-Delivery for Indian regional snacks from verified local shops: "Estimated delivery in 25 to 30
-minutes, subject to serviceability and preparation time." Four roles (customer, seller,
-rider, admin), each with its own screens. All shops, people, prices and pictures in this
-repository are demo data.
+**Hyperlocal delivery for India's regional snacks, from verified shops, street stalls and home kitchens near you.**
 
-## What is in here
+[![CI](https://github.com/Syama-202/SnackHub/actions/workflows/ci.yml/badge.svg)](https://github.com/Syama-202/SnackHub/actions/workflows/ci.yml)
+![Node](https://img.shields.io/badge/node-%3E%3D20.6-339933?logo=node.js&logoColor=white)
+![React](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=black)
+![MySQL](https://img.shields.io/badge/mysql-8-4479A1?logo=mysql&logoColor=white)
 
-| Folder | What it is |
+**Live demo:** https://snackhub-india.netlify.app
+
+> All shops, people, prices and pictures in this project are demo data. The demo runs on free
+> hosting, so the first request after a quiet spell can take up to a minute while the API wakes.
+
+---
+
+## Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Architecture](#architecture)
+- [How the hard parts work](#how-the-hard-parts-work)
+- [Project structure](#project-structure)
+- [Getting started](#getting-started)
+- [Running tests](#running-tests)
+- [Scripts](#scripts)
+- [API documentation](#api-documentation)
+- [Deployment](#deployment)
+- [Roadmap](#roadmap)
+
+---
+
+## Overview
+
+Small makers of regional snacks, from Guntur's mirchi bajji to Kakinada's kaja, are mostly
+missing from the big delivery apps, and their food has real constraints: some snacks must
+arrive hot, others travel well. SnackHub is a marketplace built around those constraints.
+
+- **Customers** order from shops that can actually reach their address in time, see an honest
+  delivery window, and track the rider live.
+- **Sellers** are verified (food licence and documents) before they can list anything, then
+  manage products, stock and incoming orders from their own console.
+- **Riders** are verified too, receive delivery offers near them, and hand over each order with
+  a one-time code from the customer.
+
+Hot snacks get a shorter range and ride-time cap than sweets and dry snacks, and every delivery
+promise is calculated from distance, preparation time and riding speed rather than guessed.
+
+## Features
+
+### For customers
+- Browse shops and snacks that can deliver to the chosen address, by category, region or mood
+- One-shop cart with server-side pricing, and checkout with pay on delivery
+- Live order tracking on a map, with status updates as they happen
+- A 4-digit delivery code that appears only when the rider is close
+- Saved addresses, favourites, "order again", in-app notifications and web push
+- Report a problem after delivery, with photos; simple cases are resolved automatically with app credit
+- Sign in with email and password or Google, with optional two-step sign-in
+
+### For sellers
+- Guided onboarding with document upload; documents asked for depend on the business type
+- Products with stock adjustments (plus or minus, with a reason) that never overwrite a sale in progress
+- Live order board: accept within 2 minutes, pack, and see when a rider is on the way
+- Opening hours, holidays, busy mode, and payout statements
+
+### For riders
+- Onboarding with vehicle-specific documents
+- Delivery offers with a 20-second timer, pickup, live GPS sharing and handover with the customer's code
+- Earnings, cash-on-delivery balance and pay disputes
+
+### Platform
+- Every order status change follows one shared state machine with a single owner per step
+- Real-time updates over Socket.IO, with polling as a safety net
+- Notifications by in-app inbox, email and web push, delivered reliably through a transactional outbox
+- Automatic timers: unaccepted orders are cancelled and their stock returned, unanswered offers move to the next rider
+- An internal staff console (a separate, private build) for verification, live operations and support
+
+## Tech stack
+
+| Layer | Technology |
 | --- | --- |
-| `frontend/` | React 19 + Redux Toolkit + Tailwind CSS v4 app (customer, seller, rider) and the admin console as a separate build. Runs today on a mock API in the browser. See [frontend/README.md](frontend/README.md) |
-| `backend/` | Express modular monolith on MySQL 8: Identity, Catalog, Order, Dispatch, Payment and Notify, each with its own schema and database user |
-| `shared/` | Business rules used by both the frontend and the backend (delivery promise, rider pay, order states, complaint triage) and the demo seed data |
-| `infra/` | Docker Compose for the local stack: MySQL, Redis and Mailpit; RabbitMQ, Elasticsearch and MinIO only with `--profile later`, since the code does not use them yet |
-| `scripts/` | Repository setup helpers |
+| Front end | React 19, Redux Toolkit, React Router, react-hook-form, Tailwind CSS v4, Vite, MapLibre GL, Motion |
+| Back end | Node.js, Express, Knex, zod, Socket.IO, pino |
+| Data | MySQL 8 (six schemas), Redis |
+| Auth and security | Argon2id, JWT access tokens, rotating refresh cookies, TOTP (otplib), Google Identity, helmet |
+| Files and messages | S3-compatible private storage, nodemailer, Web Push |
+| Testing | Vitest, Supertest, GitHub Actions |
+| Hosting | Netlify (sites), Render (API), Aiven (MySQL), Upstash (Redis), Backblaze B2 (files) |
 
-## First run
+## Architecture
 
-Needs Node.js 20.6 or newer and MySQL 8 running on this machine (port 3306).
+SnackHub is a **modular monolith**: one Express API, split into six modules that each own their
+own MySQL schema and their own database user. A module can only reach its own tables, so the
+boundaries are enforced by the database rather than by convention, and any module could later
+be moved into a service of its own.
+
+```mermaid
+flowchart TB
+  subgraph Browser
+    WEB["Web app: customer, seller, rider<br/>React + Redux Toolkit"]
+  end
+  subgraph API["Express API, modular monolith"]
+    direction LR
+    R["Routes: auth, permission,<br/>rate limit, zod validation"] --> C["Thin controllers"] --> D["Workflows and shared rules"] --> M["Models, one per table"]
+    J["Background jobs: outbox relay,<br/>order timers, document expiry"]
+  end
+  DB[("MySQL 8<br/>identity, catalog, ordering,<br/>dispatch, payment, notify")]
+  RD[("Redis<br/>rate limits, socket rooms")]
+  S3[("Private file storage")]
+  EXT["Email, web push"]
+  WEB -->|HTTPS REST via the Netlify proxy| R
+  D -.->|Socket.IO change hints| WEB
+  M --> DB
+  J --> DB
+  R --> RD
+  D --> S3
+  J --> EXT
+```
+
+| Module | Owns |
+| --- | --- |
+| `identity` | Accounts, roles, passwords, sessions, two-step sign-in, addresses, audit log |
+| `catalog` | Shops, products, stock and stock holds, the shared snack catalogue |
+| `ordering` | Carts, orders and their history, delivery policy, complaints, credits |
+| `dispatch` | Riders, delivery offers and assignments, GPS trail, earnings, cash |
+| `payment` | Payments, refunds and an append-only ledger |
+| `notify` | In-app notifications and push subscriptions |
+
+Business rules that both the front end and the back end need (order states, money, password
+rules, permissions, distance) live in `shared/domain`, so the two never disagree.
+
+## How the hard parts work
+
+**Checkout that survives retries and races.** Every checkout carries an `Idempotency-Key`. The
+server derives the order's key from it, so a double tap or a network retry returns the same
+order instead of creating a second one. Prices and delivery fees are always recomputed on the
+server. Stock is taken with a single conditional update (`qty = qty - n WHERE qty >= n`), in
+product-id order so two checkouts never lock rows in opposite orders; when two people race for
+the last unit, exactly one wins.
+
+**Consistency across modules.** Stock and orders live in different schemas, so checkout holds
+the stock first, then creates the order, then confirms the hold. If anything fails in between,
+the hold is released, and a timer recovers any hold left behind by a crash.
+
+**One owner per status change.** Order states (`PLACED`, `ACCEPTED`, `PACKING`, `PACKED`,
+`PICKED_UP`, `ON_THE_WAY`, `ARRIVED`, `DELIVERED`, plus `CANCELLED` and `REJECTED`) can only
+change through `canTransition(from, to, role)`, and every change is a compare-and-set
+(`... WHERE status = :from`), so two people acting at once cannot both succeed.
+
+**Reliable notifications.** A change that must notify someone writes an outbox row in the same
+transaction. A relay claims rows with `FOR UPDATE SKIP LOCKED`, sends them, and retries failures
+with exponential backoff, so nothing is sent for a change that rolled back and nothing is lost
+in a crash.
+
+**Secure sessions.** Passwords are hashed with Argon2id. Access tokens are 15-minute JWTs kept
+in memory; the refresh token is an `httpOnly`, `SameSite=Strict` cookie stored only as a hash
+and replaced on every use. If an old refresh token is ever used again, every session from that
+sign-in ends. Sellers must use an authenticator app; customers and riders may.
+
+**Private delivery code.** The 4-digit code is never stored: it is derived from the order with a
+server key, shown to the customer only once the rider is within 500 m, and locked after three
+wrong tries.
+
+**Real-time without leaking data.** Socket events are hints such as "order 42 changed"; the app
+then reads the update over the normal API, which checks permissions. Rooms are assigned from the
+signed token, so a client cannot listen to someone else's order.
+
+**Rate limits.** Every route has its own limit, counted in Redis with an atomic Lua script so all
+API processes share it. If Redis is unavailable, counting continues in memory instead of
+switching the limits off.
+
+## Project structure
+
+```
+SnackHub/
+|-- frontend/            React app (customer, seller, rider) and the staff console build
+|   `-- src/
+|       |-- pages/       Screens by role: customer/, seller/, rider/, auth/, common/
+|       |-- components/  ui/ (shared primitives), layout/, cart/, product/, tracking/, ...
+|       |-- store/       Redux store and slices
+|       |-- services/    API client and real-time socket
+|       |-- hooks/       Polling, real-time, motion and catalog hooks
+|       `-- mocks/       In-browser mock API for the one-tap demo
+|-- backend/             Express API
+|   |-- src/
+|   |   |-- config/      Settings validated at start-up, database options
+|   |   |-- db/          Connections, migrations, demo seed
+|   |   |-- models/      One file per table, grouped by module
+|   |   |-- controllers/ Request handlers, one file per area
+|   |   |-- routes/      Endpoints with their middleware and zod schemas
+|   |   |-- middleware/  Auth, permissions, rate limits, uploads, errors
+|   |   |-- utils/       Workflows (orders, dispatch, payments) and helpers
+|   |   `-- jobs/        Outbox relay, order timers, expiry and clean-up
+|   `-- tests/           Integration tests against MySQL
+|-- shared/              Business rules and demo seed data used by both sides
+|-- infra/               Docker Compose for local MySQL, Redis and Mailpit
+`-- scripts/             Setup and local development helpers
+```
+
+## Getting started
+
+### Prerequisites
+
+- **Node.js 20.6 or newer**
+- **MySQL 8**, either installed locally or through Docker
+- **Docker** (optional) for Redis; without it, rate limits and live updates still work within a single process
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/Syama-202/SnackHub.git
+cd SnackHub
+npm --prefix backend install
+npm --prefix frontend install
+```
+
+### 2. Create the local settings
 
 ```bash
 npm run setup
 ```
 
-Creates `infra/.env` and `backend/.env` with random local passwords. Nothing is printed and an
-existing file is never overwritten.
+This creates `backend/.env` and `infra/.env` with random local passwords and secrets. It never
+prints a secret and never overwrites a file that already exists. Both files are ignored by git.
+
+### 3. Create the database
+
+Choose one.
+
+**A. MySQL installed on your machine (port 3306)**
 
 ```bash
 npm run db:local
 ```
 
-Asks once for your MySQL root password (shown as `*`, never stored), then creates the six
-module schemas, one user per module that can only reach its own schema, and the migrator user.
+It asks once for your MySQL root password (never stored), then creates the six schemas, one
+user per module with access to its own schema only, and a migrator user. It also points
+`backend/.env` at your local server.
+
+**B. MySQL in Docker (port 3307)**
 
 ```bash
-npm --prefix backend install
-npm --prefix frontend install
+npm run db:up
+```
+
+Starts MySQL, Redis and Mailpit. The schemas and users are created on the first start.
+
+### 4. Create the tables and load demo data
+
+```bash
 npm run migrate
+```
+
+```bash
 npm run seed
 ```
 
-Creates every table, then loads the demo data. Both are safe to run again.
+Both are safe to run again; the seed always produces the same demo data.
+
+### 5. Start Redis (optional)
 
 ```bash
 npm run redis:up
 ```
 
-Starts SnackHub's own Redis in Docker on `127.0.0.1:6380` (6380, so it never meets another
-project's Redis on 6379), with its data kept on disk. The backend uses it for rate limits and
-live updates; without it everything still works, each process on its own.
+Runs SnackHub's own Redis on `127.0.0.1:6380`, so it never clashes with another project on 6379.
 
-## Accounts, sign-up and verification
-
-Each public role has its own sign-up and sign-in page, and a token from one portal never opens
-another. One account (one email) can hold several roles; staff use the admin console only.
-
-| Who | Sign up | Sign in | After that |
-| --- | --- | --- | --- |
-| Customer | `/customer/signup` | `/customer/signin` (password, or Google) | Orders snacks |
-| Seller | `/seller/signup` | `/seller/signin` (password + authenticator, always) | `/seller/onboarding`, then the console once approved |
-| Delivery partner | `/rider/signup` | `/rider/signin` (password, authenticator optional) | `/rider/onboarding`, then the rider app once approved |
-| Admin or reviewer | no sign-up (`npm run create-admin`) | the admin console (Google + authenticator, always) | Verification queue |
-
-`/join` shows all four. A new account must confirm its email before it can sign in.
-
-**Emails in development.** The backend sends mail with nodemailer. Without SMTP settings, in
-development every message is saved as an `.eml` file in `backend/storage/mail` (git-ignored):
-open the newest one in any mail app (or a text editor) to click the confirmation or reset link.
-Text messages for mobile verification are saved there too. To send for real, set `SMTP_HOST`,
-`SMTP_PORT`, `SMTP_USER` and `SMTP_PASS` in `backend/.env` (see `backend/.env.example`);
-production needs them, and real texts need `SMS_PROVIDER=twilio` with the Twilio keys.
-
-**Passwords and sessions.** Passwords are hashed with Argon2id and checked against a list of
-common passwords (and Have I Been Pwned with `PASSWORD_BREACH_CHECK=true`). Five wrong
-passwords lock the account for 15 minutes, and sign-in, sign-up and code entry are rate-limited.
-Reset links work once and expire in 30 minutes; a reset signs out every device. Answers never
-say whether an email has an account. `/account/security` lists sessions (sign out one or all),
-changes the password, turns the authenticator on, makes new recovery codes and verifies a
-mobile number.
-
-**Two-step sign-in.** Admins, reviewers and sellers must use an authenticator app
-(`MFA_REQUIRED_ROLES`); customers and riders may. After the right password comes a challenge
-that lasts five minutes, works once and only on that device; the session opens only after the
-code. A code works once, five wrong codes lock the factor for 15 minutes, and ten single-use
-recovery codes (stored hashed, shown once) cover a lost phone. Secrets are encrypted with
-`MFA_KEY`.
-
-**Seller and rider verification.** The onboarding pages save as you go. Sellers give the
-business, pickup point and hours, and the settlement account; riders give their details,
-address and vehicle. The documents asked for depend on the answers: a company also needs GST
-and business registration, and a bicycle rider never needs a licence, RC, insurance or PUC.
-Admins change these rules per business type, vehicle and state in the console
-(**Requirements**). Uploads are checked by their bytes (PDF, JPEG, PNG or WebP, up to 5 MB),
-scanned by ClamAV when `CLAMAV_HOST` is set, and stored in `backend/storage/private` under random
-names, outside every public folder; they open only through five-minute signed links, and every
-view is logged. Document numbers and bank accounts are stored encrypted and shown masked.
-
-Applications move `DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED`, with `ACTION_REQUIRED`,
-`REJECTED` and `SUSPENDED`; the server allows only those moves. Nothing is approved
-automatically: a reviewer approves each document and ticks the checks, and approving, rejecting
-and suspending ask for a fresh authenticator code. Every step is kept in an append-only history
-and the audit log, and the applicant gets an email. Until approved, a seller cannot publish
-snacks and a rider cannot go online. A daily job reminds people 30, 7 and 1 days before a
-document expires; once a required one has expired, the shop disappears from listings and the
-rider is taken offline until the renewal is approved.
-
-## Google sign-in
-
-Customers can also sign in with Google (doc 16.1). Google's button gives the browser an ID
-token; the backend checks it with your **Web client ID** and then issues SnackHub's own tokens.
-No client secret is used anywhere. Until a client ID is set, the button is hidden.
-
-**1. Create the client in Google Cloud** (free):
-
-1. Open https://console.cloud.google.com and create a project, for example `SnackHub`.
-2. Go to **APIs & Services → OAuth consent screen** (newer consoles call it **Google Auth
-   Platform**: fill in **Branding**, then **Audience**):
-   - App name `SnackHub`, your email as the support and developer contact.
-   - User type / audience **External**, publishing status **Testing**.
-   - Under **Test users**, add the Gmail addresses that may sign in while you build.
-   - Scopes: nothing to add. Sign-in uses only `openid`, `email` and `profile`.
-3. Go to **APIs & Services → Credentials** (or **Google Auth Platform → Clients**) and choose
-   **Create credentials → OAuth client ID**:
-   - Application type **Web application**, name `SnackHub web (local)`.
-   - **Authorised JavaScript origins**: `http://localhost:5180` and `http://localhost:5181`
-     (add your Netlify address when you deploy). No trailing slash, no path.
-   - **Authorised redirect URIs**: leave empty. The popup sign-in does not use one.
-4. Click **Create** and copy the **Client ID**. It ends in `.apps.googleusercontent.com`.
-   You do not need the client secret; do not put it anywhere in this project.
-
-**2. Put the client ID in two files** (both are ignored by git):
+### 6. Run the app
 
 ```bash
-npm run setup
+npm run dev
 ```
 
-This adds `JWT_SECRET` (random), an empty `GOOGLE_CLIENT_ID=` line and `COOKIE_SECURE=false`
-to `backend/.env` without touching the keys already there. Then:
-
-- `backend/.env`: set `GOOGLE_CLIENT_ID=` to your client ID.
-- `frontend/.env.local` (copy `frontend/.env.example`): set `VITE_GOOGLE_CLIENT_ID=` to the
-  same client ID.
-
-**3. Run both and sign in:**
+This starts Redis (if Docker is running), then the API, and the web app once the API is ready,
+all in one terminal. Or run them separately:
 
 ```bash
 npm run dev:backend
@@ -152,344 +283,105 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-Open http://localhost:5180/customer/signin and click Google's button. The first sign-in
-creates a customer account in MySQL (`identity.users`); an existing account with the same
-verified email is linked instead. Restart both after changing an env file.
+| What | Address |
+| --- | --- |
+| Web app | http://localhost:5180 |
+| API | http://localhost:4000 (health check at `/health`, readiness at `/ready`) |
+| API documentation | http://localhost:4000/api/docs |
 
-How the session works: the access token lasts 15 minutes and lives only in memory. The
-refresh token is an `httpOnly`, `SameSite=Strict` cookie, stored in MySQL only as a hash,
-one per device, and replaced on every use. If an old one is ever used again, every session
-from that sign-in ends. Google signs in to the customer portal only; sellers and riders use
-their own portals, and staff the admin console.
+### 7. Try it
 
-## Admin console sign-in
+- **Fastest:** every sign-in page has a one-tap **demo account** (customer, seller and rider).
+  The demo runs on an in-browser mock, so it works even without the database.
+- **Real accounts:** sign up at `/customer/signup`, `/seller/signup` or `/rider/signup`. New
+  accounts confirm their email first. In development no email is sent: each message is saved
+  as an `.eml` file in `backend/storage/mail` (open it in any mail app or text editor to click
+  the link). With the Docker setup you can also point SMTP at Mailpit and read mail at
+  http://localhost:8025.
 
-Staff sign in with Google and then a code from an authenticator app (doc 16.3). Admins can do
-everything; reviewers (the verification team) see only the verification queue and expiring
-documents. There is no staff sign-up; the server owner makes them from the command line:
+### Optional configuration
+
+All settings are documented in `backend/.env.example` and `frontend/.env.example`. The API
+checks every setting at start-up and stops with the name of anything missing or invalid.
+
+- **Google sign-in:** create an OAuth **Web client ID** in Google Cloud (authorised JavaScript
+  origin `http://localhost:5180`), then set `GOOGLE_CLIENT_ID` in `backend/.env` and
+  `VITE_GOOGLE_CLIENT_ID` in `frontend/.env.local` (copy `frontend/.env.example`). No client
+  secret is needed.
+- **Email:** set the `SMTP_*` values in `backend/.env` to send real email.
+- **Web push:** run `npx web-push generate-vapid-keys` and set `VAPID_PUBLIC_KEY` and
+  `VAPID_PRIVATE_KEY`.
+- **File storage:** uploads are stored on disk in `backend/storage/private` by default; set
+  `STORAGE_DRIVER=s3` and the `S3_*` values to use an S3-compatible bucket.
+
+Restart the API and the web app after changing a settings file.
+
+## Running tests
 
 ```bash
-npm run create-admin -- --email you@gmail.com --name "Your name"
+npm test
 ```
 
-Add `--role reviewer` for a reviewer.
-It prints a one-time link (valid 15 minutes). Open it, scan the QR code with Google
-Authenticator, Microsoft Authenticator or any TOTP app, type the first code, and save the ten
-recovery codes it shows once. Then run `npm run dev:admin`, open http://localhost:5181,
-continue with Google and enter the code from the app. Lost phone: run the same command with
-`--reset-mfa`. Admins can also reset a customer's, seller's or rider's authenticator from
-**Accounts** after checking who they are.
-In Windows PowerShell, npm drops the flags, so write them as plain words:
-`npm run create-admin -- you@gmail.com "Your name"` (add `reset-mfa` for a lost phone).
+The back-end suite runs against the real MySQL database from the setup above, using Vitest and
+Supertest. Each test runs inside database transactions that are rolled back afterwards, so your
+local data is never changed. The tests cover accounts and sessions, two-step sign-in, roles and
+permissions, onboarding and uploads, the full order flow, payments, complaints, live updates,
+rate limits and database constraints, including races such as two customers buying the last
+unit at the same moment.
 
-Rules the backend enforces: admin routes answer 404 off the admin host; the Google step gives
-only a half-session; a code works once; five wrong codes lock the account for 15 minutes and
-alert the other admins; staff tokens last 10 minutes and a session at most 8 hours; decisions,
-suspensions, requirement changes and revealing a document number need a code from the last 5
-minutes (the console asks again). "Use the demo admin instead" keeps the in-browser demo (code
-`246810`); the verification queue needs a real staff sign-in.
+GitHub Actions runs the same suite on every push and pull request against a MySQL 8.4 service,
+and builds the front end.
 
-## Ordering
+## Scripts
 
-With real accounts the whole order runs on MySQL. An approved seller adds snacks in the
-console (**Products**: add, edit, stock adjustments with a reason, list or hide), and the
-shop appears to customers in range. The customer fills the cart (one shop per cart), checks
-out with pay on delivery, and follows the order. The seller has 2 minutes to accept, then
-packs; an approved, online rider nearby gets a 20-second offer, collects the sealed package
-and rides. The customer's 4-digit delivery code shows only once the rider is within 500 m,
-and the rider can enter it only inside 150 m; three wrong codes lock it and alert an admin.
-The rider records the cash collected and the pay for the delivery is written. Every change
-goes through `canTransition()`, and each step puts a message in the person's inbox
-(**Notifications**, never containing the code). Sellers and riders have their own inbox behind
-the bell in the console, showing only their portal's messages; a new shop sees a "Get your
-shop ready" card on its board (add a snack, stock it, list it, open the shop) until it can
-take orders.
+Run from the repository root.
 
-- Prices, fees and the delivery promise are recomputed on the server at checkout; stock is
-  held all-or-nothing, and one Idempotency-Key makes one order however often it is sent.
-- Nobody reaches another person's order, shop board or delivery: ids are always checked
-  against the account in the token.
-- The seeded demo shops and riders take no real orders; the one-tap demo account keeps the
-  simulated shop and rider in the browser, and pays on delivery only.
-- Online payment: PhonePe Standard Checkout, sandbox only (the code has no production
-  address). With PHONEPE_CLIENT_ID and PHONEPE_CLIENT_SECRET set (backend/.env.example),
-  checkout offers "Pay online": the order waits as PENDING_PAYMENT with its stock held and the
-  customer pays on PhonePe's page (any UPI app, UPI QR or card; no PIN or card number reaches
-  SnackHub). The order goes to the shop only when PhonePe's order-status API says paid for
-  the exact amount, asked after the return from the pay page, after a webhook (checked
-  against the dashboard credentials, de-duplicated), and by a timer for lost ones. Failed or
-  abandoned payments cancel the order and return the stock; money for an order that will not
-  be delivered (cancelled, rejected, paid late, wrong amount) is refunded automatically, never
-  more than was paid. Cash on delivery is recorded the same way, and every charge and refund
-  is a row in the append-only ledger. Without keys, checkout offers pay on delivery only.
-- Riders share their phone's location while online, and the customer, the rider and the
-  admin console follow it on a real map (MapLibre with free OpenFreeMap tiles from
-  OpenStreetMap data, no key): shop, drop point and the rider's last GPS fix, with a straight
-  dashed line for the leg left (direct distance, not a road route). Only the one-tap demo
-  has a "Simulate drive" button; to test a real rider account on a computer, set a location
-  in Chrome DevTools > More tools > Sensors and change it as the rider "moves".
-- Shops span 28 demo cities. Guests pick a city or share their location from "Deliver to"
-  (kept in this browser); signed-in customers order to any saved address.
-- Cash in hand: a rider's pay-on-delivery cash is what they recorded at the door minus what
-  they handed in. Staff record deposits on the admin Cash in hand page (never more than the
-  rider holds, with a recent second factor; append only, a mistake is reversed). At the
-  policy's cash limit (Rs 2,000 by default) a rider gets no new pay-on-delivery offers until
-  they deposit; prepaid orders still reach them. The rider sees it on the Earnings page.
-- Seller payouts: a shop is owed the food value of its delivered orders, less SnackHub's
-  commission (10% by default) and applied fines, once each order's 24-hour complaint window
-  has passed; a fine reversed after it was deducted is given back on the next statement.
-  Admins draft a statement on the Seller payouts page, make the bank transfer, then record its
-  reference (or cancel, which frees the orders). Each order and fine can be on one statement
-  only, enforced by MySQL. Sellers see what is due, when the next order becomes payable, and
-  their statements on the Payouts tab. No money moves through SnackHub: it records transfers.
-- Shared catalogue: one entry per snack (name, kind, pack size, spice, picture) that any shop
-  sells at its own price. Sellers add snacks with **Add a snack**: search the catalogue, see
-  what shops in their city charge, set their price, MRP, prep time and description. The
-  entry's name and details are the same at every shop and cannot be changed from a shop; a
-  shop can still add a recipe of its own. Admins keep the entries on the Catalogue page: an
-  edit reaches every shop's copy (prices stay the shops'), a retired entry leaves the picker,
-  and a shop's own recipe can be linked to an entry. A shop sells each entry once, enforced by
-  MySQL. On a snack, customers see the other open shops near them that sell it, cheapest first
-  (`/catalogue/:id/offers`).
-- Push notifications: customers, sellers and riders can turn on alerts for a device on their
-  Notifications page. Every new inbox message is then also shown on that phone or computer
-  (Web Push, even when SnackHub is closed), and tapping it opens the order, the board or the
-  payouts. Alerts follow the portal (a seller's phone gets shop messages only) and the sign-in:
-  signing out of that device, "sign out other devices" or a password reset stops them. The
-  server sends only to the browsers' own push services. To switch it on, run
-  `npx web-push generate-vapid-keys` and put the two keys in `backend/.env` as
-  `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`, then restart the API. Push needs https (or
-  localhost); on iPhone, SnackHub must first be added to the home screen.
-- Error monitoring: crashes in the API (every 500), the background jobs and both websites are
-  kept in MySQL, one row per cause with a count, first and last seen, the route or page, the
-  latest stack and request id, and the release (`RELEASE`, and `VITE_RELEASE` for the sites).
-  Emails, phone numbers, codes, tokens, long ids and query strings are removed before anything
-  is stored, and a database error keeps MySQL's message without the SQL or its values. Admins
-  read them on the Errors page and mark each resolved or ignored; a new error, or a resolved
-  one that comes back, emails the admins (at most once an hour each). Browsers report through
-  `POST /client-errors`, limited per address, once per error per page load.
-- Favourites are saved to the customer's account (the heart on every snack, and a Favourites
-  page), and "Order again" on a finished order refills the cart at today's prices, naming
-  anything sold out or off the menu.
-- CI (.github/workflows/ci.yml): on every push to main and every pull request, the backend
-  tests run against MySQL 8.4 and Redis service containers, and both frontend builds run.
-- Opening hours: a seller sets each day's hours in India time (up to two windows, such as
-  7 to 11 am and 4 to 10 pm), holidays, and optionally the pincodes they deliver to on top of
-  their radius. Closed shops stay visible with when they open next, but their snacks leave
-  the lists and search, and nothing can be added or ordered until they open. A shop that
-  lists pincodes takes orders only for addresses with one of them.
-- Saved addresses (up to 10): home, hostel, college, office or a named place, with flat,
-  floor, landmark and instructions for the rider, and one default that checkout picks first.
-  The pin is set by place search (OpenStreetMap Nominatim through the API, one request a
-  second, set GEOCODER_URL for production), the phone's location, or dragging it on the map.
-  Each order keeps its own copy of the address, and a database trigger stops it changing,
-  so editing or deleting a saved address never moves an order. Riders see the area before
-  pickup and the door, floor and instructions after.
-- Problems after delivery: the customer reports within 2 hours (food, with 1 to 3 photos) or
-  24 hours (anything else), once per kind. The order's own timeline is attached as evidence
-  and the shared triage rules decide: a confident, small, safe case is resolved at once with
-  app credit (used on the next pay-on-delivery order, returned if that order is cancelled);
-  the rest wait in the admin console's **Complaints**, where an admin adds credit or fines
-  with a fresh code. Unsafe food hides the shop at once. Photos are private and open only
-  through five-minute links.
-- A rider can dispute a lateness cut within 48 hours with a reason; an admin gives it back or
-  keeps it. **Delivery policy** changes become a new version for later orders only.
-- The clocks (shop timeout, offer expiry, finding a rider) run every 5 seconds in the API
-  (`RUN_JOBS`), or once per `npm run jobs`.
-
-## Live updates and rate limits
-
-Every page that follows something live listens on Socket.IO (`/api/v1/socket`, same origin
-through the dev proxy). A new order reaches the seller's board and the admin's live board,
-an offer reaches the rider, and a status change, the rider moving or a new message reaches the
-customer, all within a fraction of a second. The socket carries hints only, `{ id, topic,
-orderId }`; the page then reads the change over the normal REST route, so no order details,
-address or delivery code ever travel on it.
-
-- A connection needs the same signed access token as the API, an active account and role,
-  two-step sign-in where the role needs it, and the admin host for the staff rooms. Rooms come
-  from the token alone (one per person and portal, plus `ops` and `complaints` for staff with
-  those permissions); a request to join any other room is ignored, and a client that keeps
-  sending is dropped. A socket closes when its token expires or the account is suspended.
-- The app reconnects by itself (after a refresh of the token when the server closed it), and
-  ignores an event it has already seen. While the socket is down every page polls at its
-  usual pace; while it is up, polling slows to a 30-second safety net. Demo sessions have no
-  socket and keep polling the mock.
-- Every route has a rate limit, counted in Redis so all API processes share it: per address
-  for public reads, sign-in and sign-up, per account for everything behind a token, with the
-  tightest limits on sign-in, codes, checkout, cancelling and admin decisions, and a cap on all
-  `/api/v1` requests per address (`RATE_LIMIT_IP_PER_MIN`, 600 a minute). Sign-in also counts
-  per email, so a new IP address does not reset the tries on an account. Keys are hashed, so no
-  email or address is stored. A refused request gets `429 RATE_LIMITED` with `Retry-After`,
-  the same seconds in `error.details.retryAfter`, and `RateLimit-*` headers.
-- If Redis goes away, even before the API starts, requests never wait on it and nothing
-  crashes: each process keeps counting on its own and live updates reach the sockets on that
-  process, until Redis is back. Production refuses to
-  start without `REDIS_URL`.
-
-## How the code is organised
-
-```
-backend/
-  src/
-    config/        env.js (settings checked at start), database.js (schemas, users, pool options)
-    db/            connection.js, ddl.js, migrations/, seeds/demo.js
-    models/        one file per table, named after it, by module: identity/user.js, catalog/product.js, ...
-    controllers/   request handlers, one file per area: auth, security, adminAuth, onboarding, cart,
-                   orders, shop, delivery, addresses, notifications, complaints, operations,
-                   verification, adminUsers, files, me, catalog, health
-    routes/        URL to controller, one file per area (zod-checked input); index.js mounts them all
-    middleware/    auth (roles, permissions, fresh MFA), rate limits, uploads, logging, errors
-    utils/         passwords, keys, tokens, sessions, secondFactor, storage, fileCheck, mailer,
-                   redis, rateLimit (shared counters), realtime (live hints), ...
-    jobs/          outboxRelay.js (emails, texts, inbox), orderTimers.js, documentExpiry.js
-    app.js, server.js, socket.js (Socket.IO on the API server)
-  scripts/         migrate.js, seed.js, local-db-init.js, create-admin.js, jobs.js
-  storage/         private uploads and development emails (git-ignored)
-  tests/
-frontend/
-  src/
-    pages/         customer/, seller/ (Console, Onboarding, Approved, ...), rider/ (Console, Onboarding, Approved, ...),
-                   auth/ (Join, SignUp, SignIn, VerifyEmail, ForgotPassword, ResetPassword), common/ (Security, ...)
-    components/    ui/ (primitives, Carousel, SnackImage), layout/ (Navbar, Footer, Customer, Console),
-                   cart/ (Drawer, Prompts), product/ (Card, Modal), payment/, tracking/,
-                   auth/ (Shell, Fields, Mfa, RecoveryCodes), onboarding/ (Wizard, Stepper, DocumentCard, StatusPanel),
-                   landing/ (one file per section: Hero, Regions, Bestsellers, Delivery, Moods, Stories, ...)
-    routes/        Guards.jsx (sign-in and role checks)
-    store/         index.jsx, apiThunk.jsx, slices/ (auth.jsx, cart.jsx, order.jsx, ...)
-    services/      api.jsx, realtime.jsx (the live-update socket)
-    hooks/         index.jsx (motion, visibility, polling with live topics, useRealtime), useCatalog.jsx, useTracking.jsx
-    utils/  constants/  assets/ (ready.json)  styles/  mocks/  admin/ (App.jsx, store.jsx, pages/)
-shared/            domain/ (business rules: permissions, verification, documents, eligibility, passwords, ...), seed/ (demo data)
-```
-
-## API docs
-
-With the API running, open http://localhost:4000/api/docs for Swagger UI, or fetch the OpenAPI
-3.1 document from `/api/v1/openapi.json`. It is built from the routers themselves: every route,
-its zod schemas (body, query and path), whether it needs a sign-in, which permission, the admin
-host or a recent second factor, and its rate limits. So it cannot drift from the code, and a
-test fails if a write route has no body schema (apart from a short reviewed list that takes
-none). Summaries come from the route lists at the top of each controller. The docs are on by
-default outside production; set `API_DOCS=true` or `false` to choose.
-
-## Deploying
-
-Free hosting, as planned in doc 15.0. Every account below is yours to create; nothing here
-needs a secret in the repository. Put each service in or near Singapore.
-
-| Part | Where | In the repository |
-| --- | --- | --- |
-| Customer, seller and rider site | Netlify, base directory `frontend` | `frontend/netlify.toml` |
-| Admin console | A second Netlify site, base directory `frontend/deploy/admin` | `frontend/deploy/admin/netlify.toml` |
-| API with the background jobs and live updates | Render, free web service from `backend/Dockerfile` | `render.yaml` |
-| MySQL 8 | Aiven, free plan | `npm run db:hosted` |
-| Redis | Upstash free (or Render Key Value) | |
-| Seller and rider documents, complaint photos | A private S3-compatible bucket: Backblaze B2 free (no card), or Cloudflare R2 | `STORAGE_DRIVER=s3` |
-| Keeping the free API awake | GitHub Actions, every 10 minutes | `.github/workflows/keepalive.yml` |
-
-1. **Database.** Create an Aiven for MySQL service (free plan). In `backend/`, create
-   `.env.production` (git ignores it) with `DB_HOST`, `DB_PORT`, `DB_SSL=true`, `DB_SSL_CA`
-   (the CA certificate from the Aiven console), `DB_ADMIN_USER=avnadmin`, and new strong
-   values for `DB_MIGRATOR_USER=sh_migrator`, `DB_MIGRATOR_PASSWORD` and `DB_MODULE_PASSWORD`.
-   Then run `npm run db:hosted` (it asks for the avnadmin password, hidden), `npm run
-   migrate:hosted` and `npm run seed:hosted`. The setup checks that triggers are allowed and
-   says what to change if not.
-2. **Redis and the bucket.** Create an Upstash Redis database (copy its `rediss://` URL) and a
-   private bucket with a key limited to that bucket. Backblaze B2 needs no card for its free
-   10 GB: copy the S3 endpoint, its region (the part after `s3.`, e.g. `us-west-004`), the
-   bucket name, the key id and the application key into `S3_ENDPOINT`, `S3_REGION`,
-   `S3_BUCKET`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`. Cloudflare R2 works the same way
-   with `S3_REGION=auto`.
-3. **API.** On Render, New > Blueprint, pick this repository: `render.yaml` creates
-   `snackhub-api` and asks for each value. If Render gives the service another address, use it
-   in both `netlify.toml` files. Make an MFA key with
-   `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`. Copy the
-   `PROXY_SIGNING_SECRET` Render generated. `https://<api>.onrender.com/health` should answer.
-4. **Sites.** On Netlify, add two sites from this repository: base directory `frontend` for the
-   shop, `frontend/deploy/admin` for the console. In each, add the environment variable
-   `PROXY_SIGNING_SECRET` with the value from Render and the Runtime scope, and
-   `VITE_GOOGLE_CLIENT_ID` if Google sign-in is used. Then set Render's `APP_URL` (the shop),
-   `ADMIN_CONSOLE_URL` (the console, with a trailing `/`) and `CORS_ORIGINS` (both, comma
-   separated) to the two Netlify addresses.
-5. **First admin.** Add to `.env.production` the same `MFA_KEY` as on Render (the admin's
-   authenticator secret is encrypted with it, so a different key locks them out), the
-   `JWT_SECRET` and the `CORS_ORIGINS`, then run `npm run create-admin:hosted` from `backend/`.
-6. **Awake.** In GitHub, Settings > Secrets and variables > Actions > Variables, add `API_URL`
-   with the Render address. GitHub runs scheduled jobs late at busy times and pauses them after
-   60 days without a commit, so add a second free pinger too (for example an UptimeRobot HTTP
-   monitor on `https://<api>.onrender.com/health` every 5 minutes, which also emails you when
-   the API is down). Check Render's terms allow it.
-7. **Before applying to PhonePe.** Replace the demo business details in
-   `frontend/src/constants/business.jsx` (name, address, support and grievance contacts). They
-   appear on the Terms, Privacy, Cancellations and refunds, and Contact pages, which PhonePe
-   checks against your registration.
-
-The database pools: `render.yaml` sets `DB_POOL_MAX=3`, so the six module pools use at most 18
-connections. Check the plan's limit with `SHOW VARIABLES LIKE 'max_connections'` in the Aiven
-console's query editor, and keep `6 × DB_POOL_MAX` well under it.
-
-The demo: the hosted sites show the real API's data (the seeded demo shops are labelled). The
-one-tap demo accounts still work there: choosing one loads the in-browser mock for that browser
-only, until the demo session signs out. A build with `VITE_USE_MOCKS=true` starts the mock on
-every page (a demo-only site); development starts it unless `VITE_USE_MOCKS=false`.
-
-How the pieces trust each other: each Netlify site proxies `/api/*` to Render and signs every
-proxied request (Netlify's signed proxy redirects, HS256 with `PROXY_SIGNING_SECRET`). The API
-reads the signature to know the site: admin routes answer only requests the admin site signed,
-and the rate limits count each visitor's own address. In production the API refuses calls that
-did not come through a site, except the PhonePe webhook (point it straight at
-`https://<api>.onrender.com/api/v1/webhooks/phonepe`) and the health checks. Live updates
-connect straight to Render (`VITE_SOCKET_URL`), because Netlify cannot carry sockets; staff
-updates there need the admin console's own page address and a staff sign-in with a second factor.
-
-Free-plan limits to expect: the API takes about a minute to wake after a quiet spell, Netlify's
-free credits stop the sites when used up, and Aiven's free MySQL is small (about 1 GB disk) and
-may be powered off when unused. Check each provider's current limits.
-
-## Everyday commands
-
-From the repository root:
-
-| Command | Does |
+| Command | Description |
 | --- | --- |
-| `npm run dev` | Everything in one terminal, in order: Redis (when Docker is running), the API, then both sites once the API answers. Use this to avoid `ECONNREFUSED 127.0.0.1:4000`, which means a site is running without the API |
-| `npm run dev:frontend` | Frontend on http://localhost:5180 (accounts, onboarding and the catalog from the backend; the demo parts from the mock) |
-| `npm run dev:admin` | Admin console on http://localhost:5181 |
-| `npm run dev:backend` | Backend on http://localhost:4000 (`/health`, `/ready`, live updates on `/api/v1/socket`), with the email relay and the expiry job |
-| `npm run redis:up` / `npm run redis:down` | Start or stop SnackHub's Redis (Docker, 127.0.0.1:6380) |
-| `npm run create-admin -- --email you@gmail.com` | Make an admin (or `--role reviewer`) and print a one-time enrolment link |
-| `npm run jobs` | One pass of the expiry job and the email relay, for a scheduler when `RUN_JOBS=false` |
-| `npm run migrate` / `npm run migrate:down` | Apply every migration / undo all of them |
-| `npm run seed` | Reload the demo data (same result every time) |
-| `npm test` | Backend tests against MySQL (and Redis, when it runs): accounts, MFA, roles and permissions, onboarding and uploads, verification, expiry, constraints, catalog, orders, complaints, live updates, rate limits |
-| `npm run build` | Production build of the frontend and the admin console |
+| `npm run setup` | Create the local settings files |
+| `npm run db:local` | Create the schemas and users on a locally installed MySQL |
+| `npm run db:up` / `npm run db:down` | Start or stop MySQL, Redis and Mailpit in Docker |
+| `npm run redis:up` / `npm run redis:down` | Start or stop only Redis |
+| `npm run migrate` | Apply all database migrations |
+| `npm run migrate:status` | Show applied and pending migrations |
+| `npm run migrate:down` | Undo all migrations |
+| `npm run seed` | Load the demo data |
+| `npm run dev` | Run Redis, the API and the web app together |
+| `npm run dev:backend` | Run the API on port 4000 |
+| `npm run dev:frontend` | Run the web app on port 5180 |
+| `npm test` | Run the back-end test suite |
+| `npm run build` | Build the front end for production |
+| `npm run jobs` | Run the background jobs once (for an external scheduler) |
 
-## Database rules worth knowing
+## API documentation
 
-- Money is stored as integer paise; latitude and longitude as plain DECIMAL columns.
-- Stock can never go below zero, and two buyers racing for the last units get exactly one winner.
-- The same Idempotency-Key from one customer can never create two orders.
-- Each payment webhook event is processed once; the payment ledger can only be added to.
-- Foreign keys stay inside a module; references to another module's rows are plain ids.
-- A shop lists each catalogue entry at most once (a unique key on shop and entry).
+The API is versioned under `/api/v1`. With the API running, open
+http://localhost:4000/api/docs for Swagger UI, or fetch the OpenAPI 3.1 document from
+`/api/v1/openapi.json`. The documentation is generated from the same zod schemas that validate
+each request, so it always matches the code. Errors have one shape:
 
-## Status
+```json
+{ "error": { "code": "OUT_OF_STOCK", "message": "Only 2 Mirchi Bajji left", "requestId": "..." } }
+```
 
-- Phase 1, the frontend on a mock API: done.
-- Phase 2, the backend: the database (migrations, seed, constraint tests) is done; the catalog
-  (`/cities`, `/sellers`, `/products`, `/search`) is served from MySQL; and accounts for every
-  role work end to end: sign-up, email verification, password and Google sign-in, two-step
-  sign-in, password reset, sessions (`/api/v1/auth/*`), seller and rider onboarding with
-  documents (`/seller/onboarding`, `/rider/onboarding`), the verification console
-  (`/admin/verification`, `/admin/documents`, `/admin/requirements`, `/admin/users`,
-  `/admin/audit`), the customer order flow, complaints, credit, fines, rider pay disputes, the
-  delivery policy and the live operations board (see "Ordering" above), with live updates over
-  Socket.IO and shared rate limits in Redis (see "Live updates and rate limits"). Online payment runs
-  through PhonePe's sandbox once its test keys are set; there is no live payment. Passkeys are not built yet.
-- The demo catalogue has 201 snacks (one shared catalogue entry each) in 28 cities, most of them from the Telugu states, Tamil
-  Nadu, Karnataka, Kerala and Maharashtra (`shared/seed/regional.js`).
-- Every shop is a shop, a street stall (a cart, bandi or kadai) or a home kitchen (`catalog.sellers.kind`):
-  24 demo street stalls and 8 demo home kitchens, all fictional, with badges and filters on the site.
-- 34 of 201 snacks have their own AI image so far; the rest show a drawing until theirs is made
-  (`npm --prefix frontend run assets:generate` makes more each day on the free Hugging Face quota).
+## Deployment
+
+| Part | Platform |
+| --- | --- |
+| Web app | Netlify, with a strict Content Security Policy and HSTS |
+| API, real-time and background jobs | Render (Docker image from `backend/Dockerfile`, blueprint in `render.yaml`) |
+| MySQL 8 | Aiven, over TLS |
+| Redis | Upstash, over TLS |
+| Uploaded documents | Backblaze B2, a private S3-compatible bucket |
+
+The web app forwards `/api/*` to the API through Netlify's signed proxy, so the browser only ever
+talks to its own site and the API can trust the visitor's real IP address for rate limiting.
+Secrets are kept only in each platform's environment settings, never in the repository.
+
+## Roadmap
+
+- Online payments in test mode (the payment flow is built behind a provider interface; pay on
+  delivery is live today)
+- End-to-end browser tests and load testing
+- A separate worker process for background jobs
+- Virus scanning for uploaded documents in production
