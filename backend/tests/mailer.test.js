@@ -4,7 +4,7 @@ import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { createMailer } from '../src/utils/mailer.js';
+import { createMailer, parseSender } from '../src/utils/mailer.js';
 import { createSms } from '../src/utils/sms.js';
 import { loadEnv } from '../src/config/env.js';
 
@@ -30,6 +30,9 @@ describe('mail settings', () => {
     expect(() => loadEnv({ ...BASE, NODE_ENV: 'production', REDIS_URL: 'redis://redis.internal:6379', MAIL_TRANSPORT: 'file' })).toThrow(/development only/);
     expect(() => loadEnv({ ...BASE, NODE_ENV: 'production', REDIS_URL: 'redis://redis.internal:6379', SMS_PROVIDER: 'dev-mail' })).toThrow(/development only/);
     expect(() => loadEnv({ ...BASE, NODE_ENV: 'production', REDIS_URL: 'redis://redis.internal:6379', MAIL_TRANSPORT: 'smtp' })).toThrow(/SMTP_HOST/);
+    // a Brevo key wins over SMTP, because hosts that need it block the SMTP ports
+    expect(loadEnv({ ...BASE, NODE_ENV: 'production', REDIS_URL: 'redis://redis.internal:6379', BREVO_API_KEY: 'test-key', SMTP_HOST: 'smtp.example.test' }).MAIL_TRANSPORT).toBe('brevo');
+    expect(() => loadEnv({ ...BASE, MAIL_TRANSPORT: 'brevo' })).toThrow(/BREVO_API_KEY/);
   });
 });
 
@@ -65,5 +68,40 @@ describe('the file transport', () => {
     const mailer = createMailer({ MAIL_TRANSPORT: 'off' });
     expect(mailer.enabled).toBe(false);
     expect(await mailer.send({ to: 'x@example.test', subject: 's', text: 't' })).toEqual({ skipped: true });
+  });
+});
+
+describe('the Brevo transport', () => {
+  const env = { MAIL_TRANSPORT: 'brevo', BREVO_API_KEY: 'test-key', MAIL_FROM: 'SnackHub <hello@snackhub.test>' };
+  const reply = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+  it('reads the sender name and address', () => {
+    expect(parseSender('SnackHub (demo) <no-reply@snackhub.test>')).toEqual({ name: 'SnackHub (demo)', email: 'no-reply@snackhub.test' });
+    expect(parseSender(' plain@snackhub.test ')).toEqual({ email: 'plain@snackhub.test' });
+  });
+
+  it('posts the message to the web API with the key in a header', async () => {
+    const calls = [];
+    const mailer = createMailer(env, { fetch: async (url, init) => (calls.push([url, init]), reply(201, { messageId: '<abc@brevo>' })) });
+    expect(mailer).toMatchObject({ enabled: true, kind: 'brevo' });
+    expect(await mailer.send({ to: 'asha@example.test', subject: 'Confirm your email', text: 'Open the link', html: '<p>hi</p>', messageId: '<outbox-identity-7@snackhub.local>' })).toEqual({ messageId: '<abc@brevo>' });
+    const [url, init] = calls[0];
+    expect(url).toBe('https://api.brevo.com/v3/smtp/email');
+    expect(init.headers['api-key']).toBe('test-key');
+    expect(JSON.parse(init.body)).toEqual({
+      sender: { name: 'SnackHub', email: 'hello@snackhub.test' },
+      to: [{ email: 'asha@example.test' }],
+      subject: 'Confirm your email',
+      textContent: 'Open the link',
+      htmlContent: '<p>hi</p>',
+      headers: { 'X-SnackHub-Message-Id': '<outbox-identity-7@snackhub.local>' },
+    });
+  });
+
+  it('fails with the status and code, never the address, so the outbox tries again', async () => {
+    const mailer = createMailer(env, { fetch: async () => reply(401, { code: 'unauthorized', message: 'Key not found' }) });
+    const err = await mailer.send({ to: 'asha@example.test', subject: 's', text: 't' }).catch((e) => e);
+    expect(err).toMatchObject({ status: 401, code: 'unauthorized' });
+    expect(err.message).not.toContain('asha');
   });
 });

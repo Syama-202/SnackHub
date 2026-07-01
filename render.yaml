@@ -46,7 +46,8 @@ services:
       - { key: S3_BUCKET, sync: false }
       - { key: S3_ACCESS_KEY_ID, sync: false }
       - { key: S3_SECRET_ACCESS_KEY, sync: false }
-      # email through a provider's SMTP
+      # email: BREVO_API_KEY (Brevo's web API; Render's free plan blocks the SMTP ports) or SMTP
+      - { key: BREVO_API_KEY, sync: false }
       - { key: SMTP_HOST, sync: false }
       - { key: SMTP_PORT, sync: false }
       - { key: SMTP_USER, sync: false }

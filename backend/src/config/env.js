@@ -62,10 +62,13 @@ const server = database.extend({
   // check new passwords against Have I Been Pwned (only a 5-character hash prefix is sent)
   PASSWORD_BREACH_CHECK: bool.prefault('false'),
 
-  // Email with nodemailer: smtp (your provider), file (each message saved as an .eml file in
-  // MAIL_DIR, development only) or off. Unset: smtp when SMTP_HOST is set, otherwise file in
-  // development and off elsewhere, where the outbox keeps the messages until it is set.
-  MAIL_TRANSPORT: z.enum(['smtp', 'file', 'off']).optional(),
+  // Email: brevo (Brevo's web API over HTTPS, for hosts that block the SMTP ports, such as
+  // Render's free plan), smtp (your provider, with nodemailer), file (each message saved as an
+  // .eml file in MAIL_DIR, development only) or off. Unset: brevo when BREVO_API_KEY is set,
+  // smtp when SMTP_HOST is set, otherwise file in development and off elsewhere, where the
+  // outbox keeps the messages until it is set.
+  MAIL_TRANSPORT: z.enum(['brevo', 'smtp', 'file', 'off']).optional(),
+  BREVO_API_KEY: z.string().max(200).default(''),
   MAIL_DIR: z.string().min(1).default('storage/mail'),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
@@ -165,6 +168,7 @@ export function loadEnv(source = process.env) {
   // saved emails hold sign-in links, so production never writes them to disk
   if (env.MAIL_TRANSPORT === 'file' && env.NODE_ENV === 'production') throw new Error('Invalid settings: MAIL_TRANSPORT=file is for development only.');
   if (env.MAIL_TRANSPORT === 'smtp' && !env.SMTP_HOST) throw new Error('Invalid or missing settings: SMTP_HOST. See backend/.env.example.');
+  if (env.MAIL_TRANSPORT === 'brevo' && !env.BREVO_API_KEY) throw new Error('Invalid or missing settings: BREVO_API_KEY. See backend/.env.example.');
   if (env.PHONEPE_CLIENT_ID && !env.PHONEPE_CLIENT_SECRET) throw new Error('Invalid or missing settings: PHONEPE_CLIENT_SECRET. See backend/.env.example.');
   if (env.STORAGE_DRIVER === 's3' && !(env.S3_ENDPOINT && env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY)) {
     throw new Error('Invalid or missing settings: S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY. See backend/.env.example.');
@@ -181,7 +185,7 @@ export function loadEnv(source = process.env) {
     API_DOCS: env.API_DOCS ?? env.NODE_ENV !== 'production',
     REQUIRE_PROXY: env.REQUIRE_PROXY ?? Boolean(env.PROXY_SIGNING_SECRET && env.NODE_ENV === 'production'),
     SMTP_HOST: env.SMTP_HOST ?? '',
-    MAIL_TRANSPORT: env.MAIL_TRANSPORT ?? (env.SMTP_HOST ? 'smtp' : dev ? 'file' : 'off'),
+    MAIL_TRANSPORT: env.MAIL_TRANSPORT ?? (env.BREVO_API_KEY ? 'brevo' : env.SMTP_HOST ? 'smtp' : dev ? 'file' : 'off'),
     SMS_PROVIDER: env.SMS_PROVIDER ?? (dev ? 'dev-mail' : ''),
     GEOCODER_URL: env.GEOCODER_URL ?? (dev ? 'https://nominatim.openstreetmap.org' : ''),
   });
