@@ -1,7 +1,7 @@
 # Every push to main and every pull request: the backend tests against a real MySQL 8.4 and
-# Redis (the same schemas, module users and migrations as local development), and both
-# frontend builds. Nothing here deploys, and no real keys are used: the passwords below exist
-# only inside these throwaway containers, and payments stay off (no PhonePe keys).
+# Redis (the same schemas, module users and migrations as local development), the frontend
+# unit tests and both frontend builds. Nothing here deploys, and no real keys are used: the
+# passwords below exist only inside these throwaway containers, and payments stay off.
 name: CI
 
 on:
@@ -75,7 +75,7 @@ jobs:
         run: npx vitest run
 
   frontend:
-    name: Frontend builds
+    name: Frontend tests and builds
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -90,6 +90,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       # one dev dependency declares an older peer range; the lockfile pins what works
       - run: npm ci --legacy-peer-deps
+      - name: Unit tests
+        run: npx vitest run
       - name: Customer, seller and rider site
         run: npx vite build
       - name: Admin console
