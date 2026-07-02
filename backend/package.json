@@ -21,6 +21,8 @@
     "migrate:hosted": "node --env-file=.env.production scripts/migrate.js latest",
     "seed:hosted": "node --env-file=.env.production scripts/seed.js",
     "create-admin:hosted": "node --env-file=.env.production scripts/create-admin.js",
+    "backup": "node --env-file=.env scripts/backup.js",
+    "backup:hosted": "node --env-file=.env.production scripts/backup.js",
     "jobs": "node --env-file=.env scripts/jobs.js"
   },
   "dependencies": {
