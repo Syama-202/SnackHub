@@ -5,24 +5,38 @@
 // The URL may carry a password, so only the state is logged, never the URL.
 import { Redis } from 'ioredis';
 
-export function createRedis(env, logger, { name = 'api', queue = false } = {}) {
+export function createRedis(env, logger, { name = 'api', queue = false, graceMs = 8000 } = {}) {
   if (!env.REDIS_URL) return null;
   const redis = new Redis(env.REDIS_URL, {
     connectionName: `snackhub-${name}`,
     enableOfflineQueue: queue,
     maxRetriesPerRequest: 1,
     connectTimeout: 2000,
+    // hosted Redis closes a connection that sits quiet; a TCP keep-alive every 30 s stops that
+    keepAlive: 30_000,
     retryStrategy: (times) => Math.min(times * 500, 5000),
   });
+  // a dropped connection that comes back within a few seconds is routine on hosted Redis, so
+  // the warning waits that long; only an outage that lasts is logged
   let up = null;
+  let warn = null;
   redis.on('ready', () => {
+    clearTimeout(warn);
+    warn = null;
     if (up !== true) logger?.info({ redis: 'ready' }, 'redis connected');
     up = true;
   });
   redis.on('error', (err) => {
-    if (up !== false) logger?.warn({ redis: 'down', reason: err.code ?? err.name }, 'redis unreachable; limits count per process until it is back');
-    up = false;
+    if (up === false || warn) return;
+    const reason = err.code ?? err.name;
+    warn = setTimeout(() => {
+      warn = null;
+      up = false;
+      logger?.warn({ redis: 'down', reason }, 'redis unreachable; limits count per process until it is back');
+    }, graceMs);
+    warn.unref?.();
   });
+  redis.on('end', () => clearTimeout(warn));
   return redis;
 }
 
