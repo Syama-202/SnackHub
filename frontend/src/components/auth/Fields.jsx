@@ -1,12 +1,12 @@
 import { forwardRef, useState } from 'react';
-import { Icon, cx } from '../ui';
+import { FieldMessage as Message, Icon, Select, cx } from '../ui';
 import { passwordProblems, PASSWORD_MIN } from '@shared/domain/passwords';
 
-const inputClass = (error) =>
-  cx('h-11 w-full rounded-xl border bg-white px-3.5 text-[0.9375rem] text-grey-800 placeholder:text-grey-400 transition focus:border-orange focus:outline-none focus:ring-4 focus:ring-orange/15', error ? 'border-red' : 'border-grey-800/15');
+// the shared field look (styles/index.css); aria-invalid on the element turns the border red
+const inputClass = () => 'field h-11';
 
-const Message = ({ id, error, hint }) =>
-  error ? <span id={`${id}-err`} className="mt-1 block text-sm font-semibold text-red-text" role="alert">{error}</span> : hint ? <span id={`${id}-hint`} className="mt-1 block text-sm text-grey-600">{hint}</span> : null;
+// Select lives with the other shared fields now; it is still exported from here for the forms that import it
+export { Select };
 
 /**
  * A password with a show/hide button. strength shows the live checklist (sign-up and reset);
@@ -60,20 +60,6 @@ export const CodeField = forwardRef(function CodeField({ label = '6-digit code',
         {...rest}
       />
       <Message id={id} error={error} />
-    </label>
-  );
-});
-
-/** A select styled like Input. */
-export const Select = forwardRef(function Select({ label, id, error, hint, children, className, ...rest }, ref) {
-  const fid = id || rest.name;
-  return (
-    <label className={cx('block', className)} htmlFor={fid}>
-      {label && <span className="mb-1.5 block text-sm font-bold text-grey-800">{label}</span>}
-      <select ref={ref} id={fid} aria-invalid={Boolean(error)} className={cx(inputClass(error), 'pr-8')} {...rest}>
-        {children}
-      </select>
-      <Message id={fid} error={error} hint={hint} />
     </label>
   );
 });

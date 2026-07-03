@@ -7,9 +7,14 @@ import { useReveal } from '../../hooks';
 const cx = (...c) => c.filter(Boolean).join(' ');
 
 // ---------- Button: primary gradient with grey-800 text, danger with white text (doc 22.1)
+// One main action per screen is primary; secondary sits beside it; ghost and quiet are for
+// actions on a coloured or busy background; danger confirms a destructive action and
+// dangerOutline offers one.
 const BTN = {
-  primary: 'bg-primary text-grey-800 shadow-cta hover:shadow-lg shine',
-  danger: 'bg-danger text-white shine',
+  primary: 'bg-primary text-grey-800 shadow-cta hover:shadow-lg hover:brightness-[1.03] disabled:shadow-none shine',
+  secondary: 'bg-white text-grey-800 border border-grey-800/15 shadow-sm hover:border-grey-800/30 hover:bg-grey-50',
+  danger: 'bg-danger text-white hover:brightness-105 shine',
+  dangerOutline: 'border border-red/45 bg-white text-red-text hover:bg-red/5 hover:border-red',
   dark: 'bg-grey-800 text-white hover:bg-grey-900',
   ghost: 'bg-white/70 text-grey-800 border border-white/80 shadow-sm backdrop-blur hover:bg-white',
   quiet: 'text-grey-800 hover:bg-grey-800/5',
@@ -22,12 +27,40 @@ export const Button = forwardRef(function Button({ variant = 'primary', size = '
   return (
     <button
       ref={ref}
-      className={cx('inline-flex min-h-11 items-center justify-center gap-2 rounded-full font-bold transition-all active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50', BTN[variant], SIZE[size], size === 'sm' && 'min-h-9', className)}
+      className={cx(
+        'inline-flex min-h-11 select-none items-center justify-center gap-2 rounded-full font-bold transition-[transform,box-shadow,background-color,border-color,filter,opacity] duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100',
+        BTN[variant],
+        SIZE[size],
+        size === 'sm' && 'min-h-9',
+        className,
+      )}
       disabled={loading || rest.disabled}
+      aria-busy={loading || undefined}
       {...rest}
     >
       {loading && <Spinner className="h-4 w-4" />}
       {children}
+    </button>
+  );
+});
+
+const ICON_BTN = {
+  quiet: 'text-grey-600 hover:bg-grey-800/5 hover:text-grey-800',
+  solid: 'bg-white text-grey-800 border border-grey-800/10 shadow-sm hover:border-grey-800/25',
+  danger: 'text-red-text hover:bg-red/10',
+};
+/** A round button that shows only an icon. The label is read out and shows as a tooltip. */
+export const IconButton = forwardRef(function IconButton({ label, icon, variant = 'quiet', size = 'md', className, children, ...rest }, ref) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      aria-label={label}
+      title={label}
+      className={cx('grid shrink-0 place-items-center rounded-full transition-[transform,background-color,border-color,color] duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50', size === 'sm' ? 'h-9 w-9' : 'h-11 w-11', ICON_BTN[variant], className)}
+      {...rest}
+    >
+      {icon ? <Icon name={icon} className={size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'} /> : children}
     </button>
   );
 });
@@ -65,20 +98,71 @@ export function Pill({ tone = 'grey', className, children, ...rest }) {
   );
 }
 
-export const Input = forwardRef(function Input({ label, hint, error, className, id, ...rest }, ref) {
+// ---------- Form fields: Input, Select and Textarea share one look (the `field` utility in
+// styles/index.css), one label style and one message line. An error shows an icon as well as
+// red text, so it does not rely on colour alone.
+export function FieldLabel({ children, optional }) {
+  return (
+    <span className="mb-1.5 flex items-baseline justify-between gap-2 text-sm font-bold text-grey-800">
+      <span>{children}</span>
+      {optional && <span className="text-xs font-semibold text-grey-600">Optional</span>}
+    </span>
+  );
+}
+
+export function FieldMessage({ id, error, hint }) {
+  if (error)
+    return (
+      <span id={`${id}-err`} role="alert" className="mt-1.5 flex items-start gap-1.5 text-sm font-semibold text-red-text">
+        <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>{error}</span>
+      </span>
+    );
+  return hint ? <span id={`${id}-hint`} className="mt-1.5 block text-sm text-grey-600">{hint}</span> : null;
+}
+
+const describedBy = (id, error, hint) => (error ? `${id}-err` : hint ? `${id}-hint` : undefined);
+
+export const Input = forwardRef(function Input({ label, hint, error, optional, className, id, ...rest }, ref) {
   const fid = id || rest.name;
   return (
     <label className={cx('block', className)} htmlFor={fid}>
-      {label && <span className="mb-1.5 block text-sm font-bold text-grey-800">{label}</span>}
-      <input
-        ref={ref}
-        id={fid}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${fid}-err` : hint ? `${fid}-hint` : undefined}
-        className={cx('h-11 w-full rounded-xl border bg-white px-3.5 text-[0.9375rem] text-grey-800 placeholder:text-grey-400 transition focus:border-orange focus:outline-none focus:ring-4 focus:ring-orange/15', error ? 'border-red' : 'border-grey-800/15')}
-        {...rest}
-      />
-      {error ? <span id={`${fid}-err`} className="mt-1 block text-sm font-semibold text-red-text">{error}</span> : hint ? <span id={`${fid}-hint`} className="mt-1 block text-sm text-grey-600">{hint}</span> : null}
+      {label && <FieldLabel optional={optional}>{label}</FieldLabel>}
+      <input ref={ref} id={fid} aria-invalid={Boolean(error)} aria-describedby={describedBy(fid, error, hint)} className="field h-11" {...rest} />
+      <FieldMessage id={fid} error={error} hint={hint} />
+    </label>
+  );
+});
+
+/** A select styled like Input, with its own arrow so it looks the same in every browser. */
+export const Select = forwardRef(function Select({ label, hint, error, optional, className, id, children, ...rest }, ref) {
+  const fid = id || rest.name;
+  return (
+    <label className={cx('block', className)} htmlFor={fid}>
+      {label && <FieldLabel optional={optional}>{label}</FieldLabel>}
+      <span className="relative block">
+        <select ref={ref} id={fid} aria-invalid={Boolean(error)} aria-describedby={describedBy(fid, error, hint)} className="field h-11 appearance-none pr-10" {...rest}>
+          {children}
+        </select>
+        <Icon name="chevronDown" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-grey-600" />
+      </span>
+      <FieldMessage id={fid} error={error} hint={hint} />
+    </label>
+  );
+});
+
+/** A text area styled like Input. With maxLength it shows how many characters are left. */
+export const Textarea = forwardRef(function Textarea({ label, hint, error, optional, className, id, rows = 3, ...rest }, ref) {
+  const fid = id || rest.name;
+  const left = rest.maxLength && typeof rest.value === 'string' ? rest.maxLength - rest.value.length : null;
+  return (
+    <label className={cx('block', className)} htmlFor={fid}>
+      {label && <FieldLabel optional={optional}>{label}</FieldLabel>}
+      <textarea ref={ref} id={fid} rows={rows} aria-invalid={Boolean(error)} aria-describedby={describedBy(fid, error, hint)} className="field resize-y py-2.5 leading-relaxed" {...rest} />
+      <span className="flex items-start justify-between gap-3">
+        <span className="min-w-0"><FieldMessage id={fid} error={error} hint={hint} /></span>
+        {left !== null && left <= 40 && <span className={cx('nums mt-1.5 shrink-0 text-xs font-semibold', left <= 10 ? 'text-red-text' : 'text-grey-600')} aria-live="polite">{left} left</span>}
+      </span>
     </label>
   );
 });
@@ -138,6 +222,8 @@ export function Modal({ open, onClose, title, children, className, wide }) {
             exit={{ y: 30, opacity: 0, scale: 0.98 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
           >
+            {/* on a phone the dialog is a bottom sheet: the bar shows it can be closed */}
+            <span className="sticky top-0 z-10 mx-auto block h-1.5 w-10 translate-y-2 rounded-full bg-grey-800/15 sm:hidden" aria-hidden="true" />
             {children}
           </m.div>
         </m.div>
@@ -189,7 +275,7 @@ export function Skeleton({ className }) {
 
 export function Price({ paise, mrp, className }) {
   return (
-    <span className={cx('inline-flex items-baseline gap-1.5', className)}>
+    <span className={cx('nums inline-flex items-baseline gap-1.5', className)}>
       <span className="font-extrabold text-grey-800">{rupees(paise)}</span>
       {mrp ? (
         <>
@@ -272,14 +358,79 @@ export function LogoMark({ className }) {
   return <img src="/assets/brand/logo-round.webp" alt="" width="512" height="512" decoding="async" className={cx('shrink-0 rounded-full object-contain', className)} />;
 }
 
-export function EmptyState({ title, body, action, art }) {
+/**
+ * Nothing to show yet: what is missing, why, and the next step. `icon` names one from Icon
+ * (a round badge is drawn around it); `art` replaces the badge with your own picture.
+ * compact fits inside a card or a drawer.
+ */
+export function EmptyState({ title, body, action, art, icon = 'box', compact = false, className }) {
   return (
-    <div className="flex flex-col items-center px-6 py-10 text-center">
-      {art}
-      <h3 className="mt-4 text-xl font-bold text-grey-800">{title}</h3>
-      {body && <p className="mt-1 max-w-sm text-grey-600">{body}</p>}
-      {action && <div className="mt-5">{action}</div>}
+    <div className={cx('flex flex-col items-center text-center', compact ? 'px-4 py-6' : 'px-6 py-12 sm:py-16', className)}>
+      {art ?? (
+        <span className={cx('grid place-items-center rounded-full bg-sun-soft text-orange-ink ring-8 ring-sun-soft/50', compact ? 'h-12 w-12' : 'h-16 w-16')} aria-hidden="true">
+          <Icon name={icon} className={compact ? 'h-5 w-5' : 'h-7 w-7'} />
+        </span>
+      )}
+      <h2 className={cx('font-extrabold text-grey-800', compact ? 'mt-3 text-base' : 'mt-5 text-xl')}>{title}</h2>
+      {body && <p className={cx('mt-1.5 max-w-sm text-grey-600', compact && 'text-sm')}>{body}</p>}
+      {action && <div className="mt-5 flex flex-wrap justify-center gap-2">{action}</div>}
     </div>
+  );
+}
+
+/**
+ * Something failed to load: a plain reason and a way to try again. Use it in place of the
+ * content that could not be shown; a failed action (a save, a payment) uses a toast instead.
+ */
+export function ErrorState({ title = 'Could not load this', body = 'Check your connection and try again.', onRetry, retrying, action, compact = false, className }) {
+  return (
+    <div role="alert" className={cx('flex flex-col items-center text-center', compact ? 'px-4 py-6' : 'px-6 py-12 sm:py-16', className)}>
+      <span className={cx('grid place-items-center rounded-full bg-red/10 text-red-text ring-8 ring-red/5', compact ? 'h-12 w-12' : 'h-16 w-16')} aria-hidden="true">
+        <Icon name="alert" className={compact ? 'h-5 w-5' : 'h-7 w-7'} />
+      </span>
+      <h2 className={cx('font-extrabold text-grey-800', compact ? 'mt-3 text-base' : 'mt-5 text-xl')}>{title}</h2>
+      {body && <p className={cx('mt-1.5 max-w-sm text-grey-600', compact && 'text-sm')}>{body}</p>}
+      {(onRetry || action) && (
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          {onRetry && <Button variant="secondary" onClick={onRetry} loading={retrying}><Icon name="refresh" className="h-4 w-4" /> Try again</Button>}
+          {action}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A message inside a page or form: info, success, warning or error, with an icon as well as colour. */
+const NOTE = {
+  info: ['bg-grey-50 text-grey-800', 'info'],
+  success: ['bg-emerald-50 text-emerald-800', 'check'],
+  warning: ['bg-sun-soft text-orange-ink', 'alert'],
+  error: ['bg-red/10 text-red-text', 'alert'],
+};
+export function Note({ tone = 'info', title, children, className, ...rest }) {
+  const [look, icon] = NOTE[tone] ?? NOTE.info;
+  return (
+    <div role={tone === 'error' ? 'alert' : 'status'} className={cx('flex items-start gap-2.5 rounded-2xl p-3.5 text-sm', look, className)} {...rest}>
+      <Icon name={icon} className="mt-0.5 h-4 w-4 shrink-0" />
+      <div className="min-w-0">
+        {title && <p className="font-bold">{title}</p>}
+        <div className={cx(tone === 'error' && !title && 'font-semibold')}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/** The title block of an inner page: where you are, a line of help, and the page's actions. */
+export function PageHeader({ title, sub, eyebrow, actions, className }) {
+  return (
+    <header className={cx('flex flex-wrap items-end justify-between gap-x-6 gap-y-3', className)}>
+      <div className="min-w-0">
+        {eyebrow && <p className="eyebrow mb-1.5">{eyebrow}</p>}
+        <h1 className="page-title">{title}</h1>
+        {sub && <p className="mt-1.5 max-w-2xl text-grey-600">{sub}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </header>
   );
 }
 
@@ -340,6 +491,11 @@ const ICONS = {
   mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></>,
   key: <><circle cx="8" cy="15" r="4" /><path d="m11 12 9-9m-4 4 3 3m-6-1 2 2" /></>,
   x: <path d="M6 6l12 12M18 6 6 18" />,
+  info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8.5v.5" /></>,
+  refresh: <><path d="M20 11a8 8 0 0 0-14.3-4.3L4 8.5" /><path d="M4 4v4.5h4.5" /><path d="M4 13a8 8 0 0 0 14.3 4.3L20 15.5" /><path d="M20 20v-4.5h-4.5" /></>,
+  inbox: <><path d="M3 13h5l1.5 3h5L16 13h5" /><path d="M5.5 5h13L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5z" /></>,
+  receipt: <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" /><path d="M9 8h6M9 12h6" /></>,
+  store: <><path d="M4 9 5.5 4h13L20 9" /><path d="M4 9a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0A2.7 2.7 0 0 0 20 9" /><path d="M5 12v8h14v-8" /><path d="M10 20v-5h4v5" /></>,
   play: <path d="M7 5v14l11-7z" />,
   pause: <><path d="M8 5v14" /><path d="M16 5v14" /></>,
   shield: <><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z" /><path d="m9 12 2 2 4-4" /></>,
@@ -349,6 +505,7 @@ const ICONS = {
   arrowRight: <path d="M5 12h14m-6-6 6 6-6 6" />,
   arrowLeft: <path d="M19 12H5m6-6-6 6 6 6" />,
   chevronDown: <path d="m6 9 6 6 6-6" />,
+  chevronRight: <path d="m9 6 6 6-6 6" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   star: <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" />,
   alert: <><path d="M12 3 2 20h20z" /><path d="M12 10v4m0 3v.5" /></>,

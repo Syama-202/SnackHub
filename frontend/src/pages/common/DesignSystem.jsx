@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { Button, Card, Pill, Input, Modal, Drawer, CloseButton, QtyControl, SpiceMeter, TempBadge, Price, Skeleton, Logo, Icon, SectionTitle } from '../../components/ui';
+import { Button, IconButton, Card, Pill, Input, Select, Textarea, Modal, Drawer, CloseButton, QtyControl, SpiceMeter, TempBadge, Price, Skeleton, Logo, Icon, SectionTitle, EmptyState, ErrorState, Note, PageHeader } from '../../components/ui';
 import SnackArt from '../../components/ui/SnackArt';
 import { addToast } from '../../store/slices/toast';
 
@@ -66,14 +66,20 @@ export default function DesignSystem() {
       <h2 className="mt-12 text-2xl font-extrabold">Buttons and pills</h2>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <Button>Primary</Button>
+        <Button variant="secondary">Secondary</Button>
         <Button variant="danger">Danger</Button>
+        <Button variant="dangerOutline">Delete</Button>
         <Button variant="dark">Dark</Button>
         <Button variant="ghost">Ghost</Button>
         <Button variant="outline">Outline</Button>
         <Button loading>Loading</Button>
         <Button disabled>Disabled</Button>
         <Button size="sm">Small</Button>
+        <IconButton label="Notifications" icon="bell" />
+        <IconButton label="Add" icon="plus" variant="solid" />
+        <IconButton label="Delete" icon="x" variant="danger" size="sm" />
       </div>
+      <p className="mt-3 max-w-2xl text-sm text-grey-600">One primary action per screen. Secondary sits beside it. Ghost and quiet go on coloured or busy backgrounds. Danger confirms a destructive action; the outlined one offers it.</p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Pill tone="sun">Bestseller</Pill><Pill tone="orange">Travels well</Pill><Pill tone="red">Only 2 left</Pill><Pill tone="green">Paid</Pill><Pill tone="dark">Trending</Pill><Pill>Neutral</Pill>
         <TempBadge temp="HOT" /><SpiceMeter level={3} /><Price paise={18000} mrp={22000} />
@@ -84,8 +90,25 @@ export default function DesignSystem() {
         <Input label="Delivery address" placeholder="House no., street" hint="Helper text" />
         <Input label="With error" defaultValue="12" error="Add the street and area" />
         <div className="flex items-end gap-3"><QtyControl qty={qty} onChange={setQty} label="Murukku" /><QtyControl qty={0} disabled onChange={() => {}} label="Sold out item" /></div>
+        <Select label="City" defaultValue="hyderabad"><option value="hyderabad">Hyderabad</option><option value="guntur">Guntur</option></Select>
+        <Textarea label="Note for the shop" optional maxLength={200} defaultValue="" placeholder="Less spicy, no onion…" hint="The kitchen sees this." />
+        <Input label="Disabled" defaultValue="Cannot change" disabled />
       </div>
+      <p className="mt-3 max-w-2xl text-sm text-grey-600">Every field is 44 px tall with a 12 px corner. A field written by hand in a page uses the <code>field</code> class to get the same look.</p>
       <div className="mt-4 grid grid-cols-3 gap-3"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div>
+
+      <h2 className="mt-12 text-2xl font-extrabold">Page title, empty, error and message states</h2>
+      <Card className="mt-4 p-5"><PageHeader eyebrow="Seller console" title="Page title" sub="One line that says what this page is for." actions={<Button variant="secondary" size="sm">Action</Button>} /></Card>
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <Card><EmptyState icon="receipt" title="No orders yet" body="What is missing, and the next step." action={<Button>Explore snacks</Button>} /></Card>
+        <Card><ErrorState title="We could not load your orders" onRetry={() => {}} /></Card>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <Note tone="info">Shops marked demo take no real orders.</Note>
+        <Note tone="success" title="Saved">Your address was updated.</Note>
+        <Note tone="warning">Your food licence expires in 12 days.</Note>
+        <Note tone="error">That delivery code is not right. 2 tries left.</Note>
+      </div>
 
       <h2 className="mt-12 text-2xl font-extrabold">Overlays and feedback</h2>
       <div className="mt-4 flex flex-wrap gap-3">

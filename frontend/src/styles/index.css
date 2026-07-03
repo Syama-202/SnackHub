@@ -13,6 +13,7 @@
   --color-red-strong: #D62839;
   --color-grey-50: #F3F4F6;
   --color-grey-400: #9CA3AF;
+  --color-grey-500: #6B7280; /* placeholders and icons on white: 4.8:1, WCAG AA */
   --color-grey-600: #4B5563;
   --color-grey-800: #1F2937;
   --color-grey-900: #111827;
@@ -38,6 +39,11 @@
   --breakpoint-4xl: 160rem;
 
   --radius-glass: 20px;
+  /* The three radii of the system: controls (inputs, selects), cards and panels, and sheets
+     (modals, drawers). Buttons, chips and pills are fully round. */
+  --radius-control: 0.75rem;
+  --radius-card: 1.375rem;
+  --radius-sheet: 1.75rem;
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -174,13 +180,78 @@
 }
 /* Hover: lifts and picks up a warm glow */
 @utility glow {
-  transition: transform 0.3s var(--ease-out-soft), box-shadow 0.3s var(--ease-out-soft);
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
-      0 24px 48px -18px rgba(255, 122, 0, 0.45),
-      0 0 0 1px rgba(255, 195, 0, 0.45);
+  transition: transform 0.25s var(--ease-out-soft), box-shadow 0.25s var(--ease-out-soft);
+  /* only where a pointer can hover, so a tap on a phone does not leave a card lifted */
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 20px 40px -20px rgba(255, 122, 0, 0.38),
+        0 0 0 1px rgba(255, 195, 0, 0.4);
+    }
+  }
+}
+
+/* ===== Type roles: one size per job, so every page reads the same ===== */
+/* The h1 of an inner page (orders, profile, the consoles) */
+@utility page-title {
+  font-size: clamp(1.75rem, 1.4rem + 1.3vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+/* The heading of a block inside a page */
+@utility section-heading {
+  font-size: clamp(1.25rem, 1.15rem + 0.4vw, 1.5rem);
+  font-weight: 800;
+  line-height: 1.2;
+}
+/* The small label above a heading */
+@utility eyebrow {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-orange-text);
+}
+/* Prices, counts and times line up in columns */
+@utility nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The one look of a text field, select or text area (Input, Select, Textarea in components/ui) */
+@utility field {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid rgba(31, 41, 55, 0.18);
+  border-radius: var(--radius-control);
+  background-color: #fff;
+  padding-inline: 0.875rem;
+  font-size: 0.9375rem;
+  color: var(--color-grey-800);
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+  &::placeholder {
+    color: var(--color-grey-500);
+    opacity: 1;
+  }
+  &:hover:not(:disabled, :focus) {
+    border-color: rgba(31, 41, 55, 0.34);
+  }
+  &:focus {
+    outline: none;
+    border-color: var(--color-orange);
+    box-shadow: 0 0 0 4px rgba(255, 122, 0, 0.16);
+  }
+  &:disabled {
+    background-color: var(--color-grey-50);
+    color: var(--color-grey-600);
+    cursor: not-allowed;
+  }
+  &[aria-invalid="true"] {
+    border-color: var(--color-red);
+  }
+  &[aria-invalid="true"]:focus {
+    box-shadow: 0 0 0 4px rgba(226, 55, 68, 0.16);
   }
 }
 /* A selected chip or tab: the sun-to-orange gradient with dark text (22.1) */
@@ -275,9 +346,11 @@
 /* Hover lift, 22.3 */
 @utility lift {
   transition: transform 0.25s var(--ease-out-soft), box-shadow 0.25s var(--ease-out-soft);
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-card-hover);
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-card-hover);
+    }
   }
 }
 
@@ -446,6 +519,41 @@
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    /* a link to a section stops below the sticky header, not under it */
+    scroll-padding-top: 6rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Anything you can press shows the hand cursor (Tailwind 4 leaves buttons with the arrow) */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  select:not(:disabled),
+  label[for],
+  input:is([type="checkbox"], [type="radio"], [type="file"]):not(:disabled) {
+    cursor: pointer;
+  }
+  /* Tick boxes and radio buttons in the brand colour, large enough to tap */
+  input:is([type="checkbox"], [type="radio"]) {
+    accent-color: var(--color-orange-deep);
+    min-width: 1.125rem;
+    min-height: 1.125rem;
+  }
+  /* Fields written by hand in a page (without the shared Input) still get the same focus,
+     hover and disabled behaviour. Utility classes on the element win over these. */
+  :where(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="hidden"]), select, textarea) {
+    transition: border-color 0.15s, box-shadow 0.15s, outline-color 0.15s;
+  }
+  :where(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="hidden"]), select, textarea)::placeholder {
+    color: var(--color-grey-500);
+    opacity: 1;
+  }
+  :where(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="hidden"]), select, textarea):disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+  /* numbers in tables line up */
+  table {
+    font-variant-numeric: tabular-nums;
   }
   body {
     @apply bg-page min-h-dvh font-sans text-grey-800 antialiased;
@@ -459,6 +567,12 @@
   }
   :focus-visible {
     @apply rounded-lg outline-3 outline-offset-2 outline-orange-deep;
+  }
+  /* a text field shows a soft ring on its own edge instead of the offset outline */
+  :where(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="hidden"]), select, textarea):focus-visible {
+    outline: 3px solid rgba(255, 122, 0, 0.32);
+    outline-offset: 0;
+    border-color: var(--color-orange);
   }
   ::selection {
     background: rgba(255, 195, 0, 0.45);

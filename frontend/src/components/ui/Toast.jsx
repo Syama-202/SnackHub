@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AnimatePresence, m } from 'motion/react';
 import { removeToast } from '../../store/slices/toast';
-import { cx } from './index';
+import { Icon, cx } from './index';
 
 const TONE = {
   info: 'bg-grey-800 text-white',
@@ -10,6 +10,7 @@ const TONE = {
   error: 'bg-red-strong text-white',
   sun: 'bg-sun text-grey-800',
 };
+const ICON = { info: 'info', success: 'check', error: 'alert', sun: 'sparkle' };
 
 /** Toasts from the Redux toast slice (addToast / removeToast). */
 const Toast = ({ bottomOffset = 0 }) => {
@@ -38,10 +39,11 @@ const ToastItem = ({ toast, onDismiss }) => {
       initial={{ opacity: 0, y: 16, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 8, scale: 0.96 }}
-      className={cx('pointer-events-auto flex max-w-sm items-start gap-3 rounded-2xl py-3 pl-4 pr-1 shadow-xl', TONE[toast.type] || TONE.info)}
+      className={cx('pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl py-3 pl-4 pr-1 shadow-xl', TONE[toast.type] || TONE.info)}
       role={toast.type === 'error' ? 'alert' : 'status'}
     >
-      <div className="flex-1 py-0.5">
+      <Icon name={ICON[toast.type] || ICON.info} className="mt-1 h-5 w-5 shrink-0" />
+      <div className="min-w-0 flex-1 py-0.5">
         {toast.title && <p className="font-bold">{toast.title}</p>}
         {toast.message && <p className="text-sm opacity-90">{toast.message}</p>}
       </div>
