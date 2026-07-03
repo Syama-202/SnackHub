@@ -43,14 +43,8 @@ export const PORTALS = {
 export const signInPath = (portal) => `/${portal}/signin`;
 export const signUpPath = (portal) => `/${portal}/signup`;
 
-// country codes offered on the forms; India first
-export const COUNTRY_CODES = [
-  ['+91', 'India (+91)'],
-  ['+971', 'UAE (+971)'],
-  ['+65', 'Singapore (+65)'],
-  ['+44', 'UK (+44)'],
-  ['+1', 'USA / Canada (+1)'],
-];
+// country codes offered on the forms: SnackHub delivers in India only
+export const COUNTRY_CODES = [['+91', 'India (+91)']];
 
 // the terms and privacy version shown at sign-up (the server records which one was accepted)
 export const TERMS_VERSION = '2026-03';
