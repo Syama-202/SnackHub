@@ -3,6 +3,7 @@ import { vendorChunks } from './vite.chunks.js';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
+import { rmSync } from 'node:fs';
 
 // Business rules and seed data shared with the API (../shared)
 const shared = fileURLToPath(new URL('../shared', import.meta.url));
@@ -31,10 +32,19 @@ export default defineConfig({
         });
       },
     },
+    {
+      // public/ is shared with the shop, but the console shows no snack photos and is not for
+      // search engines: drop the photos (about 14 MB), robots.txt and the shop's sitemap
+      name: 'admin-trim',
+      apply: 'build',
+      closeBundle() {
+        for (const p of ['assets/snacks', 'assets/landing', 'robots.txt', 'sitemap.xml']) rmSync(new URL(`./dist-admin/${p}`, import.meta.url), { recursive: true, force: true });
+      },
+    },
   ],
   // the host header stays localhost:5181, which is on the backend's ADMIN_HOSTS list, and the
   // admin refresh cookie works because the API is on the same origin
   server: { port: 5181, strictPort: true, fs: { allow: ['..'] }, proxy: { ...Object.fromEntries(['admin', 'auth', 'me', 'files', 'client-errors'].map((p) => [`/api/v1/${p}`, backend])), '/api/v1/socket': { target: backend, ws: true } } },
   // MapLibre is one 1 MB chunk (290 kB gzipped), loaded only by the live map
-  build: { outDir: 'dist-admin', assetsDir: 'static',chunkSizeWarningLimit: 1100, rollupOptions: { input: 'admin.html', output: { manualChunks: vendorChunks } } },
+  build: { outDir: 'dist-admin', assetsDir: 'static', chunkSizeWarningLimit: 1100, rollupOptions: { input: 'admin.html', output: { manualChunks: vendorChunks } } },
 });
