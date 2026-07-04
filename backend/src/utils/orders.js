@@ -190,6 +190,8 @@ export async function viewOrders(dbs, orders, viewer) {
       v.addressText = atTheDoor ? o.address_text : areaOf(detail?.line ?? o.address_text);
       v.addressDetail = atTheDoor ? detail : null;
     }
+    // the note is for the kitchen: the customer who wrote it, the shop and staff see it
+    if (viewer !== 'rider') v.note = o.note ?? null;
     if (viewer !== 'seller') v.drop = { lat: Number(o.drop_lat), lng: Number(o.drop_lng) };
     if (viewer === 'seller' && o.collected_paise != null) v.collectedPaise = o.collected_paise;
     return v;

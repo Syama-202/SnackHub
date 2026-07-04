@@ -20,7 +20,7 @@ const OrderTracking = () => {
   usePolling(() => dispatch(checkPayment(id)), 4000, t?.order.status === 'PENDING_PAYMENT', 'order');
   usePageTitle(t ? `Order #${t.order.id}: ${STATE_LABEL[t.order.status]}` : null);
   if (isLoading) return <div className="grid min-h-[50vh] place-items-center"><Spinner className="h-8 w-8 text-orange-text" /></div>;
-  if (error && !t) return <EmptyState title="Order not found" body="It may belong to another account." action={<Link to="/orders"><Button>Your orders</Button></Link>} />;
+  if (error && !t) return <EmptyState icon="search" title="Order not found" body="It may belong to another account." action={<Link to="/orders"><Button>Your orders</Button></Link>} />;
   const o = t.order;
   const terminal = ['DELIVERED', 'CANCELLED', 'REJECTED'].includes(o.status);
   return (
@@ -81,6 +81,7 @@ const OrderTracking = () => {
               <Pill tone={o.tempClass === 'HOT' ? 'red' : 'orange'}>{o.tempClass === 'HOT' ? 'Hot order' : 'Sweet and dry order'}</Pill>
             </div>
             <p className="mt-3 text-sm text-grey-600"><Icon name="pin" className="mr-1 inline h-4 w-4" />{o.addressDetail?.label ? <b className="text-grey-800">{o.addressDetail.label}: </b> : null}{o.addressText}</p>
+            {o.note && <p className="mt-1 text-sm text-grey-600"><b className="text-grey-800">Your note to the shop:</b> {o.note}</p>}
             {o.addressDetail?.instructions && <p className="mt-1 text-sm text-grey-600">For the rider: {o.addressDetail.instructions}</p>}
             {o.rider && <p className="mt-2 text-sm text-grey-600"><Icon name="scooter" className="mr-1 inline h-4 w-4" />{[o.rider.name, o.rider.vehicle, o.rider.rating != null && `★ ${o.rider.rating}`].filter(Boolean).join(' · ')}</p>}
           </Card>

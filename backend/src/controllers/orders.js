@@ -124,6 +124,7 @@ export function ordersController({ env, dbs }) {
           // the address as it is now; later edits to the saved address never reach this order
           address_text: addressSummary(address).slice(0, 255),
           address_detail: JSON.stringify(addressDetail(address)),
+          note: req.body.note || null,
           drop_lat: drop.lat,
           drop_lng: drop.lng,
           distance_m: Math.round(promise.distanceKm * 1000),

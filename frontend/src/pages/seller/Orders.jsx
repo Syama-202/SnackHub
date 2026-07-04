@@ -81,7 +81,7 @@ const SellerOrders = () => {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-extrabold">Orders</h1>
+        <h1 className="page-title">Orders</h1>
         {shop && <Pill tone={shop.paused ? 'red' : sellable ? 'green' : 'orange'}>{shop.paused ? 'Shop paused' : sellable ? 'Taking orders' : 'No snacks listed'}</Pill>}
         {shop?.busyExtraMin > 0 && <Pill tone="orange">Busy +{shop.busyExtraMin} min</Pill>}
         {isDemoSession() && <Button size="sm" variant="ghost" className="ml-auto" onClick={simulate}>Simulate an incoming order (demo)</Button>}
@@ -177,6 +177,7 @@ function OrderCard({ order: o }) {
       <ul className="mt-2 text-sm">
         {o.items.map((i) => <li key={i.productId}><b>{i.qty} ×</b> {i.title}</li>)}
       </ul>
+      {o.note && <p className="mt-2 rounded-xl bg-sun/25 p-2 text-sm"><b>Customer's note:</b> {o.note}</p>}
       {o.status === 'ACCEPTED' && o.tempClass === 'HOT' && (
         <p className="mt-2 rounded-xl bg-sun/25 p-2 text-xs font-semibold">{o.rider ? `Rider ${o.rider.name} assigned. Cook now so it is hot at pickup.` : 'Wait for a rider before frying. You will get a “cook now” prompt.'}</p>
       )}

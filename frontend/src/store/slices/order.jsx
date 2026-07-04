@@ -5,8 +5,8 @@ import { apiUpload } from '../../services/api';
 // Checkout: the server recomputes prices, re-runs serviceability and reserves stock
 export const fetchQuote = apiThunk('orders/quote', async ({ addressId }, { apiFetch }) => apiFetch('/orders/quote', { method: 'POST', body: { addressId } }));
 
-export const placeOrder = apiThunk('orders/place', async ({ addressId, paymentMode, simulate, idempotencyKey }, { apiFetch }) =>
-  apiFetch('/orders', { method: 'POST', idempotencyKey, body: { addressId, paymentMode, simulate } }),
+export const placeOrder = apiThunk('orders/place', async ({ addressId, paymentMode, note, simulate, idempotencyKey }, { apiFetch }) =>
+  apiFetch('/orders', { method: 'POST', idempotencyKey, body: { addressId, paymentMode, note: note?.trim() || undefined, simulate } }),
 );
 
 // Online payment (doc 10.9): placing an ONLINE order returns PhonePe's pay page; afterwards the
@@ -46,6 +46,8 @@ const orderSlice = createSlice({
   initialState: {
     list: [],
     listLoaded: false,
+    // the first load failed: the history page offers to try again instead of loading forever
+    listError: false,
     // older pages of the history, loaded on request
     older: [],
     olderDone: false,
@@ -61,6 +63,7 @@ const orderSlice = createSlice({
     resetOrders: (state) => {
       state.list = [];
       state.listLoaded = false;
+      state.listError = false;
       state.older = [];
       state.olderDone = false;
       state.byId = {};
@@ -99,6 +102,14 @@ const orderSlice = createSlice({
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.list = action.payload;
         state.listLoaded = true;
+        state.listError = false;
+      })
+      .addCase(fetchOrders.pending, (state) => {
+        state.listError = false;
+      })
+      .addCase(fetchOrders.rejected, (state) => {
+        // a failed refresh keeps the list already shown
+        if (!state.listLoaded) state.listError = true;
       })
       .addCase(fetchOlderOrders.fulfilled, (state, action) => {
         const known = new Set([...state.list, ...state.older].map((o) => o.id));

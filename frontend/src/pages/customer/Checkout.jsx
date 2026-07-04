@@ -8,7 +8,7 @@ import { addToast } from '../../store/slices/toast';
 import { fetchCart, updateQuantity } from '../../store/slices/cart';
 import { fetchOrders, fetchQuote, placeOrder } from '../../store/slices/order';
 import { rupees } from '@shared/domain/money';
-import { Button, Card, Icon, Pill, EmptyState, TempBadge, Spinner, Modal, CloseButton, cx } from '../../components/ui';
+import { Button, Card, Icon, Pill, EmptyState, TempBadge, Spinner, Modal, CloseButton, Textarea, cx } from '../../components/ui';
 import AddressForm, { KIND_ICON } from '../../components/address/Form';
 import { selectSavedAddress } from '../../store/slices/profile';
 import { KIND_LABEL, addressSummary } from '@shared/domain/addresses';
@@ -43,6 +43,7 @@ const Checkout = () => {
   const demo = isDemoSession();
   const [method, setMethod] = useState('COD');
   const [simulate, setSimulate] = useState(true);
+  const [note, setNote] = useState('');
   const [placing, setPlacing] = useState(false);
   const [problem, setProblem] = useState(null);
   const idem = useRef(newIdempotencyKey());
@@ -56,7 +57,7 @@ const Checkout = () => {
   // Prices, address or method changed: a new attempt gets a new idempotency key
   useEffect(() => {
     idem.current = newIdempotencyKey();
-  }, [addressId, method, cart.subtotalPaise]);
+  }, [addressId, method, cart.subtotalPaise, note]);
 
   const offered = METHODS.filter((m) => q?.paymentModes?.includes(m.mode));
   const mode = offered.some((m) => m.id === method) ? method : (offered[0]?.mode ?? 'COD');
@@ -67,7 +68,7 @@ const Checkout = () => {
     setPlacing(true);
     setProblem(null);
     try {
-      const { order } = await dispatch(placeOrder({ addressId, paymentMode: mode, simulate: demo ? simulate : undefined, idempotencyKey: idem.current })).unwrap();
+      const { order } = await dispatch(placeOrder({ addressId, paymentMode: mode, note, simulate: demo ? simulate : undefined, idempotencyKey: idem.current })).unwrap();
       dispatch(fetchCart());
       dispatch(fetchOrders());
       if (mode === 'COD') {
@@ -93,12 +94,12 @@ const Checkout = () => {
 
   if (cart.isLoading && !cart.items.length) return <div className="grid min-h-[50vh] place-items-center"><Spinner className="h-8 w-8 text-orange-text" /></div>;
   if (!cart.items.length)
-    return <EmptyState title="Your cart is empty" body="Add snacks from a shop near you to check out." action={<Link to="/shop"><Button>Explore snacks</Button></Link>} />;
+    return <EmptyState icon="cart" title="Your cart is empty" body="Add snacks from a shop near you to check out." action={<Link to="/shop"><Button>Explore snacks</Button></Link>} />;
 
   const lines = cart.items.length ? cart.items : [];
   return (
     <div className="page page-narrow pt-6">
-      <h1 className="text-4xl font-extrabold">Checkout</h1>
+      <h1 className="page-title">Checkout</h1>
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-6">
           <Card className="p-5">
@@ -207,6 +208,8 @@ const Checkout = () => {
             {quoteError && !q && lines.length > 0 && <p role="alert" className="mt-4 rounded-2xl bg-red/10 p-3 text-sm font-bold text-red-text">{quoteError.message}</p>}
 
             {problem && <Problem problem={problem} onTake={(d) => dispatch(updateQuantity({ id: d.productId, sellerId: cart.sellerId, title: d.title }, d.available))} />}
+
+            <Textarea id="order-note" className="mt-4" label="Note for the shop" optional rows={2} maxLength={200} value={note} onChange={(e) => setNote(e.target.value.replace(/[<>]/g, ''))} placeholder="Less spicy, no onion…" hint="The kitchen sees this. Delivery directions go with your address." />
 
             <Button className="mt-4 w-full" size="lg" loading={placing} disabled={!addressId || !q?.promise.serviceable || !lines.length || !offered.length} onClick={place}>
               {mode === 'COD' ? `Place order · ${rupees(total)}` : `Pay ${rupees(total)} with PhonePe`}

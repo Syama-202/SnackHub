@@ -16,7 +16,9 @@ const forAddress = z.object({ addressId: id }).strict();
 // order history pages: the newest 30, then older ones before the last order shown
 const listQuery = z.object({ before: z.coerce.number().int().positive().optional(), limit: z.coerce.number().int().min(1).max(50).optional() }).strict();
 const productParams = z.object({ productId: z.coerce.number().int().positive() }).strict();
-const checkout = z.object({ addressId: id, paymentMode: z.enum(['COD', 'ONLINE']).default('COD') }).strict();
+// the note is for the shop's kitchen: one or two lines of plain text
+const note = z.string().trim().max(200).regex(/^[^\u0000-\u001f\u007f<>]*$/, 'Use plain text only').optional();
+const checkout = z.object({ addressId: id, paymentMode: z.enum(['COD', 'ONLINE']).default('COD'), note }).strict();
 const review = z
   .object({
     rating: z.number().int().min(1).max(5),
