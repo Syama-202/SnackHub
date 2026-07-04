@@ -2,7 +2,9 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
 import { operationsController } from '../controllers/operations.js';
-import { validateBody, validateParams } from '../middleware/validate.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate.js';
+import { listQuery, orderSearch } from '../utils/listQuery.js';
+import { STATES } from '../../../shared/domain/orderStates.js';
 import { requireAuth, requirePermission, requireFreshMfa, adminHostOnly } from '../middleware/auth.js';
 import { limit, byUser } from '../middleware/rateLimit.js';
 
@@ -61,11 +63,11 @@ export function operationsRoutes(deps) {
   const decisions = limit(deps, 'admin.decisions', { minutes: 1, max: 60 }, byUser);
 
   router.get('/admin/metrics/sla', ...staff('operations.read'), wrap(c.sla));
-  router.get('/admin/orders', ...staff('operations.read'), wrap(c.orders));
+  router.get('/admin/orders', ...staff('operations.read'), validateQuery(orderSearch(STATES)), wrap(c.orders));
   router.get('/admin/riders', ...staff('operations.read'), wrap(c.riders));
   router.get('/admin/sellers', ...staff('operations.read'), wrap(c.sellers));
-  router.get('/admin/reconciliation', ...staff('operations.read'), wrap(c.reconciliation));
-  router.get('/admin/earnings', ...staff('operations.read'), wrap(c.earnings));
+  router.get('/admin/reconciliation', ...staff('operations.read'), validateQuery(listQuery), wrap(c.reconciliation));
+  router.get('/admin/earnings', ...staff('operations.read'), validateQuery(listQuery), wrap(c.earnings));
   router.post('/admin/earnings/:id/resolve', ...staff('earnings.resolve'), decisions, stepUp, validateParams(idParams), validateBody(resolve), wrap(c.resolveEarning));
   router.get('/admin/policy', ...staff('operations.read'), wrap(c.policy));
   router.get('/admin/cash', ...staff('operations.read'), wrap(c.cash));

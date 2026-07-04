@@ -142,6 +142,22 @@ describe.skipIf(h.skip)('complaints, credit and operations', () => {
     const orders = (await admin(t, boss.token).get('/orders').expect(200)).body;
     expect(orders.find((o) => o.id === order.id)).toMatchObject({ status: 'DELIVERED', cashMismatch: false, track: expect.objectContaining({ progress: 1 }) });
     expect((await admin(t, boss.token).get('/reconciliation').expect(200)).body.find((x) => x.orderId === order.id)).toMatchObject({ mismatch: false });
+    // the long lists take a size: one row when asked for one, and never more than 500
+    expect((await admin(t, boss.token).get('/orders?limit=1').expect(200)).body).toHaveLength(1);
+    expect((await admin(t, boss.token).get('/reconciliation?limit=1').expect(200)).body).toHaveLength(1);
+    for (const list of ['/complaints', '/fines', '/earnings']) await admin(t, boss.token).get(`${list}?limit=5`).expect(200);
+    await admin(t, boss.token).get('/orders?limit=0').expect(400);
+    await admin(t, boss.token).get('/fines?limit=501').expect(400);
+    await admin(t, boss.token).get('/orders?before=3').expect(400);
+    // finding an order by its number, by the shop's name or by status
+    expect((await admin(t, boss.token).get(`/orders?q=${order.id}`).expect(200)).body.map((o) => o.id)).toEqual([order.id]);
+    expect((await admin(t, boss.token).get(`/orders?q=%23${order.id}&status=DELIVERED`).expect(200)).body).toHaveLength(1);
+    expect((await admin(t, boss.token).get(`/orders?q=${order.id}&status=PLACED`).expect(200)).body).toHaveLength(0);
+    const shopName = (await admin(t, boss.token).get(`/orders?q=${order.id}`).expect(200)).body[0].seller.shopName;
+    expect((await admin(t, boss.token).get(`/orders?q=${encodeURIComponent(shopName.slice(0, 6))}&limit=500`).expect(200)).body.some((o) => o.id === order.id)).toBe(true);
+    // a wildcard is plain text, not "match everything"
+    expect((await admin(t, boss.token).get('/orders?q=%25%25%25').expect(200)).body).toHaveLength(0);
+    await admin(t, boss.token).get('/orders?status=NOPE').expect(400);
     await admin(t, staff.token).get('/orders').expect(403);
     await request(t.app).get('/api/v1/admin/orders').set(ADMIN).set(bearer(t.tokenFor(await t.makeUser(), 'customer', { mfa: false }))).expect(403);
   });

@@ -18,6 +18,7 @@ import { riderModel } from '../models/dispatch/rider.js';
 import { auditLogModel } from '../models/identity/auditLog.js';
 import { CITIES } from '../../../shared/domain/cities.js';
 import { DEFAULT_POLICY } from '../../../shared/domain/policy.js';
+import { riderSilent } from '../../../shared/domain/riderSilence.js';
 
 const ms = (d) => (d ? new Date(d).getTime() : null);
 const cityId = (name) => CITIES.find((c) => c.name.toLowerCase() === String(name).toLowerCase())?.id ?? String(name).toLowerCase();
@@ -26,6 +27,11 @@ const startOfDay = () => {
   d.setUTCHours(0, 0, 0, 0);
   return d;
 };
+
+// an order that has not finished: waiting for payment, or anywhere from placed to the door
+const OPEN_STATES = ['PENDING_PAYMENT', 'PLACED', ...WITH_RIDER];
+// the most shops or riders the operations map draws at once
+const MAP_MAX = 2000;
 
 export function operationsController({ dbs }) {
   async function sla(req, res) {
@@ -39,7 +45,8 @@ export function operationsController({ dbs }) {
       db('orders').where({ status: 'DELIVERED' }).andWhere('delivered_at', '>=', startOfDay()).count({ n: '*' }),
       dbs.dispatch('riders').whereIn('status', ['ONLINE', 'BUSY']).where({ is_demo: false }).count({ n: '*' }),
       db('complaints').where({ status: 'IN_REVIEW' }).count({ n: '*' }),
-      db('orders').where({ payment_mode: 'COD', status: 'DELIVERED' }).whereRaw('collected_paise <> total_paise').count({ n: '*' }),
+      // within the window the board reports, so the count does not read every delivery ever made
+      db('orders').where({ payment_mode: 'COD', status: 'DELIVERED' }).andWhere('delivered_at', '>=', since).whereRaw('collected_paise <> total_paise').count({ n: '*' }),
     ]);
     res.json({
       activeOrders: Number(active.n),
@@ -55,7 +62,28 @@ export function operationsController({ dbs }) {
   }
 
   async function orders(req, res) {
-    const rows = await dbs.ordering('orders').orderBy('placed_at', 'desc').limit(60);
+    const { q, status } = req.query;
+    const size = req.query.limit ?? 60;
+    const table = () => dbs.ordering('orders');
+    let rows;
+    if (q || status) {
+      // a search: by order number (the primary key), by shop (ix_seller) or by status (ix_status)
+      const query = table().orderBy('id', 'desc').limit(size);
+      if (status) query.where({ status });
+      if (q) {
+        // an order number, or part of a shop's name (LIKE wildcards in the text are escaped)
+        const number = /^#?(\d{1,15})$/.exec(q)?.[1];
+        if (number) query.where({ id: Number(number) });
+        else query.whereIn('seller_id', await dbs.catalog('sellers').where('shop_name', 'like', `%${q.replace(/[\\%_]/g, '\\$&')}%`).limit(200).pluck('id'));
+      }
+      rows = await query;
+    } else {
+      // The live board: orders still in progress first, so a busy day never pushes one off the
+      // list, then the newest finished ones. Two queries that each follow an index (ix_status,
+      // then the primary key); one query sorted on "is it open" would read every order.
+      rows = await table().whereIn('status', OPEN_STATES).orderBy('placed_at', 'desc').orderBy('id', 'desc').limit(size);
+      if (rows.length < size) rows = rows.concat(await table().whereNotIn('status', OPEN_STATES).orderBy('id', 'desc').limit(size - rows.length));
+    }
     const views = await viewOrders(dbs, rows, 'admin');
     const sellers = new Map((await sellerModel.listByIds(dbs.catalog, [...new Set(rows.map((o) => o.seller_id))])).map((s) => [s.id, s]));
     const riders = new Map((await riderModel.listByIds(dbs.dispatch, [...new Set(rows.map((o) => o.rider_id).filter(Boolean))])).map((r) => [r.id, r]));
@@ -69,6 +97,8 @@ export function operationsController({ dbs }) {
         addressText: o.address_text,
         track: trackState(o, { seller: sellers.get(o.seller_id), rider: riders.get(o.rider_id), policy }),
         emergency: sos.has(o.id) ? { orderId: o.id } : null,
+        // the rider holding this order has sent no position for several minutes
+        riderSilent: riderSilent({ status: o.status, hasRider: Boolean(o.rider_id), lastSeenAt: riders.get(o.rider_id)?.last_seen_at ? new Date(riders.get(o.rider_id).last_seen_at).getTime() : null }),
         cashMismatch: o.payment_mode === 'COD' && o.collected_paise != null && o.collected_paise !== o.total_paise,
         collectedPaise: o.collected_paise,
       });
@@ -77,17 +107,18 @@ export function operationsController({ dbs }) {
   }
 
   async function riders(req, res) {
-    const rows = await dbs.dispatch('riders').orderBy('id');
-    res.json(rows.map((r) => ({ id: r.id, name: r.name, cityId: cityId(r.city), vehicle: r.vehicle, status: r.status, lat: r.last_lat == null ? null : Number(r.last_lat), lng: r.last_lng == null ? null : Number(r.last_lng), lastSeenAt: ms(r.last_seen_at), demo: Boolean(r.is_demo) })).filter((r) => r.lat != null));
+    // only riders with a position go on the map; the filter runs in MySQL and the list is capped
+    const rows = await dbs.dispatch('riders').whereNotNull('last_lat').orderBy('id').limit(MAP_MAX);
+    res.json(rows.map((r) => ({ id: r.id, name: r.name, cityId: cityId(r.city), vehicle: r.vehicle, status: r.status, lat: Number(r.last_lat), lng: r.last_lng == null ? null : Number(r.last_lng), lastSeenAt: ms(r.last_seen_at), demo: Boolean(r.is_demo) })));
   }
 
   async function sellers(req, res) {
-    const rows = await dbs.catalog('sellers').orderBy('id');
+    const rows = await dbs.catalog('sellers').orderBy('id').limit(MAP_MAX);
     res.json(rows.map((s) => ({ id: s.id, shopName: s.shop_name, cityId: cityId(s.city), lat: Number(s.lat), lng: Number(s.lng), status: s.status, paused: Boolean(s.paused), qualityScore: s.quality_score == null ? null : Number(s.quality_score), demo: Boolean(s.is_demo) })));
   }
 
   async function reconciliation(req, res) {
-    const rows = await dbs.ordering('orders').where({ payment_mode: 'COD', status: 'DELIVERED' }).orderBy('delivered_at', 'desc').limit(100);
+    const rows = await dbs.ordering('orders').where({ payment_mode: 'COD', status: 'DELIVERED' }).orderBy('delivered_at', 'desc').orderBy('id', 'desc').limit(req.query.limit ?? 100);
     res.json(rows.map((o) => ({ orderId: o.id, riderId: o.rider_id, totalPaise: o.total_paise, collectedPaise: o.collected_paise, mismatch: o.collected_paise !== o.total_paise, deliveredAt: ms(o.delivered_at) })));
   }
 
@@ -112,7 +143,7 @@ export function operationsController({ dbs }) {
   });
 
   async function earnings(req, res) {
-    const rows = await dbs.dispatch('rider_earnings').orderByRaw("status = 'DISPUTED' DESC").orderBy('created_at', 'desc').limit(100);
+    const rows = await dbs.dispatch('rider_earnings').orderByRaw("status = 'DISPUTED' DESC").orderBy('created_at', 'desc').orderBy('id', 'desc').limit(req.query.limit ?? 100);
     res.json(rows.map(earningView));
   }
 

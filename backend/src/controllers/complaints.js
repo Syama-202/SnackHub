@@ -166,7 +166,7 @@ export function complaintsController({ env, dbs, storage, scanner }) {
 
   // ---------- admin
   async function queue(req, res) {
-    const rows = await dbs.ordering('complaints').orderByRaw("status = 'IN_REVIEW' DESC").orderBy('created_at', 'desc').limit(100);
+    const rows = await dbs.ordering('complaints').orderByRaw("status = 'IN_REVIEW' DESC").orderBy('created_at', 'desc').orderBy('id', 'desc').limit(req.query.limit ?? 100);
     res.json(await Promise.all(rows.map((c) => complaintView(c, { viewerId: req.user.userId, withPhotos: true }))));
   }
 
@@ -201,7 +201,7 @@ export function complaintsController({ env, dbs, storage, scanner }) {
   const fineView = (f) => ({ id: f.id, complaintId: f.complaint_id, orderId: f.order_id, targetType: f.target_type, targetId: f.target_id, reason: f.reason, amountPaise: f.amount_paise, status: f.status, reverseReason: f.reverse_reason, createdAt: ms(f.created_at) });
 
   async function fines(req, res) {
-    res.json((await dbs.ordering('fines').orderBy('id', 'desc').limit(200)).map(fineView));
+    res.json((await dbs.ordering('fines').orderBy('id', 'desc').limit(req.query.limit ?? 200)).map(fineView));
   }
 
   async function reverseFine(req, res) {

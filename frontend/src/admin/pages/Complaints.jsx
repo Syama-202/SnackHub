@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { usePolling } from '../../hooks';
-import { decideComplaint, fetchComplaints, fetchEarningsAdmin, fetchFines, resolveEarning, reverseFine } from '../../store/slices/admin';
+import { LIST_MAX, LIST_STEP, decideComplaint, fetchComplaints, fetchEarningsAdmin, fetchFines, resolveEarning, reverseFine } from '../../store/slices/admin';
 import { addToast } from '../../store/slices/toast';
 import { rupees } from '@shared/domain/money';
 import { COMPLAINT_TYPES } from '@shared/domain/triage';
@@ -13,8 +13,16 @@ export default function Complaints() {
   const dispatch = useDispatch();
   const { run } = useAdmin();
   const { complaints: data, fines, earnings } = useSelector((state) => state.admin);
-  usePolling(() => dispatch(fetchComplaints()), 10000, true, 'complaint');
-  usePolling(() => dispatch(fetchFines()), 20000, true, 'complaint');
+  // "Show older" raises these; the lists keep refreshing at the size shown
+  const [limit, setLimit] = useState(LIST_STEP);
+  const [fineLimit, setFineLimit] = useState(2 * LIST_STEP);
+  const older = (n, set, fetch) => {
+    const next = Math.min(n + LIST_STEP, LIST_MAX);
+    set(next);
+    dispatch(fetch({ limit: next }));
+  };
+  usePolling(() => dispatch(fetchComplaints({ limit })), 10000, true, 'complaint');
+  usePolling(() => dispatch(fetchFines({ limit: fineLimit })), 20000, true, 'complaint');
   usePolling(() => dispatch(fetchEarningsAdmin()), 20000, true, 'earning');
   const [sel, setSel] = useState(null);
   const c = data?.find((x) => x.id === sel) || data?.find((x) => x.status === 'IN_REVIEW') || data?.[0];
@@ -23,7 +31,7 @@ export default function Complaints() {
   const decide = async () => {
     const done = await run(() => dispatch(decideComplaint({ id: c.id, ...form })).unwrap());
     if (!done) return;
-    dispatch(fetchFines());
+    dispatch(fetchFines({ limit: fineLimit }));
     dispatch(addToast({ title: 'Complaint resolved', type: 'success' }));
   };
   // every reversal and dispute decision carries a written reason, kept in the audit log
@@ -42,7 +50,7 @@ export default function Complaints() {
 
   return (
     <div>
-      <h1 className="text-3xl font-extrabold">Complaints</h1>
+      <h1 className="page-title">Complaints</h1>
       <div className="mt-6 grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="space-y-2">
           {data?.map((x) => (
@@ -52,6 +60,7 @@ export default function Complaints() {
             </button>
           ))}
           {data?.length === 0 && <p className="text-grey-600">No complaints.</p>}
+          {data?.length >= limit && limit < LIST_MAX && <Button size="sm" variant="ghost" onClick={() => older(limit, setLimit, fetchComplaints)}>Show older</Button>}
         </div>
         {c && (
           <Card className="p-5">
@@ -93,7 +102,7 @@ export default function Complaints() {
             {c.status === 'IN_REVIEW' ? (
               <div className="mt-5 grid gap-3 rounded-2xl bg-grey-50 p-4 sm:grid-cols-2">
                 <label className="text-sm font-bold">Decision
-                  <select value={form.resolution} onChange={(e) => setForm({ ...form, resolution: e.target.value })} className="mt-1 h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3">
+                  <select value={form.resolution} onChange={(e) => setForm({ ...form, resolution: e.target.value })} className="field mt-1 h-11">
                     <option value="VALID">Valid</option><option value="PARTLY_VALID">Partly valid</option><option value="INVALID">Invalid</option>
                   </select>
                 </label>
@@ -101,7 +110,7 @@ export default function Complaints() {
                 <MoneyField label="Rider fine" v={form.riderFinePaise} on={(v) => setForm({ ...form, riderFinePaise: v })} />
                 <MoneyField label="Shop fine" v={form.sellerFinePaise} on={(v) => setForm({ ...form, sellerFinePaise: v })} />
                 <label className="text-sm font-bold sm:col-span-2">Reason (shown to the parties)
-                  <input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="mt-1 h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3" placeholder="Explain the decision in plain words" />
+                  <input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="field mt-1 h-11" placeholder="Explain the decision in plain words" />
                 </label>
                 <p className="text-xs text-grey-600 sm:col-span-2">A late complaint never adds a second rider fine if the lateness cut was already applied; only the credit is added.</p>
                 <Button className="sm:col-span-2" disabled={!form.reason} onClick={decide}>Resolve complaint</Button>
@@ -141,6 +150,7 @@ export default function Complaints() {
           </tbody>
         </table>
       </div>
+      {fines?.length >= fineLimit && fineLimit < LIST_MAX && <Button size="sm" variant="ghost" className="mt-3" onClick={() => older(fineLimit, setFineLimit, fetchFines)}>Show older</Button>}
     </div>
   );
 }
@@ -152,7 +162,7 @@ function Fact({ k, v }) {
 function MoneyField({ label, v, on }) {
   return (
     <label className="text-sm font-bold">{label} (₹)
-      <input type="number" min="0" step="1" value={v / 100} onChange={(e) => on(Math.round(Number(e.target.value || 0) * 100))} className="mt-1 h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3" />
+      <input type="number" min="0" step="1" value={v / 100} onChange={(e) => on(Math.round(Number(e.target.value || 0) * 100))} className="field mt-1 h-11" />
     </label>
   );
 }

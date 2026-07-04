@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler as wrap } from '../utils/asyncHandler.js';
 import { complaintsController } from '../controllers/complaints.js';
-import { validateBody, validateParams } from '../middleware/validate.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate.js';
+import { listQuery } from '../utils/listQuery.js';
 import { requireAuth, requirePermission, requireFreshMfa, adminHostOnly } from '../middleware/auth.js';
 import { limit, byUser } from '../middleware/rateLimit.js';
 import { uploadPhotos } from '../middleware/upload.js';
@@ -43,9 +44,9 @@ export function complaintsRoutes(deps) {
 
   router.post('/orders/:id/complaints', auth, requirePermission(deps, 'complaints.self'), reports, validateParams(idParams), uploadPhotos, validateBody(report), wrap(c.create));
   router.get('/me/credits', auth, requirePermission(deps, 'credits.self'), wrap(c.credits));
-  router.get('/admin/complaints', ...staff('complaints.read'), wrap(c.queue));
+  router.get('/admin/complaints', ...staff('complaints.read'), validateQuery(listQuery), wrap(c.queue));
   router.post('/admin/complaints/:id/decide', ...staff('complaints.decide'), decisions, stepUp, validateParams(idParams), validateBody(decision), wrap(c.decide));
-  router.get('/admin/fines', ...staff('complaints.read'), wrap(c.fines));
+  router.get('/admin/fines', ...staff('complaints.read'), validateQuery(listQuery), wrap(c.fines));
   router.post('/admin/fines/:id/reverse', ...staff('fines.reverse'), decisions, stepUp, validateParams(idParams), validateBody(reasonOnly), wrap(c.reverseFine));
   return router;
 }

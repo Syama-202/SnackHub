@@ -3,10 +3,15 @@ import { apiThunk } from '../apiThunk';
 
 // Admin console (doc 11.4). Every route needs fresh MFA; sensitive actions need
 // MFA within 5 minutes and reject with code MFA_REQUIRED otherwise (doc 16.3).
-const get = (key, path) => apiThunk(`admin/fetch_${key}`, async (_, { apiFetch }) => ({ key, data: await apiFetch(path) }));
+// The long lists take { limit }: "Show older" asks for more rows, newest first (LIST_STEP at a time).
+export const LIST_STEP = 100;
+export const LIST_MAX = 500;
+const get = (key, path) => apiThunk(`admin/fetch_${key}`, async (arg, { apiFetch }) => ({ key, data: await apiFetch(arg?.limit ? `${path}?limit=${arg.limit}` : path) }));
 
 export const fetchSla = get('sla', '/admin/metrics/sla');
 export const fetchAdminOrders = get('orders', '/admin/orders');
+// finding any order by its number or the shop's name; the result is not kept in the store
+export const searchAdminOrders = apiThunk('admin/searchOrders', async ({ q = '', status = '' }, { apiFetch }) => apiFetch(`/admin/orders?${new URLSearchParams({ limit: '100', ...(q && { q }), ...(status && { status }) })}`));
 export const fetchAdminRiders = get('riders', '/admin/riders');
 export const fetchAdminSellers = get('sellers', '/admin/sellers');
 export const fetchReconciliation = get('reconciliation', '/admin/reconciliation');
@@ -34,6 +39,10 @@ export const fetchPayout = apiThunk('admin/fetchPayout', async (id, { apiFetch }
 export const draftPayout = apiThunk('admin/draftPayout', async (sellerId, { apiFetch }) => apiFetch('/admin/payouts', { method: 'POST', body: { sellerId } }));
 export const markPayoutPaid = apiThunk('admin/markPayoutPaid', async ({ id, reference }, { apiFetch }) => apiFetch(`/admin/payouts/${id}/paid`, { method: 'POST', body: { reference } }));
 export const cancelPayout = apiThunk('admin/cancelPayout', async ({ id, reason }, { apiFetch }) => apiFetch(`/admin/payouts/${id}/cancel`, { method: 'POST', body: { reason } }));
+
+// the announcement across the top of the shop: what is set, and setting or clearing it
+export const fetchNotice = apiThunk('admin/fetchNotice', async (_, { apiFetch }) => apiFetch('/admin/notice'));
+export const saveNotice = apiThunk('admin/saveNotice', async (body, { apiFetch }) => apiFetch('/admin/notice', { method: 'PUT', body }));
 
 export const decideComplaint = apiThunk('admin/decideComplaint', async ({ id, ...body }, { apiFetch }) => apiFetch(`/admin/complaints/${id}/decide`, { method: 'POST', body }));
 export const reverseFine = apiThunk('admin/reverseFine', async ({ id, reason }, { apiFetch }) => apiFetch(`/admin/fines/${id}/reverse`, { method: 'POST', body: { reason } }));

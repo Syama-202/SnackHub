@@ -11,6 +11,9 @@ import { realtime } from '../utils/realtime.js';
 import { pushToDevices } from '../utils/push.js';
 import { describeError, recordError } from '../utils/errors.js';
 
+// a message is tried this many times, 1, 2, 4 ... 64 minutes apart (about two hours in all)
+export const MAX_ATTEMPTS = 8;
+
 const MODULES = ['identity', 'catalog', 'dispatch', 'ordering'];
 
 export function createOutboxRelay({ env, dbs, mailer, sms, push, logger }) {
@@ -40,7 +43,7 @@ export function createOutboxRelay({ env, dbs, mailer, sms, push, logger }) {
       const to = await adminEmails();
       if (!to.length) return;
       // a recorded error carries its own (already scrubbed) summary
-      const text = p.summary ? `SnackHub admin alert: ${p.summary}. Open the Errors page in the admin console (error #${p.errorId}).` : `SnackHub admin alert: ${p.type} for user ${p.userId}${p.orderId ? ` on order #${p.orderId}` : ''}${p.left !== undefined ? ` (${p.left} recovery codes left)` : ''}. Check the audit log.`;
+      const text = p.type === 'rider_silent' ? `SnackHub admin alert: the rider on order #${p.orderId} has sent no position for several minutes. Open Live operations in the admin console and call the rider or the customer.` : p.summary ? `SnackHub admin alert: ${p.summary}. Open the Errors page in the admin console (error #${p.errorId}).` : `SnackHub admin alert: ${p.type} for user ${p.userId}${p.orderId ? ` on order #${p.orderId}` : ''}${p.left !== undefined ? ` (${p.left} recovery codes left)` : ''}. Check the audit log.`;
       await mailer.send({ to, subject: p.summary ? `Admin alert: error #${p.errorId}` : `Admin alert: ${p.type.replaceAll('_', ' ')}`, text, messageId, name });
       return;
     }
@@ -55,9 +58,10 @@ export function createOutboxRelay({ env, dbs, mailer, sms, push, logger }) {
     const wanted = types();
     if (!wanted.length) return 0;
     let sent = 0;
+    const gaveUp = [];
     for (const module of MODULES) {
       await dbs[module].transaction(async (trx) => {
-        const rows = await outboxModel.claimDue(trx, wanted, { limit: 20 });
+        const rows = await outboxModel.claimDue(trx, wanted, { limit: 20, maxAttempts: MAX_ATTEMPTS });
         for (const row of rows) {
           try {
             await deliver(module, row);
@@ -67,9 +71,19 @@ export function createOutboxRelay({ env, dbs, mailer, sms, push, logger }) {
             // no addresses or message text in the log, only which row and why
             logger?.warn({ outboxId: row.id, module, type: row.type, reason: err.code ?? err.responseCode ?? 'SEND_FAILED' }, 'outbox delivery failed');
             await outboxModel.retryLater(trx, row.id, row.attempts);
+            // the last try: it will not be sent again, so it goes on the Errors page (and alerts
+            // the admins) instead of sitting unseen in the table
+            if (row.attempts + 1 >= MAX_ATTEMPTS) gaveUp.push({ module, id: row.id, type: row.type, reason: err.code ?? err.responseCode ?? 'SEND_FAILED' });
           }
         }
       });
+    }
+    // recorded after the transactions, so a failure to record never undoes a delivery
+    for (const g of gaveUp) {
+      logger?.error({ outboxId: g.id, module: g.module, type: g.type, reason: g.reason }, 'outbox message given up on');
+      // an alert that could not be sent is only logged: recording it would queue another alert
+      if (g.type === 'admin.alert') continue;
+      await recordError(dbs, { source: 'job', kind: 'OutboxGaveUp', message: `A ${g.type} message could not be delivered after ${MAX_ATTEMPTS} tries (${g.reason})`, where: `outbox ${g.module}`, release: env.RELEASE }, { logger });
     }
     return sent;
   }
@@ -93,6 +107,10 @@ export function createOutboxRelay({ env, dbs, mailer, sms, push, logger }) {
       }, everyMs);
       timer.unref?.();
     },
-    stop: () => clearInterval(timer),
+    /** Stops the clock and waits for a pass that is under way, so shutdown never cuts a send in half. */
+    async stop() {
+      clearInterval(timer);
+      while (running) await new Promise((r) => setTimeout(r, 50));
+    },
   };
 }
