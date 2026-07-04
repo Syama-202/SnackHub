@@ -13,7 +13,7 @@ export const ROLES = ['customer', 'seller', 'rider', 'reviewer', 'admin'];
 export const STAFF_ROLES = ['reviewer', 'admin'];
 
 export const ROLE_PERMISSIONS = {
-  customer: ['profile.self', 'addresses.self', 'cart.self', 'favourites.self', 'orders.self', 'complaints.self', 'credits.self', 'payments.self', 'security.self', 'notifications.self'],
+  customer: ['profile.self', 'addresses.self', 'cart.self', 'favourites.self', 'orders.self', 'complaints.self', 'credits.self', 'payments.self', 'security.self', 'notifications.self', 'account.self'],
   seller: [
     'profile.self',
     'security.self',

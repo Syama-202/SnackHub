@@ -4,12 +4,14 @@ import { z } from 'zod';
 import { meController } from '../controllers/me.js';
 import { addressesController } from '../controllers/addresses.js';
 import { notificationsController } from '../controllers/notifications.js';
+import { accountController } from '../controllers/account.js';
 import { validateBody, validateParams } from '../middleware/validate.js';
 import { requireAuth, requireRole, requirePermission } from '../middleware/auth.js';
 import { limit, byUser } from '../middleware/rateLimit.js';
 import { ROLES } from '../../../shared/domain/permissions.js';
 import { ADDRESS_KINDS, ADDRESS_LIMITS } from '../../../shared/domain/addresses.js';
 import { PINCODE } from '../../../shared/domain/hours.js';
+import { DELETE_CONFIRM } from '../../../shared/domain/accounts.js';
 
 // a pin anywhere in India; the city is the key the frontend uses (guntur, chennai, ...)
 const text = (k) => z.string().trim().min(ADDRESS_LIMITS[k][0]).max(ADDRESS_LIMITS[k][1]);
@@ -44,12 +46,14 @@ const addressChange = z
   .refine((b) => b.isDefault !== false, { message: 'Make another address the default instead', path: ['isDefault'] });
 const placeQuery = z.object({ q: z.string().trim().min(3).max(120) }).strict();
 const pin = z.object({ lat, lng }).strict();
+const deletion = z.object({ confirm: z.literal(DELETE_CONFIRM), password: z.string().min(1).max(200).optional() }).strict();
 const idParams = z.object({ id: z.coerce.number().int().positive() }).strict();
 
 export function meRoutes(deps) {
   const c = meController(deps);
   const a = addressesController(deps);
   const n = notificationsController(deps);
+  const acc = accountController(deps);
   const auth = requireAuth(deps.env);
   const router = Router();
   const addresses = limit(deps, 'me.addresses', { minutes: 60, max: 30 }, byUser, 'Too many address changes in an hour. Try again later.');
@@ -57,6 +61,11 @@ export function meRoutes(deps) {
   const places = limit(deps, 'me.places', { minutes: 10, max: 30 }, byUser, 'Too many place searches. Drop the pin on the map instead, or try again in a few minutes.');
   const reads = limit(deps, 'me.notifications.read', { minutes: 1, max: 30 }, byUser);
   router.get('/me', auth, requireRole(deps.dbs, ...ROLES), wrap(c.show));
+  // your data: a copy of it, and deleting the account (customers; others go through support)
+  const exports = limit(deps, 'me.export', { minutes: 60, max: 5 }, byUser, 'You can download your data a few times an hour. Try again later.');
+  const deletes = limit(deps, 'me.delete', { minutes: 15, max: 5 }, byUser);
+  router.get('/me/export', auth, requirePermission(deps, 'account.self'), exports, wrap(acc.exportData));
+  router.post('/me/delete', auth, requirePermission(deps, 'account.self'), deletes, validateBody(deletion), wrap(acc.remove));
   router.get('/me/addresses', auth, requirePermission(deps, 'addresses.self'), wrap(a.list));
   router.post('/me/addresses', auth, requirePermission(deps, 'addresses.self'), addresses, validateBody(address), wrap(a.create));
   router.patch('/me/addresses/:id', auth, requirePermission(deps, 'addresses.self'), addresses, validateParams(idParams), validateBody(addressChange), wrap(a.update));

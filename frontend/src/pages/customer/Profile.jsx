@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { deleteAddress, fetchCredits, updateAddress } from '../../store/slices/profile';
+import YourData from '../../components/auth/YourData';
 import { setAddress } from '../../store/slices/ui';
 import { addToast } from '../../store/slices/toast';
 import { isDemoSession } from '../../store/slices/auth';
@@ -47,7 +48,7 @@ const Profile = () => {
 
   return (
     <div className="mx-auto max-w-4xl px-4 pt-6">
-      <h1 className="text-4xl font-extrabold">Profile</h1>
+      <h1 className="page-title">Profile</h1>
       <Card className="mt-6 flex items-center gap-4 p-5">
         <span className="grid h-14 w-14 place-items-center rounded-full bg-hero font-display text-2xl font-extrabold text-grey-800">{user.name[0]}</span>
         <div>
@@ -138,6 +139,8 @@ const Profile = () => {
           )) : <p className="text-grey-600">No credit right now.</p>}
         </div>
       </section>
+
+      {!demo && <YourData />}
     </div>
   );
 };

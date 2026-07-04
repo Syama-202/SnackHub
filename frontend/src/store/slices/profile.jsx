@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { apiThunk } from '../apiThunk';
 import { CITIES } from '@shared/domain/cities';
 import { distanceM } from '@shared/domain/geo';
+import { DELETE_CONFIRM } from '@shared/domain/accounts';
 
 export const fetchAddresses = apiThunk('profile/fetchAddresses', async (_, { apiFetch }) => apiFetch('/me/addresses'));
 export const addAddress = apiThunk('profile/addAddress', async (address, { apiFetch, dispatch }) => {
@@ -26,6 +27,11 @@ export const describePin = apiThunk('profile/describePin', async (pin, { apiFetc
 export const fetchFavourites = apiThunk('profile/fetchFavourites', async (_, { apiFetch }) => apiFetch('/me/favourites'));
 export const toggleFavourite = apiThunk('profile/toggleFavourite', async ({ id, on }, { apiFetch }) =>
   apiFetch(`/me/favourites/${id}`, on ? { method: 'PUT', body: {} } : { method: 'DELETE' }),
+);
+// Your data (DPDP Act): a copy of everything held about the account, and deleting it
+export const fetchMyData = apiThunk('profile/fetchMyData', async (_, { apiFetch }) => apiFetch('/me/export'));
+export const deleteMyAccount = apiThunk('profile/deleteMyAccount', async ({ password }, { apiFetch }) =>
+  apiFetch('/me/delete', { method: 'POST', body: { confirm: DELETE_CONFIRM, ...(password ? { password } : {}) }, retry: false }),
 );
 export const fetchCredits = apiThunk('profile/fetchCredits', async (_, { apiFetch }) => apiFetch('/me/credits'));
 

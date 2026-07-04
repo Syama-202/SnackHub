@@ -63,7 +63,7 @@ const SECTIONS = [
     title: 'Your choices and rights',
     body: (
       <>
-        <p>You can see and change your details in your account. You can ask us for a copy of your data, to correct it, or to delete your account. Some records, such as order and payment records, must be kept for as long as the law requires.</p>
+        <p>You can see and change your details in your account. Customers can download a copy of their data and delete their account under Your data on the Profile page; sellers and delivery partners can ask us to do it. Some records, such as order and payment records, must be kept for as long as the law requires.</p>
         <p>
           Push alerts and location access are your choice, and you can turn them off in your browser at any time. To use your rights or raise a concern, write to our Grievance Officer at <a href={`mailto:${BUSINESS.grievanceEmail}`}>{BUSINESS.grievanceEmail}</a>.
         </p>

@@ -16,6 +16,7 @@ import { refreshTokenModel } from '../models/identity/refreshToken.js';
 import { mfaChallengeModel } from '../models/identity/mfaChallenge.js';
 import { auditLogModel } from '../models/identity/auditLog.js';
 import { STAFF_ROLES } from '../../../shared/domain/permissions.js';
+import { isErased } from '../../../shared/domain/accounts.js';
 import { realtime } from '../utils/realtime.js';
 
 export function adminUsersController({ env, dbs }) {
@@ -49,6 +50,8 @@ export function adminUsersController({ env, dbs }) {
   const setAccount = (status) => async (req, res) => {
     const { user } = await target(req);
     if (user.status === status) throw new AppError(409, 'NO_CHANGE', `The account is already ${status}`);
+    // an account its owner deleted has nothing left to bring back
+    if (isErased(user.email)) throw new AppError(409, 'ACCOUNT_DELETED', 'The owner deleted this account. It cannot be changed.');
     await db.transaction(async (trx) => {
       await userModel.setStatus(trx, user.id, status, req.body.reason);
       // a suspension ends every session now; requireRole re-reads the status on every request too
