@@ -57,12 +57,16 @@ if (env.RUN_JOBS) {
   expiryTimer.unref();
 }
 
+let stopping = false;
 async function shutdown(signal) {
+  // a second signal while the first is still closing things changes nothing
+  if (stopping) return;
+  stopping = true;
   logger.info({ signal }, 'shutting down');
-  relay.stop();
-  orderTimers.stop();
   clearInterval(expiryTimer);
   setTimeout(() => process.exit(1), 10_000).unref();
+  // let a job pass that is under way finish its transaction before the pools close
+  await Promise.all([relay.stop(), orderTimers.stop()]);
   // closing Socket.IO closes the HTTP server as well
   await sockets.close();
   await closeAll(dbs);
