@@ -19,6 +19,7 @@ import { complaintsRoutes } from './complaints.js';
 import { operationsRoutes } from './operations.js';
 import { payoutsRoutes } from './payouts.js';
 import { refundsRoutes } from './refunds.js';
+import { noticeRoutes } from './notice.js';
 import { catalogueRoutes } from './catalogue.js';
 import { docsRoutes } from './docs.js';
 
@@ -46,6 +47,7 @@ export function routes(deps, { extra = [] } = {}) {
   api.use(payoutsRoutes(deps));
   api.use(refundsRoutes(deps));
   api.use(catalogueRoutes(deps));
+  api.use(noticeRoutes(deps));
   router.use('/api/v1', api);
   router.use(docsRoutes(deps, () => [['', health], ...extra, ['/api/v1', api]]));
   return router;

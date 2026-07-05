@@ -3,6 +3,7 @@ import { useLocation, useOutlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AnimatePresence, m } from 'motion/react';
 import DemoBanner from './DemoBanner';
+import Notice from './Notice';
 import Backdrop from '../ui/Backdrop';
 import Toast from '../ui/Toast';
 import Navbar from './Navbar';
@@ -59,6 +60,7 @@ export default function CustomerLayout() {
       <Backdrop />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[80] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:font-bold">Skip to content</a>
       <DemoBanner />
+      <Notice />
       <Navbar />
       <main id="main" className="min-h-[60vh]">
         <Suspense fallback={<PageFallback />}>

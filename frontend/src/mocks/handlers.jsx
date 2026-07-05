@@ -156,12 +156,14 @@ function cartView(db, userId) {
 }
 
 /** Order payloads never contain the delivery code (doc 10.3). */
+const noticeShowing = (n) => Boolean(n?.message) && (!n.endsAt || n.endsAt > Date.now());
+
 function orderView(db, o, viewer = 'customer') {
   const seller = db.sellers.find((s) => s.id === o.sellerId);
   const rider = o.riderId ? db.riders.find((r) => r.id === o.riderId) : null;
   const v = {
     id: o.id, status: o.status, tempClass: o.tempClass, items: o.items, subtotalPaise: o.subtotalPaise, deliveryFeePaise: o.deliveryFeePaise,
-    creditPaise: o.creditPaise || 0, totalPaise: o.totalPaise, paymentMode: o.paymentMode, paymentStatus: o.paymentStatus,
+    creditPaise: o.creditPaise || 0, totalPaise: o.totalPaise, paymentMode: o.paymentMode, paymentStatus: o.paymentStatus, note: viewer === 'rider' ? undefined : o.note ?? null,
     placedAt: o.placedAt, promisedAt: o.promisedAt, acceptedAt: o.acceptedAt, packedAt: o.packedAt, pickedAt: o.pickedAt, arrivedAt: o.arrivedAt, deliveredAt: o.deliveredAt,
     promiseWindow: o.promiseWindow, cancelReason: o.cancelReason, simulated: o.simSeller || o.simRider,
     seller: seller ? { id: seller.id, shopName: seller.shopName, city: seller.city, lat: seller.lat, lng: seller.lng } : null,
@@ -597,6 +599,7 @@ export const handlers = [
       status: body.paymentMode === 'ONLINE' ? 'PENDING_PAYMENT' : 'PLACED', tempClass: cart.tempClass, items,
       subtotalPaise: subtotal, deliveryFeePaise: db.policy.deliveryFeePaise, creditPaise, totalPaise: subtotal + db.policy.deliveryFeePaise - creditPaise,
       paymentMode: body.paymentMode, paymentStatus: body.paymentMode === 'ONLINE' ? 'CREATED' : 'COD_PENDING',
+      note: typeof body.note === 'string' ? body.note.trim().slice(0, 200) || null : null,
       ...addressCopy(addr), drop: { lat: addr.lat, lng: addr.lng }, distanceM: Math.round(promise.distanceKm * 1000),
       policyVersion: db.policy.version, placedAt: now, promisedAt: now + promise.window[1] * 60000, promiseWindow: promise.window,
       simSeller: body.simulate !== false, simRider: body.simulate !== false, otpAttempts: 0, otpLocked: false, holdExpiresAt: now + (body.paymentMode === 'ONLINE' ? 10 : 2) * 60000,
@@ -1058,6 +1061,25 @@ export const handlers = [
     f.status = 'REVERSED';
     audit(db, g.u, 'fine.reverse', { status: 'APPLIED' }, { status: 'REVERSED' });
     return ok(f);
+  })),
+  // the shop-wide announcement: read by anyone, set or cleared by the demo admin
+  http.get(`${API}/notice`, withDb(({ request, db }) => (isDemoToken(request) ? ok({ notice: noticeShowing(db.notice) ? db.notice : null }) : passthrough()))),
+  http.get(`${API}/admin/notice`, withDb(({ request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = adminGuard(request);
+    if (g.res) return g.res;
+    return ok({ notice: db.notice?.message ? db.notice : null, showing: noticeShowing(db.notice) });
+  })),
+  http.put(`${API}/admin/notice`, withDb(({ body, request, db }) => {
+    if (!isDemoToken(request)) return passthrough();
+    const g = adminGuard(request, { stepUp: true });
+    if (g.res) return g.res;
+    const message = String(body.message ?? '').trim().slice(0, 200);
+    if (/[<>]/.test(message)) return fail(400, 'VALIDATION', 'Use plain text only');
+    const before = db.notice?.message ?? '';
+    db.notice = message ? { id: Date.now(), message, tone: body.tone === 'warning' ? 'warning' : 'info', endsAt: body.endsAt ?? null } : null;
+    audit(db, g.u, message ? 'notice.set' : 'notice.clear', { message: before }, { message });
+    return ok({ notice: db.notice, showing: noticeShowing(db.notice) });
   })),
   http.get(`${API}/admin/policy`, withDb(({ request, db }) => {
     if (!isDemoToken(request)) return passthrough();

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPolicy, savePolicy } from '../../store/slices/admin';
+import NoticeEditor from './NoticeEditor';
 import { addToast } from '../../store/slices/toast';
 import { computeEarning } from '@shared/domain/penalty';
 import { deliveryPromise } from '@shared/domain/promise';
@@ -60,7 +61,7 @@ export default function PolicyEditor() {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-extrabold">Delivery policy</h1>
+        <h1 className="page-title">Delivery policy</h1>
         <Pill tone="dark">Current v{data.current.version}</Pill>
       </div>
       <p className="mt-1 text-sm text-grey-600">Starting values to tune from real data. Each order stores the policy version it was priced under, so a change never rewrites open orders.</p>
@@ -112,6 +113,7 @@ export default function PolicyEditor() {
           </Card>
         </div>
       </div>
+      <NoticeEditor />
     </div>
   );
 }
@@ -121,7 +123,7 @@ function Num({ label, unit, v, on, step = 1 }) {
     <label className="mt-2 block text-sm font-bold">
       {label}
       <span className="mt-1 flex items-center gap-2">
-        <input type="number" step={step} min="0" value={v} onChange={(e) => on(Number(e.target.value))} className="h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3" />
+        <input type="number" step={step} min="0" value={v} onChange={(e) => on(Number(e.target.value))} className="field h-11" />
         <span className="w-20 shrink-0 text-xs font-semibold text-grey-600">{unit}</span>
       </span>
     </label>
