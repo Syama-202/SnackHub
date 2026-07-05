@@ -47,7 +47,7 @@ const SellerProducts = () => {
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold">Products and stock</h1>
+          <h1 className="page-title">Products and stock</h1>
           <p className="mt-1 text-sm text-grey-600">Stock edits are adjustments (plus or minus, with a reason) applied to the live count, so orders arriving at the same time are never overwritten.</p>
         </div>
         {canEdit && <Button onClick={() => setEditing('catalogue')}><Icon name="plus" className="h-4 w-4" /> Add a snack</Button>}

@@ -57,7 +57,7 @@ const Payouts = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-extrabold">Seller payouts</h1>
+      <h1 className="page-title">Seller payouts</h1>
       <p className="mt-1 max-w-3xl text-grey-600">
         Shops are owed the food value of delivered orders {data ? `${data.holdHours} hours` : '…'} after delivery, less {data ? `${data.commissionPct}%` : '…'} commission and applied fines. Draft a statement, make the bank transfer, then record its reference here. Change the rate and the wait in the delivery policy.
       </p>
@@ -120,14 +120,14 @@ const Payouts = () => {
               <div>
                 <label className="block">
                   <span className="mb-1 block text-sm font-bold">Bank transfer reference (UTR)</span>
-                  <input value={reference} maxLength={60} onChange={(e) => setReference(e.target.value)} placeholder="UTR or transaction id" aria-invalid={Boolean(reference) && !refOk} className="h-11 w-full rounded-xl border border-grey-800/15 px-3 font-mono" />
+                  <input value={reference} maxLength={60} onChange={(e) => setReference(e.target.value)} placeholder="UTR or transaction id" aria-invalid={Boolean(reference) && !refOk} className="field h-11 font-mono" />
                 </label>
                 <Button className="mt-2" onClick={pay} disabled={!refOk}>Mark {rupees(open.netPaise)} paid</Button>
               </div>
               <div>
                 <label className="block">
                   <span className="mb-1 block text-sm font-bold">Or cancel, with a reason</span>
-                  <input value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} placeholder="Bank details being checked" className="h-11 w-full rounded-xl border border-grey-800/15 px-3" />
+                  <input value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} placeholder="Bank details being checked" className="field h-11" />
                 </label>
                 <Button className="mt-2" variant="ghost" onClick={cancel} disabled={reason.trim().length < 5}>Cancel statement</Button>
               </div>

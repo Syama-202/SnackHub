@@ -20,7 +20,7 @@ export default function Expiring() {
   }, [dispatch, demo]);
   return (
     <div>
-      <h1 className="text-3xl font-extrabold">Expiring documents</h1>
+      <h1 className="page-title">Expiring documents</h1>
       <p className="mt-1 text-sm text-grey-600">Approved sellers and riders whose licences, insurance or permits expire within 30 days. Reminders go out automatically.</p>
       <Card className="mt-6 overflow-x-auto">
         {demo ? (

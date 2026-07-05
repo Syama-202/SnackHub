@@ -261,7 +261,7 @@ function ActiveDelivery({ o }) {
               {o.paymentMode === 'COD' && (
                 <label className="mt-3 block">
                   <span className="text-sm font-bold">Cash collected (to collect: {rupeesExact(o.totalPaise)})</span>
-                  <input type="number" inputMode="decimal" min="0" step="1" value={cash} onChange={(e) => setCash(e.target.value)} className="mt-1 h-11 w-full rounded-xl border border-grey-800/15 px-3" placeholder={(o.totalPaise / 100).toFixed(0)} />
+                  <input type="number" inputMode="decimal" min="0" step="1" value={cash} onChange={(e) => setCash(e.target.value)} className="field mt-1 h-11" placeholder={(o.totalPaise / 100).toFixed(0)} />
                 </label>
               )}
               <Button type="submit" className="mt-3 w-full" disabled={code.length !== 4 || o.otpLocked} loading={stepPending}>Complete delivery</Button>

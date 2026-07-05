@@ -19,7 +19,7 @@ export default function AuthShell({ portal, title, sub, children, footer, wide =
             </span>
           )}
         </div>
-        <h1 className="mt-5 text-3xl font-extrabold">{title}</h1>
+        <h1 className="mt-5 page-title">{title}</h1>
         {sub && <p className="mt-2 text-grey-600">{sub}</p>}
         <div className="mt-6">{children}</div>
         {footer && <div className="mt-6 border-t border-grey-800/10 pt-4 text-sm text-grey-600">{footer}</div>}

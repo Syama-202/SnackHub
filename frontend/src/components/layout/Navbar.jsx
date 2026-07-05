@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Logo, Icon, cx } from '../ui';
 import SnackImage from '../ui/SnackImage';
@@ -32,6 +32,10 @@ function useOutside(ref, onOutside) {
 const Navbar = () => {
   const [compact, setCompact] = useState(false);
   const [menu, setMenu] = useState(false);
+  // Three of the links open the same page with a different view, so the current one is found
+  // from the whole address; plain /shop is "Categories" unless another view is showing.
+  const { pathname, search } = useLocation();
+  const isHere = (to) => (to === '/shop' ? pathname === '/shop' && !/[?&](view=regions|sort=bestsellers)/.test(search) : pathname + search === to);
   useEffect(() => {
     const on = () => setCompact(window.scrollY > 24);
     on();
@@ -52,9 +56,9 @@ const Navbar = () => {
           </div>
           <nav className="hidden items-center gap-1 xl:flex" aria-label="Main">
             {LINKS.map((l) => (
-              <NavLink key={l.label} to={l.to} className="rounded-full px-3.5 py-2 text-[0.9375rem] font-bold text-grey-800 transition hover:bg-white hover:shadow-sm">
+              <Link key={l.label} to={l.to} aria-current={isHere(l.to) ? 'page' : undefined} className={cx('rounded-full px-3.5 py-2 text-[0.9375rem] font-bold transition hover:bg-white hover:shadow-sm', isHere(l.to) ? 'bg-white text-orange-text shadow-sm' : 'text-grey-800')}>
                 {l.label}
-              </NavLink>
+              </Link>
             ))}
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1 lg:ml-0">
@@ -154,7 +158,7 @@ function LocationSelector() {
                 <select
                   value={CITIES.some((c) => c.id === point.cityId && point.label === c.name) ? point.cityId : ''}
                   onChange={(e) => choose(cityPoint(CITIES.find((c) => c.id === e.target.value)))}
-                  className="h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3"
+                  className="field h-11"
                 >
                   <option value="" disabled>Choose a city</option>
                   {[...new Set(CITIES.map((c) => c.state))].sort().map((st) => (

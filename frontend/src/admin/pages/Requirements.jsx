@@ -39,7 +39,7 @@ export default function Requirements() {
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold">Document requirements</h1>
+          <h1 className="page-title">Document requirements</h1>
           <p className="mt-1 max-w-3xl text-sm text-grey-600">Leave “applies to” empty for everyone. Saving asks for a fresh code and applies at once: an approved seller or rider missing a newly required document is paused until they upload it.</p>
         </div>
         <div className="flex gap-1 rounded-full bg-white/70 p-1 ring-1 ring-grey-800/10">
@@ -56,7 +56,7 @@ export default function Requirements() {
             <Card key={i} className="grid gap-3 p-4 lg:grid-cols-[14rem_9rem_1fr_1fr_auto]">
               <label className="text-sm">
                 <span className="mb-1 block font-bold">Document</span>
-                <select value={r.docType} onChange={(e) => update(i, { docType: e.target.value })} className="h-10 w-full rounded-xl border border-grey-800/15 bg-white px-2">
+                <select value={r.docType} onChange={(e) => update(i, { docType: e.target.value })} className="field h-11">
                   {data.docTypes.map((d) => (
                     <option key={d.docType} value={d.docType}>{d.label}</option>
                   ))}
@@ -64,7 +64,7 @@ export default function Requirements() {
               </label>
               <label className="text-sm">
                 <span className="mb-1 block font-bold">Rule</span>
-                <select value={r.mode} onChange={(e) => update(i, { mode: e.target.value })} className="h-10 w-full rounded-xl border border-grey-800/15 bg-white px-2">
+                <select value={r.mode} onChange={(e) => update(i, { mode: e.target.value })} className="field h-11">
                   <option value="required">Required</option>
                   <option value="optional">Optional</option>
                 </select>

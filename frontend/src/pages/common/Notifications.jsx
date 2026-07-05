@@ -36,11 +36,11 @@ const Notifications = () => {
   }, [dispatch]);
   return (
     <div className="mx-auto max-w-3xl px-4 pt-6">
-      <h1 className="text-4xl font-extrabold">Notifications</h1>
+      <h1 className="page-title">Notifications</h1>
       <p className="mt-1 text-sm text-grey-600">{portal.note}</p>
       <PushAlerts role={PORTAL[role] ? role : 'customer'} />
       <div className="mt-6 space-y-2">
-        {loaded && items.length === 0 && <EmptyState title="All quiet" body={portal.empty} />}
+        {loaded && items.length === 0 && <EmptyState icon="bell" title="All quiet" body={portal.empty} />}
         {items.map((n) => {
           const to = linkFor(PORTAL[role] ? role : 'customer', n);
           return (

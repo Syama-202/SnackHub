@@ -45,7 +45,7 @@ export default function Spotlight({ eyebrow, title, shops, snacks, fastest, chil
           <h1 id="spotlight-title" className="mt-4 text-[clamp(2.4rem,5.6vw,4.4rem)] font-extrabold leading-[0.95] text-grey-900">
             {title}
             <span className="mt-3 block">
-              <span className="inline-block -rotate-1 rounded-2xl bg-red-strong px-3 py-1.5 text-[0.5em] font-bold text-white shadow-[0_10px_30px_-10px_rgba(196,34,47,0.8)] sm:px-4">
+              <span className="inline-block -rotate-1 rounded-2xl bg-red-strong px-3 py-1.5 text-[0.5em] font-bold tracking-[-0.015em] text-white shadow-[0_10px_30px_-10px_rgba(196,34,47,0.8)] sm:px-4">
                 <RotatingWords words={PHRASES} />
               </span>
             </span>

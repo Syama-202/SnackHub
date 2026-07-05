@@ -52,7 +52,7 @@ const Errors = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-extrabold">Errors</h1>
+      <h1 className="page-title">Errors</h1>
       <p className="mt-1 max-w-3xl text-grey-600">Crashes from the API, the background jobs and both websites, one row per cause. Emails, phone numbers, codes and tokens are removed before anything is stored. Match a customer’s report by the request id they were shown.</p>
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -65,7 +65,7 @@ const Errors = () => {
         </div>
         <label className="ml-auto flex items-center gap-2 text-sm font-bold">
           From
-          <select value={source} onChange={(e) => setSource(e.target.value)} className="h-10 rounded-xl border border-grey-800/15 bg-white px-3">
+          <select value={source} onChange={(e) => setSource(e.target.value)} className="field h-11 w-auto">
             <option value="">Everywhere</option>
             {Object.entries(SOURCE).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select>

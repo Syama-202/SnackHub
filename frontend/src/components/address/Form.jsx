@@ -229,7 +229,7 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
           <span className="mb-1.5 block text-sm font-bold">City</span>
           <select
             {...register('city', { onChange: () => (cityPicked.current = true) })}
-            className="h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3"
+            className="field h-11"
             aria-invalid={Boolean(errors.city)}
           >
             {[...CITIES].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}, {c.state}</option>)}

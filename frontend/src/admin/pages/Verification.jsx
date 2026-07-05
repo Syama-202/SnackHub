@@ -44,7 +44,7 @@ export default function Verification() {
   if (demo) {
     return (
       <div>
-        <h1 className="text-3xl font-extrabold">Verification</h1>
+        <h1 className="page-title">Verification</h1>
         <Card className="mt-6 max-w-2xl p-6">
           <p className="font-bold">The verification queue runs on the real backend.</p>
           <p className="mt-1 text-sm text-grey-600">The demo admin lives in the browser mock, so it cannot review real uploads. Sign out and sign in with your staff Google account and authenticator (made with npm run create-admin).</p>
@@ -58,7 +58,7 @@ export default function Verification() {
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold">Verification</h1>
+          <h1 className="page-title">Verification</h1>
           <p className="mt-1 text-sm text-grey-600">Nothing is approved automatically. Every decision is recorded with your name and reason; approving, rejecting and suspending ask for a fresh code.</p>
         </div>
         <div className="flex gap-1 rounded-full bg-white/70 p-1 ring-1 ring-grey-800/10" role="tablist">
@@ -88,7 +88,7 @@ export default function Verification() {
             load();
           }}
         >
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name or email" aria-label="Search applicants" className="h-9 rounded-full border border-grey-800/15 bg-white px-3 text-sm" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name or email" aria-label="Search applicants" className="field h-11 w-auto rounded-full text-sm" />
           <Button size="sm" variant="dark" type="submit">Search</Button>
         </form>
       </div>
@@ -326,7 +326,7 @@ function Ask({ ask, onClose }) {
       {ask.needsReason && (
         <>
           <label htmlFor="decision-reason" className="mt-2 block text-sm">Reason (the applicant sees this)</label>
-          <textarea id="decision-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} maxLength={500} className="mt-1 w-full rounded-xl border border-grey-800/15 bg-white p-3 text-sm" placeholder="Like: the FSSAI number does not match the certificate" />
+          <textarea id="decision-reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} maxLength={500} className="field mt-1 py-2.5" placeholder="Like: the FSSAI number does not match the certificate" />
         </>
       )}
       <div className="mt-3 flex gap-2">

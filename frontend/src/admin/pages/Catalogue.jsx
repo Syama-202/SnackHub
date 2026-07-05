@@ -8,7 +8,7 @@ import { Button, Card, Pill, TempBadge } from '../../components/ui';
 import { useAdmin } from '../App';
 
 const BLANK = { title: '', category: 'namkeen', servingTemp: 'AMBIENT', weight: '', spice: 0, shape: 'pile', description: '' };
-const field = 'h-11 w-full rounded-xl border border-grey-800/15 bg-white px-3';
+const field = 'field h-11';
 const spread = (p) => (!p?.shops ? '–' : p.shops === 1 ? rupees(p.minPaise) : `${rupees(p.minPaise)} to ${rupees(p.maxPaise)}`);
 
 /**
@@ -65,7 +65,7 @@ const Catalogue = () => {
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold">Catalogue</h1>
+          <h1 className="page-title">Catalogue</h1>
           <p className="mt-1 max-w-3xl text-grey-600">One entry per snack. Shops pick from it and set their own price, prep time and stock; customers compare the shops near them. Editing an entry changes every shop’s copy.</p>
         </div>
         <Button onClick={() => setForm({ ...BLANK })}>Add an entry</Button>

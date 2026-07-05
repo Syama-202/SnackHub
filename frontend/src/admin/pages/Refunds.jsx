@@ -28,7 +28,7 @@ const Refunds = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-extrabold">Failed refunds</h1>
+      <h1 className="page-title">Failed refunds</h1>
       <p className="mt-1 max-w-3xl text-grey-600">
         Refunds PhonePe refused. The customer has been told theirs is delayed. Look up the reason code in the PhonePe dashboard, sort out the cause, then send the refund again.
       </p>

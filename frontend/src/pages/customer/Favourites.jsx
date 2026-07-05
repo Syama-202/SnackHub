@@ -17,13 +17,13 @@ const Favourites = () => {
   if (favouritesLoaded && favourites.length === 0)
     return (
       <div className="page pt-10">
-        <EmptyState title="No favourites yet" body="Tap the heart on any snack to save it here. Favourites follow your account to every device." action={<Link to="/shop"><Button>Find snacks</Button></Link>} />
+        <EmptyState icon="heart" title="No favourites yet" body="Tap the heart on any snack to save it here. Favourites follow your account to every device." action={<Link to="/shop"><Button>Find snacks</Button></Link>} />
       </div>
     );
 
   return (
     <div className="page pt-6">
-      <h1 className="text-4xl font-extrabold">Favourites</h1>
+      <h1 className="page-title">Favourites</h1>
       <p className="mt-1 text-grey-600">Saved to your account. Prices and stock are today’s.</p>
       <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
         {!favouritesLoaded && Array.from({ length: 4 }, (_, i) => <ProductCardSkeleton key={i} />)}

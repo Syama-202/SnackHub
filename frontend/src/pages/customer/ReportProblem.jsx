@@ -60,7 +60,7 @@ export default function ReportProblem() {
     return (
       <div className="mx-auto max-w-xl px-4 pt-10 text-center">
         <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-emerald-500 text-white"><Icon name="check" className="h-10 w-10" /></div>
-        <h1 className="mt-5 text-3xl font-extrabold">{result.autoDecided ? 'Sorted. Credit added.' : 'Complaint received'}</h1>
+        <h1 className="mt-5 page-title">{result.autoDecided ? 'Sorted. Credit added.' : 'Complaint received'}</h1>
         <p className="mt-2 text-grey-600">
           {result.autoDecided
             ? 'The order timeline supported your report, so we resolved it straight away. The credit applies to your next pay-on-delivery order.'
@@ -77,7 +77,7 @@ export default function ReportProblem() {
   return (
     <div className="mx-auto max-w-3xl px-4 pt-6">
       <Link to={`/orders/${id}`} className="inline-flex h-11 items-center gap-1 text-sm font-bold text-grey-600"><Icon name="arrowLeft" className="h-4 w-4" /> Order #{id}</Link>
-      <h1 className="text-4xl font-extrabold">Report a problem</h1>
+      <h1 className="page-title">Report a problem</h1>
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 space-y-6">
         <Card className="p-5">
           <fieldset>
@@ -132,7 +132,7 @@ export default function ReportProblem() {
 
         <Card className="p-5">
           <label className="font-bold" htmlFor="desc">Anything else? (optional)</label>
-          <textarea id="desc" rows={3} {...register('description')} className="mt-2 w-full rounded-xl border border-grey-800/15 p-3 focus:border-orange focus:outline-none focus:ring-4 focus:ring-orange/15" />
+          <textarea id="desc" rows={3} {...register('description')} className="field mt-2 py-2.5" />
           {errors.description && <p className="text-sm font-semibold text-red-text">{errors.description.message}</p>}
         </Card>
 

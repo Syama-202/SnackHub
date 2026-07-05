@@ -72,7 +72,7 @@ export default function Wizard({ kind, title, intro, steps: formSteps, homePath 
   return (
     <div className="page page-narrow py-8">
       <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-orange-text">{kind === 'seller' ? 'Seller application' : 'Delivery partner application'}</p>
-      <h1 className="mt-1 text-4xl font-extrabold">{title}</h1>
+      <h1 className="mt-1 page-title">{title}</h1>
       <p className="mt-2 max-w-2xl text-grey-600">{intro}</p>
 
       {view.status !== 'NOT_STARTED' && (

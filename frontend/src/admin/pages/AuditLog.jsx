@@ -25,11 +25,11 @@ export default function AuditLog() {
   const rows = demo ? mock : real?.items;
   return (
     <div>
-      <h1 className="text-3xl font-extrabold">Audit log</h1>
+      <h1 className="page-title">Audit log</h1>
       <p className="mt-1 text-sm text-grey-600">Every sign-in, second-factor event, decision and document view. The database refuses to change or delete these rows.</p>
       {!demo && (
         <div className="mt-4 flex flex-wrap gap-2">
-          <select value={action} onChange={(e) => (setAction(e.target.value), setPage(1))} aria-label="Filter by action" className="h-10 rounded-full border border-grey-800/15 bg-white px-3 text-sm">
+          <select value={action} onChange={(e) => (setAction(e.target.value), setPage(1))} aria-label="Filter by action" className="field h-11 w-auto rounded-full text-sm">
             <option value="">Every action</option>
             <option value="auth.">Sign-ins and security</option>
             <option value="admin.">Staff sign-ins</option>

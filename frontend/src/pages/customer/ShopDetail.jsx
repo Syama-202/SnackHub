@@ -28,7 +28,7 @@ const ShopDetail = () => {
   }, [highlight, shop]);
 
   if (error && !shop)
-    return <EmptyState title="This shop is not available" body="It may be closed, paused or outside your delivery range." action={<Link to="/shop"><Button>See shops near you</Button></Link>} />;
+    return <EmptyState icon="store" title="This shop is not available" body="It may be closed, paused or outside your delivery range." action={<Link to="/shop"><Button>See shops near you</Button></Link>} />;
 
   const hot = shop?.promise?.HOT;
   const amb = shop?.promise?.AMBIENT;

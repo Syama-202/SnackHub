@@ -33,7 +33,7 @@ const RiderEarnings = () => {
   const total = earnings.reduce((s, e) => s + e.netPaise, 0);
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-3xl font-extrabold">Earnings</h1>
+      <h1 className="page-title">Earnings</h1>
       <Card className="mt-4 bg-hero p-5 text-grey-800">
         <p className="text-sm font-bold">Net this week</p>
         <p className="font-display text-4xl font-extrabold">{rupeesExact(total)}</p>
@@ -78,7 +78,7 @@ const RiderEarnings = () => {
                   {e.status === 'ADJUSTED' && <p className="mt-2 text-xs text-emerald-700">Given back {rupeesExact(e.adjustmentPaise ?? e.penaltyPaise)}{e.resolutionReason ? `: ${e.resolutionReason}` : ''}.</p>}
                   {canDispute && !isDemoSession() && (
                     <label className="mt-3 block text-xs font-bold">What happened?
-                      <input value={reason} onChange={(ev) => setReason(ev.target.value)} maxLength={300} placeholder="Road closed near the drop" className="mt-1 h-10 w-full rounded-xl border border-grey-800/15 px-3 text-sm font-normal" />
+                      <input value={reason} onChange={(ev) => setReason(ev.target.value)} maxLength={300} placeholder="Road closed near the drop" className="field mt-1 h-11 font-normal" />
                     </label>
                   )}
                   {canDispute && <Button size="sm" variant="outline" className="mt-3" disabled={!isDemoSession() && reason.trim().length < 5} onClick={() => dispute(e)}>Dispute this cut</Button>}

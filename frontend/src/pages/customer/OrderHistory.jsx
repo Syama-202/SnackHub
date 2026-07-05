@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchOlderOrders } from '../../store/slices/order';
+import { fetchOlderOrders, fetchOrders } from '../../store/slices/order';
 import { STATE_LABEL, isActive } from '@shared/domain/orderStates';
 import { rupees } from '@shared/domain/money';
-import { Button, Card, EmptyState, Pill, Skeleton, Icon } from '../../components/ui';
+import { Button, Card, EmptyState, ErrorState, Pill, Skeleton, Icon } from '../../components/ui';
 
 // the newest orders come from CustomerLayout; this many means there may be older ones
 const LATEST = 30;
@@ -12,7 +12,7 @@ const LATEST = 30;
 /** Order history. The latest are kept fresh in the orders slice by CustomerLayout; older ones load a page at a time. */
 const OrderHistory = () => {
   const dispatch = useDispatch();
-  const { list: latest, listLoaded, older, olderDone } = useSelector((state) => state.orders);
+  const { list: latest, listLoaded, listError, older, olderDone } = useSelector((state) => state.orders);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const shown = new Set(latest.map((o) => o.id));
@@ -27,24 +27,27 @@ const OrderHistory = () => {
   };
   return (
     <div className="mx-auto max-w-4xl px-4 pt-6">
-      <h1 className="text-4xl font-extrabold">Your orders</h1>
+      <h1 className="page-title">Your orders</h1>
       <div className="mt-6 space-y-3">
-        {!listLoaded && [0, 1, 2].map((i) => <Skeleton key={i} className="h-28" />)}
-        {listLoaded && list.length === 0 && <EmptyState title="No orders yet" body="Your snack adventure starts here." action={<Link to="/shop"><Button>Explore snacks</Button></Link>} />}
+        {!listLoaded && !listError && [0, 1, 2].map((i) => <Skeleton key={i} className="h-[5.5rem]" />)}
+        {!listLoaded && listError && <ErrorState title="We could not load your orders" onRetry={() => dispatch(fetchOrders())} />}
+        {listLoaded && list.length === 0 && <EmptyState icon="receipt" title="No orders yet" body="Your snack adventure starts here." action={<Link to="/shop"><Button>Explore snacks</Button></Link>} />}
         {list.map((o) => (
-          <Card key={o.id} as={Link} to={`/orders/${o.id}`} className="lift flex flex-wrap items-center gap-4 p-4">
-            <span className={`grid h-12 w-12 place-items-center rounded-2xl ${isActive(o.status) ? 'bg-primary' : 'bg-grey-50'}`}>
-              <Icon name={isActive(o.status) ? 'scooter' : 'box'} className="h-6 w-6" />
+          <Card key={o.id} as={Link} to={`/orders/${o.id}`} aria-label={`Order ${o.id} from ${o.seller?.shopName ?? 'a shop'}, ${STATE_LABEL[o.status]}`} className="lift flex items-center gap-3 p-4 sm:gap-4">
+            <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl sm:h-12 sm:w-12 ${isActive(o.status) ? 'bg-primary' : 'bg-grey-50'}`}>
+              <Icon name={isActive(o.status) ? 'scooter' : 'box'} className="h-5 w-5 sm:h-6 sm:w-6" />
             </span>
+            {/* the shop name keeps to one line on a phone; the order number sits with the date */}
             <div className="min-w-0 flex-1">
-              <p className="font-bold">{o.seller?.shopName} <span className="text-sm font-semibold text-grey-600">· #{o.id}</span></p>
+              <p className="truncate font-bold">{o.seller?.shopName}</p>
               <p className="truncate text-sm text-grey-600">{o.items.map((i) => `${i.title} × ${i.qty}`).join(', ')}</p>
-              <p className="text-xs text-grey-600">{new Date(o.placedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</p>
+              <p className="nums truncate text-xs text-grey-600">#{o.id} · {new Date(o.placedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</p>
             </div>
-            <div className="text-right">
+            <div className="shrink-0 text-right">
               <Pill tone={isActive(o.status) ? 'sun' : o.status === 'DELIVERED' ? 'green' : o.status === 'CANCELLED' || o.status === 'REJECTED' ? 'red' : 'grey'}>{STATE_LABEL[o.status]}</Pill>
-              <p className="mt-1 font-extrabold">{rupees(o.totalPaise)}</p>
+              <p className="nums mt-1 font-extrabold">{rupees(o.totalPaise)}</p>
             </div>
+            <Icon name="chevronRight" className="hidden h-4 w-4 shrink-0 text-grey-400 sm:block" />
           </Card>
         ))}
       </div>

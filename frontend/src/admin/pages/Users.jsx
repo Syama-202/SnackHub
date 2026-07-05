@@ -33,7 +33,7 @@ export default function Users() {
   const confirm = (title, args) => setAsk({ title, args });
   return (
     <div>
-      <h1 className="text-3xl font-extrabold">Accounts</h1>
+      <h1 className="page-title">Accounts</h1>
       <p className="mt-1 text-sm text-grey-600">Suspending signs the person out everywhere at once. Every change needs a reason, which is kept in the audit log.</p>
       <div className="mt-5 flex flex-wrap gap-2">
         <form
@@ -44,14 +44,14 @@ export default function Users() {
             load();
           }}
         >
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name or email" aria-label="Search accounts" className="h-10 rounded-full border border-grey-800/15 bg-white px-3 text-sm" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name or email" aria-label="Search accounts" className="field h-11 w-auto rounded-full text-sm" />
           <Button size="sm" variant="dark" type="submit">Search</Button>
         </form>
-        <select value={role} onChange={(e) => (setRole(e.target.value), setPage(1))} aria-label="Role" className="h-10 rounded-full border border-grey-800/15 bg-white px-3 text-sm">
+        <select value={role} onChange={(e) => (setRole(e.target.value), setPage(1))} aria-label="Role" className="field h-11 w-auto rounded-full text-sm">
           <option value="">All roles</option>
           {['customer', 'seller', 'rider'].map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
         </select>
-        <select value={status} onChange={(e) => (setStatus(e.target.value), setPage(1))} aria-label="Status" className="h-10 rounded-full border border-grey-800/15 bg-white px-3 text-sm">
+        <select value={status} onChange={(e) => (setStatus(e.target.value), setPage(1))} aria-label="Status" className="field h-11 w-auto rounded-full text-sm">
           <option value="">Any status</option>
           <option value="active">Active</option>
           <option value="suspended">Suspended</option>
@@ -135,7 +135,7 @@ function Reason({ title, onCancel, onConfirm }) {
     <Card className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-lg p-5 shadow-2xl" role="dialog" aria-label={title}>
       <p className="font-bold">{title}</p>
       <label htmlFor="user-reason" className="mt-2 block text-sm">Reason (kept in the audit log; suspensions are emailed to the person)</label>
-      <textarea id="user-reason" rows={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} className="mt-1 w-full rounded-xl border border-grey-800/15 bg-white p-3 text-sm" />
+      <textarea id="user-reason" rows={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} className="field mt-1 py-2.5" />
       <div className="mt-3 flex gap-2">
         <Button size="sm" disabled={reason.trim().length < 3} onClick={() => onConfirm(reason.trim())}>Confirm</Button>
         <Button size="sm" variant="quiet" onClick={onCancel}>Cancel</Button>

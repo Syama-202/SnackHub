@@ -42,7 +42,7 @@ const Cash = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-extrabold">Cash in hand</h1>
+      <h1 className="page-title">Cash in hand</h1>
       <p className="mt-1 max-w-2xl text-grey-600">
         Pay-on-delivery cash each rider collected, less what they handed in. At {cash ? rupees(cash.limitPaise) : '…'} or more a rider gets no new pay-on-delivery orders until they deposit. Change the limit in the delivery policy.
       </p>
@@ -76,11 +76,11 @@ const Cash = () => {
           <div className="mt-3 grid gap-3 sm:grid-cols-[12rem_1fr]">
             <label className="block">
               <span className="mb-1 block text-sm font-bold">Amount (₹)</span>
-              <input type="number" inputMode="decimal" min="1" step="0.01" max={(form.max / 100).toFixed(2)} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} aria-invalid={!valid} className="h-11 w-full rounded-xl border border-grey-800/15 px-3" />
+              <input type="number" inputMode="decimal" min="1" step="0.01" max={(form.max / 100).toFixed(2)} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} aria-invalid={!valid} className="field h-11" />
             </label>
             <label className="block">
               <span className="mb-1 block text-sm font-bold">Note (optional)</span>
-              <input value={form.note} maxLength={200} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Handed in at the hub" className="h-11 w-full rounded-xl border border-grey-800/15 px-3" />
+              <input value={form.note} maxLength={200} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Handed in at the hub" className="field h-11" />
             </label>
           </div>
           {!valid && <p role="alert" className="mt-2 text-sm font-semibold text-red-text">Enter an amount from ₹1 to {rupees(form.max)}.</p>}
@@ -119,7 +119,7 @@ const Cash = () => {
           <p className="text-sm text-grey-600">The deposit stays on record; a reversal row cancels it and the rider holds that cash again.</p>
           <label className="mt-3 block">
             <span className="mb-1 block text-sm font-bold">Reason</span>
-            <input value={reversing.reason} maxLength={200} onChange={(e) => setReversing({ ...reversing, reason: e.target.value })} placeholder="Recorded against the wrong rider" className="h-11 w-full rounded-xl border border-grey-800/15 px-3" />
+            <input value={reversing.reason} maxLength={200} onChange={(e) => setReversing({ ...reversing, reason: e.target.value })} placeholder="Recorded against the wrong rider" className="field h-11" />
           </label>
           <div className="mt-4 flex gap-2">
             <Button variant="danger" onClick={reverse} disabled={reversing.reason.trim().length < 5}>Reverse deposit</Button>

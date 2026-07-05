@@ -30,7 +30,7 @@ const SellerShop = () => {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div>
-        <h1 className="text-3xl font-extrabold">{s.shopName}</h1>
+        <h1 className="page-title">{s.shopName}</h1>
         <p className="text-grey-600">{[s.city, s.region].filter(Boolean).join(', ')}</p>
         <Card className="mt-4 p-5">
           <h2 className="text-lg font-extrabold">Verification status</h2>
@@ -116,14 +116,14 @@ function HoursCard({ shop, save }) {
               {!open && <span className="text-sm text-grey-600">Closed</span>}
               {week[d].map(([a, b], i) => (
                 <span key={i} className="flex items-center gap-1 text-sm">
-                  <input type="time" value={a} onChange={(e) => setTime(d, i, 0, e.target.value)} aria-label={`${DAY_LABEL[d]} window ${i + 1} opens`} className="h-10 rounded-lg border border-grey-800/15 px-2" />
+                  <input type="time" value={a} onChange={(e) => setTime(d, i, 0, e.target.value)} aria-label={`${DAY_LABEL[d]} window ${i + 1} opens`} className="field h-11 w-auto" />
                   <span aria-hidden="true">to</span>
-                  <input type="time" value={b === '24:00' ? '23:59' : b} onChange={(e) => setTime(d, i, 1, e.target.value === '23:59' ? '24:00' : e.target.value)} aria-label={`${DAY_LABEL[d]} window ${i + 1} closes`} className="h-10 rounded-lg border border-grey-800/15 px-2" />
+                  <input type="time" value={b === '24:00' ? '23:59' : b} onChange={(e) => setTime(d, i, 1, e.target.value === '23:59' ? '24:00' : e.target.value)} aria-label={`${DAY_LABEL[d]} window ${i + 1} closes`} className="field h-11 w-auto" />
                   {i === 1 && <button type="button" onClick={() => setDay(d, week[d].slice(0, 1))} className="grid h-8 w-8 place-items-center rounded-full hover:bg-grey-800/5" aria-label={`Remove the second window on ${DAY_LABEL[d]}`}><Icon name="x" className="h-4 w-4" /></button>}
                 </span>
               ))}
               {open && week[d].length === 1 && (
-                <button type="button" onClick={() => setDay(d, [...week[d], ['17:00', '21:00']])} className="text-sm font-bold text-orange-text">+ second window</button>
+                <button type="button" onClick={() => setDay(d, [...week[d], ['17:00', '21:00']])} className="-mx-2 inline-flex min-h-9 items-center rounded-full px-2 text-sm font-bold text-orange-text hover:bg-orange/10">+ second window</button>
               )}
             </li>
           );
@@ -154,7 +154,7 @@ function HolidaysCard({ shop, save }) {
       <p className="text-sm text-grey-600">The shop stays closed all day on these dates, whatever the weekly hours say.</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <label className="sr-only" htmlFor="holiday">Date</label>
-        <input id="holiday" type="date" min={today} value={day} onChange={(e) => setDay(e.target.value)} className="h-11 rounded-xl border border-grey-800/15 px-3" />
+        <input id="holiday" type="date" min={today} value={day} onChange={(e) => setDay(e.target.value)} className="field h-11 w-auto" />
         <Button variant="ghost" onClick={add} disabled={!day || dates.length >= MAX_CLOSED_DATES}>Add holiday</Button>
       </div>
       <ul className="mt-3 flex flex-wrap gap-2">
@@ -189,7 +189,7 @@ function PincodesCard({ shop, save }) {
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <label className="sr-only" htmlFor="pins">Pincodes</label>
-        <input id="pins" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} inputMode="numeric" placeholder="522001, 522002" aria-invalid={bad.length > 0} className="h-11 min-w-0 flex-1 rounded-xl border border-grey-800/15 px-3" />
+        <input id="pins" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} inputMode="numeric" placeholder="522001, 522002" aria-invalid={bad.length > 0} className="field h-11 min-w-0 flex-1" />
         <Button variant="ghost" onClick={add} disabled={!typed.length || bad.length > 0 || pins.length + typed.length > MAX_PINCODES}>Add</Button>
       </div>
       {bad.length > 0 && <p role="alert" className="mt-1 text-sm font-semibold text-red-text">{bad[0]} is not a pincode: six digits, not starting with 0.</p>}

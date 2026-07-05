@@ -19,7 +19,7 @@ const SellerPayouts = () => {
   const d = p.due;
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-3xl font-extrabold">Payouts</h1>
+      <h1 className="page-title">Payouts</h1>
       <p className="mt-1 text-grey-600">
         You are paid the food value of each delivered order, less SnackHub’s {p.commissionPct}% commission and any fines. Delivery fees and app credit are SnackHub’s, so you get the full food value however the customer paid. An order is payable {p.holdHours} hours after delivery, once its complaint window has closed.
       </p>

@@ -43,7 +43,7 @@ export default function Security() {
   return (
     <div className="page page-narrow py-8">
       <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-orange-text">Your account</p>
-      <h1 className="mt-1 text-4xl font-extrabold">Security and sign-in</h1>
+      <h1 className="mt-1 page-title">Security and sign-in</h1>
       {recoveryCodes && (
         <Card className="mt-6 p-6">
           <h2 className="text-xl font-extrabold">Your new recovery codes</h2>
