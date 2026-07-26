@@ -16,7 +16,7 @@ export default function RotatingWords({ words, every = 2600, className }) {
   }, [reduced, words.length, every]);
   return (
     <span className={`relative inline-grid overflow-hidden align-bottom ${className || ''}`}>
-      <span className="sr-only">{words.join(', ')}</span>
+      <span className="sr-only">{words.map((w) => w.replace(/[.!]$/, '')).join(', ')}</span>
       <AnimatePresence mode="popLayout" initial={false}>
         <m.span
           key={i}

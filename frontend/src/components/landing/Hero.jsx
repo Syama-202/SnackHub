@@ -93,10 +93,11 @@ export default function Hero() {
         ))}
       </div>
       <div className="page grid items-center gap-10 pb-16 pt-8 lg:min-h-[calc(100dvh-7rem)] lg:grid-cols-[1.1fr_0.9fr] xl:grid-cols-[1fr_1.05fr]">
-        <div data-copy className="relative z-10 order-2 lg:order-1">
+        {/* the message comes first on phones too; the plate follows, smaller */}
+        <div data-copy className="relative z-10">
           <HeroCopy />
         </div>
-        <div className="relative order-1 mx-auto aspect-square w-[min(100%,35rem)] md:w-[min(100%,27rem)] lg:order-2 lg:w-[min(100%,35rem)] 2xl:w-[min(100%,40rem)]">
+        <div className="relative mx-auto aspect-square w-[min(100%,22rem)] sm:w-[min(100%,27rem)] lg:w-[min(100%,35rem)] 2xl:w-[min(100%,40rem)]">
           <div className="absolute inset-[6%] rounded-full bg-gradient-to-br from-sun/60 via-orange/40 to-red/30 blur-2xl" aria-hidden="true" />
           <div data-plate className="absolute inset-[10%] will-change-transform">
             <div className="h-full w-full animate-pop overflow-hidden rounded-full shadow-[0_40px_90px_rgba(122,42,0,0.35)] ring-[10px] ring-white/90">
@@ -137,7 +138,7 @@ function HeroCopy() {
     const city = q && CITIES.find((c) => c.name.toLowerCase().startsWith(q) || c.id.startsWith(q));
     if (hit) dispatch(setAddress(hit.id));
     else if (city) dispatch(setGuestPoint(cityPoint(city)));
-    else if (q) return dispatch(addToast({ type: 'info', title: 'City not found', message: 'Try a city name like Chennai or Pune, or pick one from “Deliver to” at the top.' }));
+    else if (q) return dispatch(addToast({ type: 'info', title: 'City not found', message: 'Try a city name like Hyderabad or Vijayawada, or pick one from “Deliver to” at the top.' }));
     navigate('/shop');
     return undefined;
   };
@@ -160,7 +161,7 @@ function HeroCopy() {
         </div>
         <Button size="lg" type="submit">Show snacks near me</Button>
       </form>
-      <p className="mt-2 pl-2 text-xs text-grey-600">Type a city, such as Chennai, Pune or Kochi{user ? ', or one of your saved addresses' : ''}. Demo shops in {CITIES.length} cities.</p>
+      <p className="mt-2 pl-2 text-xs text-grey-600">Type a city, such as Hyderabad, Vijayawada or Visakhapatnam{user ? ', or one of your saved addresses' : ''}. Demo shops in {CITIES.length} cities.</p>
       <div className="mt-6 flex flex-wrap gap-3">
         <Button variant="dark" onClick={() => navigate('/shop')}>Explore snacks <Icon name="arrowRight" className="h-4 w-4" /></Button>
         <Button variant="ghost" onClick={() => document.getElementById('regions')?.scrollIntoView({ behavior: 'smooth' })}>Discover regional flavours</Button>
