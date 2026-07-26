@@ -15,7 +15,8 @@ const BTN = {
   quiet: 'text-grey-800 hover:bg-grey-800/5',
   outline: 'border-2 border-orange text-orange-text bg-white/80 hover:bg-orange/10',
 };
-const SIZE = { sm: 'h-9 px-4 text-sm', md: 'h-12 px-6 text-base', lg: 'h-14 px-8 text-lg' };
+// md matches the 44 px inputs; nothing goes below the 44 px touch target except sm
+const SIZE = { sm: 'h-9 px-4 text-sm', md: 'h-11 px-5 text-sm', lg: 'h-12 px-7 text-base' };
 
 export const Button = forwardRef(function Button({ variant = 'primary', size = 'md', className, loading, children, ...rest }, ref) {
   return (
