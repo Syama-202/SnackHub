@@ -1,0 +1,13 @@
+User-agent: *
+Disallow: /seller
+Disallow: /rider
+Disallow: /checkout
+Disallow: /orders
+Disallow: /account
+Disallow: /notifications
+Disallow: /favourites
+Disallow: /verify-email
+Disallow: /reset-password
+Allow: /
+
+Sitemap: https://snackhub-india.netlify.app/sitemap.xml
