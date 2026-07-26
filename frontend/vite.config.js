@@ -43,6 +43,9 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    // hashed build files go in static/ (cached for a year); public/assets keeps the photos,
+    // whose names stay the same when they change
+    assetsDir: 'static',
     // vendor split only (vite.chunks.js); MapLibre and GSAP stay in their lazy chunks
     rollupOptions: { input: 'index.html', output: { manualChunks: vendorChunks } },
     // MapLibre is one 1 MB chunk (290 kB gzipped), loaded only when a map is on screen

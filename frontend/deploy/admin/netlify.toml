@@ -41,7 +41,14 @@
     X-Robots-Tag = "noindex, nofollow"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
+# hashed build files never change, so browsers keep them
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# icons keep their names when replaced: a day, then checked again
 [[headers]]
   for = "/assets/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
