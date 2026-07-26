@@ -9,7 +9,7 @@ const SECTIONS = [
     title: 'Who we are',
     body: (
       <p>
-        SnackHub is run by {BUSINESS.legalName}, {BUSINESS.address}. SnackHub is a marketplace: local shops list and sell their snacks, and delivery partners carry them to you. The shop that makes your order is the seller of the food.
+        SnackHub is {BUSINESS.legalName}, run from {BUSINESS.address} for customers in {BUSINESS.region}. SnackHub is a marketplace: local shops list and sell their snacks, and delivery partners carry them to you. The shop that makes your order is the seller of the food.
       </p>
     ),
   },

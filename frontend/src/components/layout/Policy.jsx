@@ -20,7 +20,7 @@ export default function Policy({ eyebrow = 'SnackHub policies', title, intro, se
       <h1 className="mt-2 font-display text-4xl font-bold text-grey-800 md:text-5xl">{title}</h1>
       <p className="mt-3 text-sm text-grey-600">Last updated {BUSINESS.policiesUpdated}</p>
       <p role="note" className="mt-5 rounded-2xl border border-sun/60 bg-sun/15 px-4 py-3 text-sm text-grey-800">
-        Demo project: this is draft text and the business details are demo data. Replace them and have these pages reviewed before SnackHub takes real orders.
+        SnackHub is a student project. Shops marked demo are fictional, and this text has not been reviewed by a lawyer.
       </p>
       {intro && <p className="mt-6 text-lg text-grey-600">{intro}</p>}
 

@@ -35,6 +35,7 @@ const SECTIONS = [
       <ul>
         <li>{BUSINESS.legalName}</li>
         <li>{BUSINESS.address}</li>
+        <li>Serving {BUSINESS.region}</li>
       </ul>
     ),
   },
