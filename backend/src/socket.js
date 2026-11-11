@@ -14,6 +14,7 @@ import { realtime, roomOf, personRoom, STAFF_ROOMS } from './utils/realtime.js';
 import { userModel } from './models/identity/user.js';
 import { userRoleModel } from './models/identity/userRole.js';
 import { can, mfaRequiredFor, STAFF_ROLES } from '../../shared/domain/permissions.js';
+import { markActive } from './utils/activity.js';
 
 export const SOCKET_PATH = '/api/v1/socket';
 // the apps send nothing on the socket; a client that keeps sending is dropped
@@ -82,6 +83,8 @@ export function createSocketServer(httpServer, { env, dbs, logger, redis = null,
   });
 
   io.on('connection', (socket) => {
+    // an open app counts as someone using the site (utils/activity.js)
+    markActive();
     const { rooms, exp, role } = socket.data;
     socket.join(rooms);
     // access tokens are short-lived: the socket closes when this one expires and the app

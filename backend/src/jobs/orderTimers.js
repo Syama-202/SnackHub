@@ -16,6 +16,7 @@ import { reconcilePayments } from '../utils/payments.js';
 import { outboxModel } from '../models/outbox.js';
 import { riderModel } from '../models/dispatch/rider.js';
 import { RIDER_EXPECTED_STATES, riderSilent } from '../../../shared/domain/riderSilence.js';
+import { shouldRunPass } from '../utils/activity.js';
 
 export async function runOrderTimers({ dbs, logger }) {
   const out = { sellerTimeouts: 0, offersExpired: 0, offersMade: 0, holdsReleased: 0, silentRiders: 0 };
@@ -60,11 +61,14 @@ export async function runOrderTimers({ dbs, logger }) {
 export function createOrderTimers(deps) {
   let timer = null;
   let running = false;
+  let lastPassAt = 0;
   return {
     runOnce: () => runOrderTimers(deps),
     start(everyMs = 5000) {
       timer = setInterval(async () => {
-        if (running) return;
+        // a quiet site checks every half hour instead, so the database can sleep (utils/activity.js)
+        if (running || !shouldRunPass(lastPassAt)) return;
+        lastPassAt = Date.now();
         running = true;
         try {
           await runOrderTimers(deps);

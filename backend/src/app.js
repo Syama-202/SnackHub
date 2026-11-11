@@ -23,6 +23,7 @@ import { gateway } from './utils/payments.js';
 import { createPush } from './utils/push.js';
 import { webhookRoutes } from './routes/webhooks.js';
 import { limit, byIp } from './middleware/rateLimit.js';
+import { markActive } from './utils/activity.js';
 
 export function createApp({
   env,
@@ -48,6 +49,12 @@ export function createApp({
   app.set('trust proxy', 1);
 
   app.use(requestLogger(logger));
+  // any API call (not the health checks, which uptime monitors make) counts as someone using the
+  // site, so the background jobs run at full speed (utils/activity.js)
+  app.use('/api', (req, res, next) => {
+    markActive();
+    next();
+  });
   app.use(helmet());
   // exact origins only, never a wildcard with credentials (doc 16.2)
   app.use(cors({ origin: env.CORS_ORIGINS, credentials: true, exposedHeaders: ['X-Request-Id', 'Retry-After', 'RateLimit-Remaining'] }));

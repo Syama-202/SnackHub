@@ -10,6 +10,7 @@ import { notificationModel, portalOfType } from '../models/notify/notification.j
 import { realtime } from '../utils/realtime.js';
 import { pushToDevices } from '../utils/push.js';
 import { describeError, recordError } from '../utils/errors.js';
+import { shouldRunPass } from '../utils/activity.js';
 
 // a message is tried this many times, 1, 2, 4 ... 64 minutes apart (about two hours in all)
 export const MAX_ATTEMPTS = 8;
@@ -90,11 +91,14 @@ export function createOutboxRelay({ env, dbs, mailer, sms, push, logger }) {
 
   let timer = null;
   let running = false;
+  let lastPassAt = 0;
   return {
     runOnce,
     start(everyMs = 3000) {
       timer = setInterval(async () => {
-        if (running) return;
+        // a quiet site checks every half hour instead, so the database can sleep (utils/activity.js)
+        if (running || !shouldRunPass(lastPassAt)) return;
+        lastPassAt = Date.now();
         running = true;
         try {
           await runOnce();
