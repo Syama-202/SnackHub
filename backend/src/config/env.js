@@ -10,12 +10,14 @@ const bool = z.union([z.boolean(), z.enum(['true', 'false']).transform((v) => v 
 // What migrations, the seed and the database tests need
 const database = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  // PostgreSQL: the server, and the one database that holds the six module schemas
   DB_HOST: z.string().min(1),
-  DB_PORT: z.coerce.number().int().positive(),
+  DB_PORT: z.coerce.number().int().positive().default(5432),
+  DB_NAME: z.string().regex(/^[a-z_][a-z0-9_]{0,62}$/, 'a lower-case database name').default('snackhub'),
   DB_MIGRATOR_USER: z.string().min(1),
   DB_MIGRATOR_PASSWORD: z.string().min(8),
   DB_MODULE_PASSWORD: z.string().min(8),
-  // TLS to a hosted MySQL (Aiven requires it). DB_SSL_CA is the provider's CA certificate,
+  // TLS to a hosted PostgreSQL (Neon requires it). DB_SSL_CA is the provider's CA certificate,
   // the PEM text itself (newlines may be written as \n); without it the system's CAs are used.
   DB_SSL: bool.prefault('false'),
   DB_SSL_CA: z.string().default(''),

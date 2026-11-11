@@ -13,7 +13,7 @@ export function applicationTable(TABLE) {
     findById: (db, id) => db(TABLE).where({ id }).first().then(parse),
     /** The application that counts for a person: the newest one. */
     latestForUser: (db, userId) => db(TABLE).where({ user_id: userId }).orderBy('id', 'desc').first().then(parse),
-    createDraft: (db, { userId, checks }) => db(TABLE).insert({ user_id: userId, status: 'DRAFT', checks: JSON.stringify(checks) }).then(([id]) => id),
+    createDraft: (db, { userId, checks }) => db(TABLE).insert({ user_id: userId, status: 'DRAFT', checks: JSON.stringify(checks) }).returning('id').then(([r]) => r.id),
     setChecks: (db, id, checks) => db(TABLE).where({ id }).update({ checks: JSON.stringify(checks) }),
     /**
      * Moves an application only from the status it was read in (optimistic: false if someone
@@ -102,7 +102,7 @@ export function documentTable(TABLE) {
           status: 'PENDING',
           uploaded_at: new Date(),
         })
-        .then(([id]) => id),
+        .returning('id').then(([r]) => r.id),
     /**
      * A new upload replaces the earlier versions of that document that are not approved; an
      * approved version stays valid until its replacement is approved.

@@ -26,8 +26,8 @@ import { riderEarningModel } from '../models/dispatch/riderEarning.js';
 import { auditLogModel } from '../models/identity/auditLog.js';
 import { triage, canAutoResolve } from '../../../shared/domain/triage.js';
 import { riderLateMin } from '../../../shared/domain/penalty.js';
+import { isUniqueViolation } from '../db/errors.js';
 
-const DUPLICATE = 1062;
 const PHOTO_MIME = ['image/jpeg', 'image/png', 'image/webp'];
 const CREDIT_DAYS = 30;
 // the old food-quality detail column, for the subtypes that have one
@@ -145,7 +145,7 @@ export function complaintsController({ env, dbs, storage, scanner }) {
       });
     } catch (err) {
       for (const p of stored) await storage.remove(p.key);
-      if (err.errno === DUPLICATE) throw new AppError(409, 'DUPLICATE', 'You already reported this kind of problem for this order');
+      if (isUniqueViolation(err)) throw new AppError(409, 'DUPLICATE', 'You already reported this kind of problem for this order');
       throw err;
     }
     // unsafe food: the shop is hidden at once, until an admin looks at it

@@ -1,5 +1,5 @@
 // Catalog API on the seeded demo data (doc 11.2): the same shapes the frontend mock serves,
-// read from MySQL through the catalog and ordering module users. Read only.
+// read from PostgreSQL through the catalog and ordering module users. Read only.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import pino from 'pino';

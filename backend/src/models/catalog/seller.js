@@ -36,19 +36,26 @@ export function closedReason(row, now = Date.now()) {
   return st.open ? null : `${row.shop_name} is closed now. ${hoursLabel(st, now)}.`;
 }
 
+/**
+ * Metres along the earth from the row's lat/lng to a point (bindings: lat, lat, lng): the
+ * haversine formula on the sphere MySQL's ST_Distance_Sphere used (radius 6,370,986 m).
+ */
+export const DISTANCE_SQL = '2 * 6370986 * asin(sqrt(power(sin(radians(lat - ?) / 2), 2) + cos(radians(?)) * cos(radians(lat)) * power(sin(radians(lng - ?) / 2), 2)))';
+
 export const sellerModel = {
   findById: (db, id) => db(TABLE).where({ id }).first(),
   findByUser: (db, userId) => db(TABLE).where({ user_id: userId }).first(),
   /**
    * Shops that can reach a point (doc 12.1, query 2): a bounding box on the lat/lng index
-   * first, then the exact distance. POINT takes (lng, lat), the axis order
-   * ST_Distance_Sphere expects; the tests check it with two known cities.
+   * first, then the exact great-circle distance (haversine, on the same sphere MySQL's
+   * ST_Distance_Sphere used, radius 6,370,986 m); the tests check it with two known cities.
    */
   listServiceable: (db, { lat, lng, maxKm }) => {
     const dLat = maxKm / 111;
     const dLng = maxKm / (111 * Math.cos((lat * Math.PI) / 180));
-    return db
-      .select('*', db.raw('ST_Distance_Sphere(POINT(lng, lat), POINT(?, ?)) AS distance_m', [lng, lat]))
+    // the distance is worked out in an inner query, so the outer one can filter and sort on it
+    const near = db
+      .select('*', db.raw(`${DISTANCE_SQL} AS distance_m`, [lat, lat, lng]))
       .from(TABLE)
       .whereIn('status', VISIBLE_STATUSES)
       .andWhere('paused', false)
@@ -56,8 +63,8 @@ export const sellerModel = {
       .andWhere((q) => q.whereNull('docs_valid_until').orWhere('docs_valid_until', '>=', new Date().toISOString().slice(0, 10)))
       .whereBetween('lat', [lat - dLat, lat + dLat])
       .whereBetween('lng', [lng - dLng, lng + dLng])
-      .havingRaw('distance_m <= LEAST(radius_km * 1000, ?)', [maxKm * 1000])
-      .orderBy('distance_m');
+      .as('near');
+    return db.select('*').from(near).whereRaw('distance_m <= LEAST(radius_km * 1000, ?)', [maxKm * 1000]).orderBy('distance_m');
   },
   /**
    * The public shop row from a submitted application's business details: hidden from
@@ -71,7 +78,7 @@ export const sellerModel = {
       await db(TABLE).where({ id: existing.id }).update({ ...row, status: ['active', 'probation', 'warned'].includes(existing.status) ? existing.status : 'pending' });
       return existing.id;
     }
-    const [id] = await db(TABLE).insert({ user_id: userId, ...row, status: 'pending' });
+    const [{ id }] = await db(TABLE).insert({ user_id: userId, ...row, status: 'pending' }).returning('id');
     return id;
   },
   setDocsValidUntil: (db, id, date) => db(TABLE).where({ id }).update({ docs_valid_until: date }),

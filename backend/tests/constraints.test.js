@@ -1,7 +1,7 @@
 // Prompt 2.1: the database itself refuses bad data. CHECK, UNIQUE and foreign keys,
 // plus the append-only ledger, one accepted rider per order, and module isolation.
 import { afterAll, beforeEach, afterEach, describe, expect, it } from 'vitest';
-import { connect, moduleDb, ER, expectError } from './helpers/db.js';
+import { connect, moduleDb, ER, expectError, survivable } from './helpers/db.js';
 
 const { db, env, reason } = await connect();
 if (!db) console.warn(`database tests skipped: ${reason}`);
@@ -15,11 +15,11 @@ const uniq = () => `${Date.now()}${++n}`;
 
 // minimal valid rows, created inside the test transaction
 async function makeSeller(trx, over = {}) {
-  const [id] = await trx('catalog.sellers').insert({ user_id: 900000000 + n++, shop_name: 'Test shop (demo)', city: 'Guntur', lat: 16.3, lng: 80.43, status: 'active', ...over });
+  const [{ id }] = await trx('catalog.sellers').insert({ user_id: 900000000 + n++, shop_name: 'Test shop (demo)', city: 'Guntur', lat: 16.3, lng: 80.43, status: 'active', ...over }).returning('id');
   return id;
 }
 async function makeProduct(trx, sellerId, over = {}) {
-  const [id] = await trx('catalog.products').insert({ seller_id: sellerId, slug: `test-${uniq()}`, title: 'Test snack', category: 'fried', serving_temp: 'HOT', prep_minutes: 10, price_paise: 5000, ...over });
+  const [{ id }] = await trx('catalog.products').insert({ seller_id: sellerId, slug: `test-${uniq()}`, title: 'Test snack', category: 'fried', serving_temp: 'HOT', prep_minutes: 10, price_paise: 5000, ...over }).returning('id');
   return id;
 }
 const order = (over = {}) => ({
@@ -41,14 +41,14 @@ const order = (over = {}) => ({
   ...over,
 });
 async function makeOrder(trx, over) {
-  const [id] = await trx('ordering.orders').insert(order(over));
+  const [{ id }] = await trx('ordering.orders').insert(order(over)).returning('id');
   return id;
 }
 
 describe.skipIf(!db)('database constraints', () => {
   let trx;
   beforeEach(async () => {
-    trx = await db.transaction();
+    trx = survivable(await db.transaction());
   });
   afterEach(async () => {
     await trx.rollback();
@@ -65,8 +65,8 @@ describe.skipIf(!db)('database constraints', () => {
       const p = await makeProduct(trx, await makeSeller(trx));
       await trx('catalog.stock').insert({ product_id: p, qty: 3 });
       const take = (q) => trx.raw('UPDATE catalog.stock SET qty = qty - ? WHERE product_id = ? AND qty >= ?', [q, p, q]);
-      expect((await take(2))[0].affectedRows).toBe(1);
-      expect((await take(2))[0].affectedRows).toBe(0);
+      expect((await take(2)).rowCount).toBe(1);
+      expect((await take(2)).rowCount).toBe(0);
     });
 
     it('a product price is positive and the MRP is never below it', async () => {
@@ -124,7 +124,7 @@ describe.skipIf(!db)('database constraints', () => {
     });
 
     it('a suspended account or role always says why', async () => {
-      const [u] = await trx('identity.users').insert({ email: `held-${uniq()}@example.test`, name: 'Held (demo)' });
+      const [{ id: u }] = await trx('identity.users').insert({ email: `held-${uniq()}@example.test`, name: 'Held (demo)' }).returning('id');
       await expectError(trx('identity.users').where({ id: u }).update({ status: 'suspended' }), ER.CHECK_VIOLATED);
       await trx('identity.users').where({ id: u }).update({ status: 'suspended', status_reason: 'Chargeback fraud under review' });
       await expectError(trx('identity.user_roles').insert({ user_id: u, role: 'seller', status: 'suspended', granted_at: now() }), ER.CHECK_VIOLATED);
@@ -132,14 +132,14 @@ describe.skipIf(!db)('database constraints', () => {
     });
 
     it('a password is only ever an Argon2id hash', async () => {
-      const [u] = await trx('identity.users').insert({ email: `pw-${uniq()}@example.test`, name: 'Pw (demo)' });
+      const [{ id: u }] = await trx('identity.users').insert({ email: `pw-${uniq()}@example.test`, name: 'Pw (demo)' }).returning('id');
       await expectError(trx('identity.credentials').insert({ user_id: u, password_hash: 'plain-text-password', changed_at: now() }), ER.CHECK_VIOLATED);
       await expectError(trx('identity.credentials').insert({ user_id: u, password_hash: '$2b$10$bcrypthashbcrypthash', changed_at: now() }), ER.CHECK_VIOLATED);
       await trx('identity.credentials').insert({ user_id: u, password_hash: '$argon2id$v=19$m=19456,t=2,p=1$c2FsdA$aGFzaA', changed_at: now() });
     });
 
     it('a rejected document says why, and only safe file types and sizes are stored', async () => {
-      const [app] = await trx('dispatch.rider_applications').insert({ user_id: 900600000 + n++, status: 'DRAFT' });
+      const [{ id: app }] = await trx('dispatch.rider_applications').insert({ user_id: 900600000 + n++, status: 'DRAFT' }).returning('id');
       const doc = { user_id: 900600000 + n, application_id: app, doc_type: 'PHOTO', version: 1, storage_key: uniq().padEnd(32, '0').slice(0, 32), mime: 'image/png', size_bytes: 1000, sha256: 'a'.repeat(64), uploaded_at: now() };
       await expectError(trx('dispatch.rider_documents').insert({ ...doc, status: 'REJECTED' }), ER.CHECK_VIOLATED);
       await expectError(trx('dispatch.rider_documents').insert({ ...doc, mime: 'application/x-msdownload' }), ER.CHECK_VIOLATED);
@@ -173,7 +173,7 @@ describe.skipIf(!db)('database constraints', () => {
 
     it('a verified mobile number belongs to one account; unverified numbers may repeat', async () => {
       const mobile = `+9198${String(Date.now()).slice(-8)}`;
-      const [a] = await trx('identity.users').insert({ email: `m1-${uniq()}@example.test`, name: 'M1 (demo)', mobile, mobile_verified_at: now() });
+      const [{ id: a }] = await trx('identity.users').insert({ email: `m1-${uniq()}@example.test`, name: 'M1 (demo)', mobile, mobile_verified_at: now() }).returning('id');
       await trx('identity.users').insert({ email: `m2-${uniq()}@example.test`, name: 'M2 (demo)', mobile });
       await expectError(trx('identity.users').insert({ email: `m3-${uniq()}@example.test`, name: 'M3 (demo)', mobile, mobile_verified_at: now() }), ER.DUP_ENTRY);
       expect(a).toBeGreaterThan(0);
@@ -204,8 +204,8 @@ describe.skipIf(!db)('database constraints', () => {
       const p = await makeProduct(trx, await makeSeller(trx));
       const hold = { order_key: `ok-${uniq()}`, product_id: p, qty: 2, expires_at: new Date(Date.now() + 120000) };
       await trx('catalog.stock_holds').insert(hold);
-      const [res] = await trx.raw('INSERT IGNORE INTO catalog.stock_holds (order_key, product_id, qty, expires_at) VALUES (?, ?, ?, ?)', [hold.order_key, p, 2, hold.expires_at]);
-      expect(res.affectedRows).toBe(0);
+      const res = await trx.raw('INSERT INTO catalog.stock_holds (order_key, product_id, qty, expires_at) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING', [hold.order_key, p, 2, hold.expires_at]);
+      expect(res.rowCount).toBe(0);
     });
 
     it('a webhook event id is processed once', async () => {
@@ -281,8 +281,8 @@ describe.skipIf(!db)('database constraints', () => {
 
   describe('append-only review history', () => {
     it('a review decision can be added but never changed or removed', async () => {
-      const [app] = await trx('catalog.seller_applications').insert({ user_id: 900900000 + n++, status: 'DRAFT' });
-      const [id] = await trx('catalog.seller_reviews').insert({ application_id: app, actor_id: 9001, action: 'reject', from_status: 'UNDER_REVIEW', to_status: 'REJECTED', reason: 'Fake licence', at: now() });
+      const [{ id: app }] = await trx('catalog.seller_applications').insert({ user_id: 900900000 + n++, status: 'DRAFT' }).returning('id');
+      const [{ id }] = await trx('catalog.seller_reviews').insert({ application_id: app, actor_id: 9001, action: 'reject', from_status: 'UNDER_REVIEW', to_status: 'REJECTED', reason: 'Fake licence', at: now() }).returning('id');
       await expectError(trx('catalog.seller_reviews').where({ id }).update({ reason: 'Never mind' }), ER.SIGNAL);
       await expectError(trx('catalog.seller_reviews').where({ id }).del(), ER.SIGNAL);
     });
@@ -290,8 +290,8 @@ describe.skipIf(!db)('database constraints', () => {
 
   describe('append-only ledger', () => {
     it('ledger rows can be added but never changed or removed', async () => {
-      const [pay] = await trx('payment.payments').insert({ order_id: 990000008, method: 'RAZORPAY', amount_paise: 12900, status: 'CAPTURED', created_at: now(), updated_at: now() });
-      const [id] = await trx('payment.ledger_entries').insert({ payment_id: pay, entry_type: 'CHARGE', amount_paise: 12900, created_at: now() });
+      const [{ id: pay }] = await trx('payment.payments').insert({ order_id: 990000008, method: 'RAZORPAY', amount_paise: 12900, status: 'CAPTURED', created_at: now(), updated_at: now() }).returning('id');
+      const [{ id }] = await trx('payment.ledger_entries').insert({ payment_id: pay, entry_type: 'CHARGE', amount_paise: 12900, created_at: now() }).returning('id');
       await expectError(trx('payment.ledger_entries').where({ id }).update({ amount_paise: 1 }), ER.SIGNAL);
       await expectError(trx('payment.ledger_entries').where({ id }).delete(), ER.SIGNAL);
       // a correction is a new row
@@ -333,14 +333,14 @@ describe.skipIf(!db)('module isolation', () => {
 describe.skipIf(!db)('last-units race', () => {
   it('two buyers for the last units: exactly one wins (doc 10.8)', async () => {
     // committed rows so two real connections can race; removed afterwards
-    const [s] = await db('catalog.sellers').insert({ user_id: 900000000 + n++, shop_name: 'Race shop (demo)', city: 'Guntur', lat: 16.3, lng: 80.43, status: 'active' });
-    const [p] = await db('catalog.products').insert({ seller_id: s, slug: `race-${uniq()}`, title: 'Race snack', category: 'fried', serving_temp: 'HOT', prep_minutes: 10, price_paise: 5000 });
+    const [{ id: s }] = await db('catalog.sellers').insert({ user_id: 900000000 + n++, shop_name: 'Race shop (demo)', city: 'Guntur', lat: 16.3, lng: 80.43, status: 'active' }).returning('id');
+    const [{ id: p }] = await db('catalog.products').insert({ seller_id: s, slug: `race-${uniq()}`, title: 'Race snack', category: 'fried', serving_temp: 'HOT', prep_minutes: 10, price_paise: 5000 }).returning('id');
     await db('catalog.stock').insert({ product_id: p, qty: 3 });
     try {
       const buy = () =>
         db.transaction(async (t) => {
-          const [res] = await t.raw('UPDATE catalog.stock SET qty = qty - ? WHERE product_id = ? AND qty >= ?', [2, p, 2]);
-          return res.affectedRows;
+          const res = await t.raw('UPDATE catalog.stock SET qty = qty - ? WHERE product_id = ? AND qty >= ?', [2, p, 2]);
+          return res.rowCount;
         });
       const results = await Promise.all([buy(), buy()]);
       expect(results.sort()).toEqual([0, 1]);

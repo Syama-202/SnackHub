@@ -5,6 +5,7 @@
 import { AppError } from './AppError.js';
 import { MIN_PAYOUT_PAISE, statement } from '../../../shared/domain/payouts.js';
 import { DEFAULT_POLICY } from '../../../shared/domain/policy.js';
+import { isUniqueViolation } from '../db/errors.js';
 
 export const commissionPctOf = (policy) => policy?.commissionPct ?? DEFAULT_POLICY.commissionPct;
 export const holdHoursOf = (policy) => policy?.payoutHoldHours ?? DEFAULT_POLICY.payoutHoldHours;
@@ -59,7 +60,7 @@ export async function draftPayout(dbs, { sellerId, staffId, policy }) {
     return await dbs.payment.transaction(async (trx) => {
       const open = await trx('payouts').where({ seller_id: sellerId, status: 'PENDING' }).forUpdate().first('id');
       if (open) throw new AppError(409, 'PAYOUT_OPEN', `Statement #${open.id} for this shop is still open. Mark it paid or cancel it first.`);
-      const [id] = await trx('payouts').insert({
+      const [{ id }] = await trx('payouts').insert({
         seller_id: sellerId,
         commission_pct: commissionPctOf(policy),
         orders_count: due.ordersCount,
@@ -71,13 +72,13 @@ export async function draftPayout(dbs, { sellerId, staffId, policy }) {
         first_delivered_at: due.firstDeliveredAt,
         last_delivered_at: due.lastDeliveredAt,
         created_by: staffId,
-      });
+      }).returning('id');
       await trx('payout_lines').insert(due.lines.map((l) => ({ payout_id: id, kind: l.kind, ref_id: l.refId, gross_paise: l.grossPaise ?? 0, commission_paise: l.commissionPaise ?? 0, amount_paise: l.amountPaise ?? 0 })));
       return id;
     });
   } catch (err) {
     // another statement took some of these lines a moment ago
-    if (err.errno === 1062) throw new AppError(409, 'PAYOUT_CHANGED', 'Some of these orders were just put on another statement. Refresh and try again.');
+    if (isUniqueViolation(err)) throw new AppError(409, 'PAYOUT_CHANGED', 'Some of these orders were just put on another statement. Refresh and try again.');
     throw err;
   }
 }

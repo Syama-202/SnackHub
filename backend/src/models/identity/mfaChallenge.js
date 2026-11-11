@@ -7,7 +7,7 @@ export const mfaChallengeModel = {
   create: (db, { userId, portal, purpose, firstFactor, tokenHash, deviceId, expiresAt }) =>
     db(TABLE)
       .insert({ user_id: userId, portal, purpose, first_factor: firstFactor, token_hash: tokenHash, device_id: deviceId, created_at: new Date(), expires_at: expiresAt })
-      .then(([id]) => id),
+      .returning('id').then(([r]) => r.id),
   /** Unused, unexpired and with tries left, or undefined. */
   findLive: (db, tokenHash, maxAttempts) =>
     db(TABLE).where({ token_hash: tokenHash }).whereNull('used_at').andWhere('expires_at', '>', new Date()).andWhere('attempts', '<', maxAttempts).first(),

@@ -5,7 +5,7 @@ const TABLE = 'account_tokens';
 
 export const accountTokenModel = {
   create: (db, { userId, purpose, tokenHash, target, expiresAt }) =>
-    db(TABLE).insert({ user_id: userId, purpose, token_hash: tokenHash, target, created_at: new Date(), expires_at: expiresAt }).then(([id]) => id),
+    db(TABLE).insert({ user_id: userId, purpose, token_hash: tokenHash, target, created_at: new Date(), expires_at: expiresAt }).returning('id').then(([r]) => r.id),
   /** A live token by its hash, or undefined. */
   findLive: (db, purpose, tokenHash) =>
     db(TABLE).where({ purpose, token_hash: tokenHash }).whereNull('used_at').andWhere('expires_at', '>', new Date()).first(),

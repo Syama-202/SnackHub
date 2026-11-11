@@ -3,7 +3,7 @@
 const TABLE = 'ledger_entries';
 
 export const ledgerEntryModel = {
-  append: (db, { paymentId, entryType, amountPaise }) => db(TABLE).insert({ payment_id: paymentId, entry_type: entryType, amount_paise: amountPaise, created_at: new Date() }).then(([id]) => id),
+  append: (db, { paymentId, entryType, amountPaise }) => db(TABLE).insert({ payment_id: paymentId, entry_type: entryType, amount_paise: amountPaise, created_at: new Date() }).returning('id').then(([r]) => r.id),
   listByPayment: (db, paymentId) => db(TABLE).where({ payment_id: paymentId }).orderBy('id'),
   /** Charges minus refunds, in paise. */
   balance: (db, paymentId) =>

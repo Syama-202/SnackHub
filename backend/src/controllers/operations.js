@@ -74,7 +74,7 @@ export function operationsController({ dbs }) {
         // an order number, or part of a shop's name (LIKE wildcards in the text are escaped)
         const number = /^#?(\d{1,15})$/.exec(q)?.[1];
         if (number) query.where({ id: Number(number) });
-        else query.whereIn('seller_id', await dbs.catalog('sellers').where('shop_name', 'like', `%${q.replace(/[\\%_]/g, '\\$&')}%`).limit(200).pluck('id'));
+        else query.whereIn('seller_id', await dbs.catalog('sellers').where('shop_name', 'ilike', `%${q.replace(/[\\%_]/g, '\\$&')}%`).limit(200).pluck('id'));
       }
       rows = await query;
     } else {
@@ -107,7 +107,7 @@ export function operationsController({ dbs }) {
   }
 
   async function riders(req, res) {
-    // only riders with a position go on the map; the filter runs in MySQL and the list is capped
+    // only riders with a position go on the map; the filter runs in the database and the list is capped
     const rows = await dbs.dispatch('riders').whereNotNull('last_lat').orderBy('id').limit(MAP_MAX);
     res.json(rows.map((r) => ({ id: r.id, name: r.name, cityId: cityId(r.city), vehicle: r.vehicle, status: r.status, lat: Number(r.last_lat), lng: r.last_lng == null ? null : Number(r.last_lng), lastSeenAt: ms(r.last_seen_at), demo: Boolean(r.is_demo) })));
   }

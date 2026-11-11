@@ -17,11 +17,11 @@ services:
     envVars:
       - { key: NODE_ENV, value: production }
       - { key: HOST, value: 0.0.0.0 }
-      # MySQL (Aiven): host, port and the CA certificate from the Aiven console
+      # PostgreSQL (Neon): the direct host (not "-pooler") and database name from the Neon console
       - { key: DB_HOST, sync: false }
-      - { key: DB_PORT, sync: false }
+      - { key: DB_PORT, value: "5432" }
+      - { key: DB_NAME, sync: false }
       - { key: DB_SSL, value: "true" }
-      - { key: DB_SSL_CA, sync: false }
       - { key: DB_MIGRATOR_USER, value: sh_migrator }
       - { key: DB_MIGRATOR_PASSWORD, sync: false }
       - { key: DB_MODULE_PASSWORD, sync: false }

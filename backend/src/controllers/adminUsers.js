@@ -96,7 +96,7 @@ export function adminUsersController({ env, dbs }) {
   async function audit(req, res) {
     const { action, actorId, target: t, page, pageSize } = req.query;
     const base = db('audit_log')
-      .modify((q) => action && q.where('action', 'like', `${action.replace(/[%_\\]/g, (c) => `\\${c}`)}%`))
+      .modify((q) => action && q.where('action', 'ilike', `${action.replace(/[%_\\]/g, (c) => `\\${c}`)}%`))
       .modify((q) => actorId && q.where({ actor_id: actorId }))
       .modify((q) => t && q.where({ target: t }));
     const [{ n }] = await base.clone().count('* as n');

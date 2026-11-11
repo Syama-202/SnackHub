@@ -7,12 +7,15 @@ export const userRoleModel = {
   listForUser: (db, userId) => db(TABLE).where({ user_id: userId }).orderBy('granted_at'),
   find: (db, userId, role) => db(TABLE).where({ user_id: userId, role }).first(),
   /** Adds a role once; false if the account already holds it. */
-  // ON DUPLICATE KEY with a no-op reports 0 affected rows for an existing role and 1 for a new
-  // one, without hiding other errors the way INSERT IGNORE would
+  // ON CONFLICT on the key only: an existing role is left alone (false), a new one added (true),
+  // and any other error still surfaces
   add: (db, { userId, role, grantedBy = null }) =>
-    db
-      .raw(`INSERT INTO ${TABLE} (user_id, role, granted_at, granted_by) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE user_id = user_id`, [userId, role, new Date(), grantedBy])
-      .then(([r]) => r.affectedRows === 1),
+    db(TABLE)
+      .insert({ user_id: userId, role, granted_at: new Date(), granted_by: grantedBy })
+      .onConflict(['user_id', 'role'])
+      .ignore()
+      .returning('user_id')
+      .then((rows) => rows.length === 1),
   setStatus: (db, userId, role, status, reason = null) =>
     db(TABLE).where({ user_id: userId, role }).update({ status, status_reason: status === 'active' ? null : reason }).then((n) => n === 1),
   remove: (db, userId, role) => db(TABLE).where({ user_id: userId, role }).del(),

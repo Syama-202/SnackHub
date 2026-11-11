@@ -37,7 +37,7 @@ export const orderModel = {
   /** Deliveries each rider is on now, and whether any of them is hot (hot food rides alone). */
   loadByRider: async (db, riderIds) => {
     if (!riderIds.length) return new Map();
-    const rows = await db(TABLE).whereIn('rider_id', riderIds).whereIn('status', WITH_RIDER).groupBy('rider_id').select('rider_id', db.raw('COUNT(*) AS n'), db.raw("SUM(temp_class = 'HOT') AS hot"));
+    const rows = await db(TABLE).whereIn('rider_id', riderIds).whereIn('status', WITH_RIDER).groupBy('rider_id').select('rider_id', db.raw('COUNT(*) AS n'), db.raw("COUNT(*) FILTER (WHERE temp_class = 'HOT') AS hot"));
     return new Map(rows.map((r) => [r.rider_id, { active: Number(r.n), hot: Number(r.hot) > 0 }]));
   },
   listNeedingRider: (db, limit = 50) => db(TABLE).whereNull('rider_id').whereIn('status', NEEDS_RIDER).orderBy('placed_at').limit(limit).then((rows) => rows.map(strip)),
@@ -53,7 +53,7 @@ export const orderModel = {
       .where({ seller_id: sellerId })
       .andWhere('placed_at', '>=', new Date(Date.now() - 30 * 86_400_000))
       .whereNot('status', 'PENDING_PAYMENT')
-      .select(db.raw('SUM(accepted_at IS NOT NULL) AS accepted'), db.raw("SUM(accepted_at IS NOT NULL OR status IN ('REJECTED','CANCELLED')) AS decided"));
+      .select(db.raw('COUNT(*) FILTER (WHERE accepted_at IS NOT NULL) AS accepted'), db.raw("COUNT(*) FILTER (WHERE accepted_at IS NOT NULL OR status IN ('REJECTED','CANCELLED')) AS decided"));
     return {
       ordersToday: Number(today.n),
       delivered: Number(done.n),
@@ -62,7 +62,7 @@ export const orderModel = {
     };
   },
   otpHash: (db, id) => db(TABLE).where({ id }).first('otp_hash').then((r) => r?.otp_hash ?? null),
-  create: (db, order) => db(TABLE).insert(order).then(([id]) => id),
+  create: (db, order) => db(TABLE).insert(order).returning('id').then(([r]) => r.id),
   /** Fields that are not the status (the delivery-code state, cash collected). */
   update: (db, id, changes) => db(TABLE).where({ id }).update(changes),
   /** The rider who accepted the offer, only while the order still needs one. */

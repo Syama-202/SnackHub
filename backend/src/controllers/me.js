@@ -1,4 +1,4 @@
-// GET /me: the signed-in account, read fresh from MySQL, as seen through the token's portal.
+// GET /me: the signed-in account, read fresh from the database, as seen through the token's portal.
 import { userModel } from '../models/identity/user.js';
 import { userRoleModel } from '../models/identity/userRole.js';
 import { mfaTotpModel } from '../models/identity/mfaTotp.js';

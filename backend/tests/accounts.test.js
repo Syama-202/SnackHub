@@ -1,6 +1,6 @@
 // Sign-up and sign-in for customers, sellers and riders: registration, duplicates, email
 // verification, generic errors, lockout and rate limits, portals and roles, password reset,
-// mobile verification and session management. Real MySQL in rolled-back transactions; the
+// mobile verification and session management. Real PostgreSQL in rolled-back transactions; the
 // verification and reset links are read from the emails the outbox relay sends.
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openHarness, beginTest, request, PASSWORD, WEB, bearer, tokenIn, cookieFrom } from './helpers/app.js';

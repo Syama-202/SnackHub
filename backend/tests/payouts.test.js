@@ -37,7 +37,7 @@ describe.skipIf(h.skip)('seller payouts', () => {
     return d;
   }
   const fine = async (order, sellerId, amount, status = 'APPLIED') => {
-    const [id] = await t.trx.ordering('fines').insert({ order_id: order.id, target_type: 'SELLER', target_id: sellerId, reason: 'Missing item (test)', amount_paise: amount, status, created_at: new Date() });
+    const [{ id }] = await t.trx.ordering('fines').insert({ order_id: order.id, target_type: 'SELLER', target_id: sellerId, reason: 'Missing item (test)', amount_paise: amount, status, created_at: new Date() }).returning('id');
     return id;
   };
 
@@ -73,7 +73,7 @@ describe.skipIf(h.skip)('seller payouts', () => {
       { kind: 'ORDER', refId: d.order.id, grossPaise: d.order.subtotalPaise, commissionPaise: commission, amountPaise: 0 },
       { kind: 'FINE', refId: expect.any(Number), grossPaise: 0, commissionPaise: 0, amountPaise: 1000 },
     ]);
-    // MySQL itself refuses the same order on a second statement
+    // the database itself refuses the same order on a second statement
     await expectError(t.trx.payment('payout_lines').insert({ payout_id: draft.id, kind: 'ORDER', ref_id: d.order.id }), ER.DUP_ENTRY);
 
     await a.post(`/payouts/${draft.id}/paid`, { reference: 'not a ref!' }).expect(400);

@@ -19,8 +19,8 @@ export const stockHoldModel = {
       await db.transaction(async (trx) => {
         const expires = new Date(Date.now() + holdMinutes * 60_000);
         for (const { productId, qty } of [...items].sort((a, b) => a.productId - b.productId)) {
-          const [res] = await trx.raw(`INSERT IGNORE INTO ${TABLE} (order_key, product_id, qty, expires_at) VALUES (?, ?, ?, ?)`, [orderKey, productId, qty, expires]);
-          if (res.affectedRows === 0) continue; // already held by an earlier try of this checkout
+          const added = await trx(TABLE).insert({ order_key: orderKey, product_id: productId, qty, expires_at: expires }).onConflict(['order_key', 'product_id']).ignore().returning('product_id');
+          if (added.length === 0) continue; // already held by an earlier try of this checkout
           if (!(await stockModel.take(trx, productId, qty))) throw new OutOfStock({ ok: false, productId, available: await stockModel.getQty(trx, productId) });
         }
       });
@@ -52,5 +52,5 @@ export const stockHoldModel = {
     };
     return db.isTransaction ? run(db) : db.transaction(run);
   },
-  listExpiredKeys: (db, limit = 100) => db(TABLE).distinct('order_key').where({ status: 'HELD' }).andWhere('expires_at', '<', db.fn.now(3)).limit(limit).pluck('order_key'),
+  listExpiredKeys: (db, limit = 100) => db(TABLE).distinct('order_key').where({ status: 'HELD' }).andWhere('expires_at', '<', new Date()).limit(limit).pluck('order_key'),
 };

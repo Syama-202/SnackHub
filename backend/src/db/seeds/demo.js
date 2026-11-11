@@ -224,24 +224,24 @@ export function seedRows(data = buildSeed()) {
   };
 }
 
-// table -> rows, in foreign-key order
+// table -> rows, in foreign-key order, with the key a second run updates the row by
 const TARGETS = [
-  ['identity.users', 'users'],
-  ['identity.user_roles', 'userRoles'],
-  ['identity.addresses', 'addresses'],
-  ['catalog.sellers', 'sellers'],
-  ['catalog.catalog_items', 'catalogItems'],
-  ['catalog.products', 'products'],
-  ['catalog.stock', 'stock'],
-  ['dispatch.riders', 'riders'],
-  ['catalog.seller_applications', 'sellerApplications'],
-  ['catalog.seller_businesses', 'sellerBusinesses'],
-  ['catalog.seller_documents', 'sellerDocuments'],
-  ['dispatch.rider_applications', 'riderApplications'],
-  ['dispatch.rider_profiles', 'riderProfiles'],
-  ['dispatch.rider_vehicles', 'riderVehicles'],
-  ['dispatch.rider_documents', 'riderDocuments'],
-  ['ordering.delivery_policy', 'policies'],
+  ['identity.users', 'users', ['id']],
+  ['identity.user_roles', 'userRoles', ['user_id', 'role']],
+  ['identity.addresses', 'addresses', ['id']],
+  ['catalog.sellers', 'sellers', ['id']],
+  ['catalog.catalog_items', 'catalogItems', ['id']],
+  ['catalog.products', 'products', ['id']],
+  ['catalog.stock', 'stock', ['product_id']],
+  ['dispatch.riders', 'riders', ['id']],
+  ['catalog.seller_applications', 'sellerApplications', ['id']],
+  ['catalog.seller_businesses', 'sellerBusinesses', ['user_id']],
+  ['catalog.seller_documents', 'sellerDocuments', ['id']],
+  ['dispatch.rider_applications', 'riderApplications', ['id']],
+  ['dispatch.rider_profiles', 'riderProfiles', ['user_id']],
+  ['dispatch.rider_vehicles', 'riderVehicles', ['user_id']],
+  ['dispatch.rider_documents', 'riderDocuments', ['id']],
+  ['ordering.delivery_policy', 'policies', ['id']],
 ];
 
 /** The placeholder PDFs, in private storage (disk or the bucket) under their fixed keys. */
@@ -265,9 +265,13 @@ export async function seed(db, { storage = storageFromEnv() } = {}) {
   const rows = seedRows();
   await writeDemoFiles(rows, storage);
   await db.transaction(async (trx) => {
-    for (const [table, key] of TARGETS) {
+    for (const [table, key, conflict] of TARGETS) {
       for (let i = 0; i < rows[key].length; i += 200) {
-        await trx(table).insert(rows[key].slice(i, i + 200)).onConflict().merge();
+        await trx(table).insert(rows[key].slice(i, i + 200)).onConflict(conflict).merge();
+      }
+      // the seed gives its own ids, so the table's id counter is moved past them for new rows
+      if (conflict[0] === 'id' && table !== 'dispatch.riders') {
+        await trx.raw(`SELECT setval(pg_get_serial_sequence(?, 'id'), GREATEST((SELECT MAX(id) FROM ${table}), 1))`, [table]);
       }
     }
     // a demo approval made a rider row for the applicant; the application is open again, so remove it

@@ -1,5 +1,5 @@
-# Every push to main and every pull request: the backend tests against a real MySQL 8.4 and
-# Redis (the same schemas, module users and migrations as local development), the frontend
+# Every push to main and every pull request: the backend tests against a real PostgreSQL 17 and
+# Redis (the same schemas, module roles and migrations as local development), the frontend
 # unit tests and both frontend builds. Nothing here deploys, and no real keys are used: the
 # passwords below exist only inside these throwaway containers, and payments stay off.
 name: CI
@@ -22,14 +22,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
-      mysql:
-        image: mysql:8.4
+      postgres:
+        image: postgres:17
         env:
-          MYSQL_ROOT_PASSWORD: ci-root-password
-          MYSQL_DATABASE: snackhub
-        ports: ['3306:3306']
+          POSTGRES_PASSWORD: ci-postgres-password
+        ports: ['5432:5432']
         options: >-
-          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -pci-root-password"
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 30
       redis:
         image: redis:7.4
@@ -40,7 +39,8 @@ jobs:
     env:
       NODE_ENV: test
       DB_HOST: 127.0.0.1
-      DB_PORT: 3306
+      DB_PORT: 5432
+      DB_NAME: snackhub
       DB_MIGRATOR_USER: sh_migrator
       DB_MIGRATOR_PASSWORD: ci-migrator-password
       DB_MODULE_PASSWORD: ci-module-password
@@ -55,18 +55,15 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      - name: Create the module schemas and users
-        working-directory: .
+      - run: npm ci
+      # the same script that prepares a developer's machine, run without questions
+      - name: Create the database, module schemas and roles
         env:
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_ROOT_PASSWORD: ci-root-password
+          PG_ADMIN_PASSWORD: ci-postgres-password
           MIGRATOR_PASSWORD: ci-migrator-password
           MODULE_DB_PASSWORD: ci-module-password
-        run: |
-          # the migrations create triggers, which binary logging allows only with this on
-          mysql -h127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SET GLOBAL log_bin_trust_function_creators = 1"
-          bash infra/mysql/init/01-schemas-and-users.sh
-      - run: npm ci
+          SKIP_ENV_UPDATE: '1'
+        run: node scripts/local-db-init.js
       - name: Migrate and seed the demo data
         run: |
           node scripts/migrate.js latest

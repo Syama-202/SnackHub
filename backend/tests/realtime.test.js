@@ -300,7 +300,7 @@ describe.skipIf(h.skip)('live updates', () => {
       const order = await H.placeOrder(c, shop);
       await t.inbox();
       // the relay meets the same outbox row again (a crash before it marked the row sent)
-      await t.trx.ordering('outbox').where({ type: 'notify.inbox' }).whereRaw("JSON_EXTRACT(payload, '$.orderId') = ?", [order.id]).update({ published_at: null, attempts: 0 });
+      await t.trx.ordering('outbox').where({ type: 'notify.inbox' }).whereRaw("(payload ->> 'orderId')::bigint = ?", [order.id]).update({ published_at: null, attempts: 0 });
       await t.inbox();
       await sleep(300);
       expect(s.events.filter((e) => e.topic === 'notification' && e.orderId === order.id)).toHaveLength(1);

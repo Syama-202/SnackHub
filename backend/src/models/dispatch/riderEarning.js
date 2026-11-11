@@ -5,6 +5,6 @@ const TABLE = 'rider_earnings';
 export const riderEarningModel = {
   findByOrder: (db, orderId) => db(TABLE).where({ order_id: orderId }).first(),
   listByRider: (db, riderId, limit = 50) => db(TABLE).where({ rider_id: riderId }).orderBy('created_at', 'desc').limit(limit),
-  create: (db, e) => db(TABLE).insert({ ...e, created_at: new Date() }).then(([id]) => id),
+  create: (db, e) => db(TABLE).insert({ ...e, created_at: new Date() }).returning('id').then(([r]) => r.id),
   setStatus: (db, id, status) => db(TABLE).where({ id }).update({ status }),
 };

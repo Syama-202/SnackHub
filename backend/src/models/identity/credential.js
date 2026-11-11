@@ -11,10 +11,10 @@ export const credentialModel = {
   failed: async (db, userId, { max, lockedUntil }) => {
     await db(TABLE)
       .where({ user_id: userId })
-      // MySQL applies SET left to right, so locked_until must read failed_count before it changes
+      // both read the count from before this update
       .update({
-        locked_until: db.raw('IF(failed_count + 1 >= ?, ?, locked_until)', [max, lockedUntil]),
-        failed_count: db.raw('IF(failed_count + 1 >= ?, 0, failed_count + 1)', [max]),
+        locked_until: db.raw('CASE WHEN failed_count + 1 >= ? THEN ?::timestamptz ELSE locked_until END', [max, lockedUntil]),
+        failed_count: db.raw('CASE WHEN failed_count + 1 >= ? THEN 0 ELSE failed_count + 1 END', [max]),
       });
     return db(TABLE).where({ user_id: userId }).first('failed_count', 'locked_until');
   },

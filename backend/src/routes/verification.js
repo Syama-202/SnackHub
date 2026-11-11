@@ -52,7 +52,7 @@ export function verificationRoutes(deps) {
   const v = verificationController(deps);
   const u = adminUsersController(deps);
   const router = Router();
-  // admin host only, a valid staff token, the permission re-checked against MySQL, and a
+  // admin host only, a valid staff token, the permission re-checked against the database, and a
   // second factor in the last 8 hours; decisions need one in the last 5 minutes (doc 16.3)
   const staff = (permission) => [adminHostOnly(deps.env), requireAuth(deps.env), requirePermission(deps, permission), requireFreshMfa(8 * 60)];
   const stepUp = requireFreshMfa(5);

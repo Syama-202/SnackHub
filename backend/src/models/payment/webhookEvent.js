@@ -4,7 +4,7 @@ const TABLE = 'webhook_events';
 
 export const webhookEventModel = {
   record: (db, { eventId, type, payload }) =>
-    db.raw(`INSERT IGNORE INTO ${TABLE} (event_id, type, payload, received_at) VALUES (?, ?, ?, ?)`, [eventId, type, JSON.stringify(payload), new Date()]).then(([r]) => r.affectedRows === 1),
+    db(TABLE).insert({ event_id: eventId, type, payload: JSON.stringify(payload), received_at: new Date() }).onConflict('event_id').ignore().returning('event_id').then((rows) => rows.length === 1),
   markProcessed: (db, eventId) => db(TABLE).where({ event_id: eventId }).update({ processed_at: new Date() }),
   listUnprocessed: (db, limit = 50) => db(TABLE).whereNull('processed_at').orderBy('received_at').limit(limit),
 };

@@ -7,7 +7,7 @@ export const complaintModel = {
   findById: (db, id) => db(TABLE).where({ id }).first(),
   listByOrder: (db, orderId) => db(TABLE).where({ order_id: orderId }).orderBy('id'),
   listByStatus: (db, status, limit = 50) => db(TABLE).where({ status }).orderBy('created_at').limit(limit),
-  create: (db, c) => db(TABLE).insert({ ...c, created_at: new Date() }).then(([id]) => id),
+  create: (db, c) => db(TABLE).insert({ ...c, created_at: new Date() }).returning('id').then(([r]) => r.id),
   /** Records the triage result (classification, confidence, fault shares, auto decision). */
   setTriage: (db, id, triage) => db(TABLE).where({ id }).update(triage),
   /** Decides a complaint under review; false if it was already decided. */

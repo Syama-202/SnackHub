@@ -19,16 +19,16 @@ describe.skipIf(h.skip)('purge', () => {
 
   it('removes only what is past its time', async () => {
     const u = await t.makeUser();
-    const token = (expiresAt) => t.trx.identity('refresh_tokens').insert({ user_id: u.id, family_id: randomUUID(), device_id: 'dev-test', token_hash: randomUUID().replace(/-/g, '').padEnd(64, '0'), created_at: ago(2 * DAY), expires_at: expiresAt }).then(([id]) => id);
+    const token = (expiresAt) => t.trx.identity('refresh_tokens').insert({ user_id: u.id, family_id: randomUUID(), device_id: 'dev-test', portal: 'customer', token_hash: randomUUID().replace(/-/g, '').padEnd(64, '0'), created_at: ago(2 * DAY), expires_at: expiresAt }).returning('id').then(([r]) => r.id);
     const expired = await token(ago(60_000));
     const live = await token(new Date(Date.now() + DAY));
 
-    const note = (createdAt, type) => t.trx.notify('notifications').insert({ user_id: u.id, type, body: 'Test note (demo)', created_at: createdAt }).then(([id]) => id);
+    const note = (createdAt, type) => t.trx.notify('notifications').insert({ user_id: u.id, type, body: 'Test note (demo)', created_at: createdAt }).returning('id').then(([r]) => r.id);
     const oldNote = await note(ago(31 * DAY), 'test.old');
     const newNote = await note(ago(29 * DAY), 'test.new');
 
     const rider = await t.trx.dispatch('riders').first('id');
-    const fix = (at) => t.trx.dispatch('rider_trail').insert({ order_id: 999999001, rider_id: rider.id, lat: 16.3, lng: 80.44, at }).then(([id]) => id);
+    const fix = (at) => t.trx.dispatch('rider_trail').insert({ order_id: 999999001, rider_id: rider.id, lat: 16.3, lng: 80.44, at }).returning('id').then(([r]) => r.id);
     const oldFix = await fix(ago(3 * DAY));
     const newFix = await fix(ago(DAY));
 

@@ -1,4 +1,4 @@
-// Deadlock retry (src/db/retry.js): a transaction MySQL picks as the deadlock victim runs again
+// Deadlock retry (src/db/retry.js): a transaction PostgreSQL picks as the deadlock victim runs again
 // and the caller never sees the error. The database test makes a real deadlock: two
 // transactions lock the same two products in opposite orders. It only locks rows (SELECT ...
 // FOR UPDATE) and changes nothing.
@@ -7,7 +7,7 @@ import { retryOnDeadlock } from '../src/db/retry.js';
 import { moduleDb } from '../src/db/connection.js';
 import { connect } from './helpers/db.js';
 
-const deadlock = () => Object.assign(new Error('Deadlock found when trying to get lock'), { code: 'ER_LOCK_DEADLOCK', errno: 1213 });
+const deadlock = () => Object.assign(new Error('deadlock detected'), { code: '40P01' });
 const noWait = () => Promise.resolve();
 
 describe('retryOnDeadlock', () => {
@@ -27,7 +27,7 @@ describe('retryOnDeadlock', () => {
     await expect(retryOnDeadlock(async () => {
       calls += 1;
       throw deadlock();
-    }, { wait: noWait })).rejects.toMatchObject({ code: 'ER_LOCK_DEADLOCK' });
+    }, { wait: noWait })).rejects.toMatchObject({ code: '40P01' });
     expect(calls).toBe(3);
   });
 
@@ -35,8 +35,8 @@ describe('retryOnDeadlock', () => {
     let calls = 0;
     await expect(retryOnDeadlock(async () => {
       calls += 1;
-      throw Object.assign(new Error('dup'), { code: 'ER_DUP_ENTRY' });
-    }, { wait: noWait })).rejects.toMatchObject({ code: 'ER_DUP_ENTRY' });
+      throw Object.assign(new Error('dup'), { code: '23505' });
+    }, { wait: noWait })).rejects.toMatchObject({ code: '23505' });
     expect(calls).toBe(1);
   });
 });
@@ -54,7 +54,7 @@ describe.skipIf(!conn.db)('a real deadlock', () => {
     expect(b).toBeDefined();
 
     // each side takes its first lock, waits for the other to take its first, then asks for
-    // the other's row: MySQL sees the cycle and rolls one back
+    // the other's row: PostgreSQL sees the cycle and rolls one back
     let tookA;
     let tookB;
     const aLocked = new Promise((r) => { tookA = r; });

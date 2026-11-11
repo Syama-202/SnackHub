@@ -49,7 +49,7 @@ export function payoutsController({ dbs }) {
   async function show(req, res) {
     const p = await dbs.payment('payouts').where({ id: req.params.id }).first();
     if (!p) throw new AppError(404, 'NOT_FOUND', 'Statement not found');
-    const lines = await dbs.payment('payout_lines').where({ payout_id: p.id }).orderBy('kind').orderBy('ref_id');
+    const lines = await dbs.payment('payout_lines').where({ payout_id: p.id }).orderByRaw("CASE kind WHEN 'ORDER' THEN 1 WHEN 'FINE' THEN 2 ELSE 3 END").orderBy('ref_id'); // orders, then fines, then fines given back
     const seller = await sellerModel.findById(dbs.catalog, p.seller_id);
     res.json({ ...payoutView(p), shopName: seller?.shop_name ?? null, bank: await bankOf(seller), lines: lines.map((l) => ({ kind: l.kind, refId: Number(l.ref_id), grossPaise: l.gross_paise, commissionPaise: l.commission_paise, amountPaise: l.amount_paise })) });
   }

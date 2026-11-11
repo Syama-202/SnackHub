@@ -1,18 +1,19 @@
+import { attempt, isUniqueViolation } from '../../db/errors.js';
 // dispatch.assignments: offers to riders (doc 10.2). The table allows one ACCEPTED row per
 // order, so if two riders accept at once the second accept fails and that rider is told.
 const TABLE = 'assignments';
-const DUPLICATE = 1062;
 
 export const assignmentModel = {
-  offer: (db, orderId, riderId) => db(TABLE).insert({ order_id: orderId, rider_id: riderId, status: 'OFFERED', offered_at: new Date() }).then(([id]) => id),
+  offer: (db, orderId, riderId) => db(TABLE).insert({ order_id: orderId, rider_id: riderId, status: 'OFFERED', offered_at: new Date() }).returning('id').then(([r]) => r.id),
   listOpenForRider: (db, riderId) => db(TABLE).where({ rider_id: riderId, status: 'OFFERED' }).orderBy('offered_at'),
   /** Accepts an open offer; false if it is no longer open or another rider took the order. */
   accept: async (db, id, riderId) => {
     try {
-      const n = await db(TABLE).where({ id, rider_id: riderId, status: 'OFFERED' }).update({ status: 'ACCEPTED', responded_at: new Date() });
+      // in its own savepoint: losing the race must not spoil the caller's transaction
+      const n = await attempt(db, (d) => d(TABLE).where({ id, rider_id: riderId, status: 'OFFERED' }).update({ status: 'ACCEPTED', responded_at: new Date() }));
       return n === 1;
     } catch (err) {
-      if (err.errno === DUPLICATE) return false;
+      if (isUniqueViolation(err)) return false;
       throw err;
     }
   },

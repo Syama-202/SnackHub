@@ -29,6 +29,7 @@ import { artFor, slugFor, MAX_STOCK } from '../../../shared/domain/menu.js';
 import { ownedFieldsIn } from '../../../shared/domain/catalogue.js';
 import { catalogItemModel } from '../models/catalog/catalogItem.js';
 import { copyOfItem, itemView, spreadsFor } from './catalogue.js';
+import { isUniqueViolation } from '../db/errors.js';
 
 const refuse = (verdict) => new AppError(403, 'NOT_ELIGIBLE', verdict.reasons[0]?.message ?? 'Not allowed yet', { reasons: verdict.reasons });
 const ACTIONS = { accept: 'ACCEPTED', reject: 'REJECTED', start: 'PACKING', packed: 'PACKED' };
@@ -228,7 +229,7 @@ export function shopController({ dbs }) {
       })
       // the unique (shop, entry) key settles two adds racing
       .catch((e) => {
-        throw e.code === 'ER_DUP_ENTRY' ? new AppError(409, 'ALREADY_ON_MENU', `${item.title} is already on your menu`) : e;
+        throw isUniqueViolation(e) ? new AppError(409, 'ALREADY_ON_MENU', `${item.title} is already on your menu`) : e;
       });
     await audit(userId, 'product.create', `product:${id}`, null, { catalogueId: item.id, title: item.title, pricePaise: b.pricePaise });
     res.status(201).json((await menuView(s, [await productModel.findWithStock(dbs.catalog, id)]))[0]);

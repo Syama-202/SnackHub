@@ -29,13 +29,14 @@ export async function recordError(dbs, e, { logger } = {}) {
     }
     const context = e.context ? JSON.stringify(e.context) : null;
     const release = e.release ? scrub(e.release, LIMITS.release) : null;
-    // regressed_at is set before status changes, so it still sees the old status
+    // every SET reads the row as it was, so regressed_at still sees the old status
     await db.raw(
-      `INSERT INTO error_groups (fingerprint, source, kind, message, where_at, stack, context, last_request_id, release_tag)
+      `INSERT INTO error_groups AS g (fingerprint, source, kind, message, where_at, stack, context, last_request_id, release_tag)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE seen = seen + 1, last_seen = CURRENT_TIMESTAMP(3), message = VALUES(message), stack = VALUES(stack),
-         context = VALUES(context), last_request_id = VALUES(last_request_id), release_tag = VALUES(release_tag),
-         regressed_at = IF(status = 'resolved', CURRENT_TIMESTAMP(3), regressed_at), status = IF(status = 'resolved', 'open', status)`,
+       ON CONFLICT (fingerprint) DO UPDATE SET seen = g.seen + 1, last_seen = CURRENT_TIMESTAMP, message = EXCLUDED.message, stack = EXCLUDED.stack,
+         context = EXCLUDED.context, last_request_id = EXCLUDED.last_request_id, release_tag = EXCLUDED.release_tag,
+         regressed_at = CASE WHEN g.status = 'resolved' THEN CURRENT_TIMESTAMP ELSE g.regressed_at END,
+         status = CASE WHEN g.status = 'resolved' THEN 'open' ELSE g.status END`,
       [fingerprint, row.source, row.kind, row.message, row.where, stackOf(e.stack), context, e.requestId ?? null, release],
     );
     const group = await db('error_groups').where({ fingerprint }).first('id');
@@ -53,13 +54,18 @@ export async function recordError(dbs, e, { logger } = {}) {
 
 /**
  * Kind, message and stack of a thrown error. A database error's message (and the first line
- * of its stack) is the whole SQL statement with its values, which can be what someone typed,
- * so only MySQL's own message is kept, with quoted values blanked.
+ * of its stack) starts with the whole SQL statement and its values, which can be what someone
+ * typed, so only PostgreSQL's own message is kept (after knex's " - "), with quoted values
+ * blanked; quoted names such as a constraint stay, so the error still says what it hit.
  */
+export const isDatabaseError = (err) => Boolean(err?.severity && /^[0-9A-Z]{5}$/.test(err?.code ?? ''));
 export function describeError(err) {
-  if (err?.sqlMessage) {
+  if (isDatabaseError(err)) {
     const stack = String(err.stack ?? '').split('\n').slice(1).join('\n');
-    return { kind: err.code ?? 'DB_ERROR', message: err.sqlMessage.replace(/'[^']*'/g, "'?'"), stack };
+    const text = String(err.message ?? '');
+    const own = text.includes(' - ') ? text.slice(text.lastIndexOf(' - ') + 3) : text;
+    const message = own.replace(/'[^']*'/g, "'?'").replace(/"([^"]*)"/g, (m, inner) => (/^[a-z_][a-z0-9_.]*$/.test(inner) ? m : '"?"'));
+    return { kind: err.code, message, stack };
   }
   return { kind: err?.code ?? err?.name ?? 'Error', message: err?.message ?? String(err), stack: err?.stack };
 }

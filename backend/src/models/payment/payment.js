@@ -7,7 +7,7 @@ export const paymentModel = {
   findByProviderOrder: (db, providerOrderId) => db(TABLE).where({ provider_order_id: providerOrderId }).first(),
   create: (db, p) => {
     const now = new Date();
-    return db(TABLE).insert({ ...p, created_at: now, updated_at: now }).then(([id]) => id);
+    return db(TABLE).insert({ ...p, created_at: now, updated_at: now }).returning('id').then(([r]) => r.id);
   },
   /** from may be one status or a list; returns false if the payment was not in it. */
   moveStatus: (db, id, from, to, set = {}) =>

@@ -229,7 +229,7 @@ describe.skipIf(!migrator)('sessions', () => {
 });
 
 describe.skipIf(!migrator)('role checks', () => {
-  it('requireRole re-reads the role from MySQL, so a removed role stops working at once', async () => {
+  it('requireRole re-reads the role from the database, so a removed role stops working at once', async () => {
     const { requireRole } = await import('../src/middleware/auth.js');
     const trx = await identity.transaction();
     try {

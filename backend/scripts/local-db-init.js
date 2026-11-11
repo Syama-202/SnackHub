@@ -1,66 +1,80 @@
-// npm run db:local (from the repo root): prepares the MySQL 8 already installed on this
-// machine (port 3306), so the backend runs without Docker. Does the same as
-// infra/mysql/init/01-schemas-and-users.sh does for the container: one schema and one
-// least-privilege user per module, plus the migrator.
+// npm run db:local (from the repo root): prepares the PostgreSQL already installed on this
+// machine (port 5432), so the backend runs without Docker: the snackhub database, one schema
+// and one least-privilege role per module, and the migrator that owns them (db-roles.js).
 //
-// Asks for the MySQL root password once, with hidden input, and never stores or prints it.
-// The module passwords come from infra/.env (created by `npm run setup`). Finally points
-// backend/.env at port 3306. Safe to run again.
+// Asks for the password of the PostgreSQL superuser (postgres) once, with hidden input, and
+// never stores or prints it. The role passwords come from infra/.env (created by
+// `npm run setup`). Finally points backend/.env at this server. Safe to run again.
+//
+// For CI and other scripted runs, every input can come from the environment instead:
+// PG_ADMIN_USER, PG_ADMIN_PASSWORD, LOCAL_PG_PORT, MIGRATOR_PASSWORD, MODULE_DB_PASSWORD,
+// DB_NAME, and SKIP_ENV_UPDATE=1 to leave backend/.env alone.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import mysql from 'mysql2/promise';
 import { askHidden } from './askHidden.js';
+import { adminClient, ensureRoles, ensureSchemas } from './db-roles.js';
 
-const SCHEMAS = ['identity', 'catalog', 'ordering', 'dispatch', 'payment', 'notify'];
-const MODULE_USERS = { identity: 'sh_identity', catalog: 'sh_catalog', ordering: 'sh_order', dispatch: 'sh_dispatch', payment: 'sh_payment', notify: 'sh_notify' };
-const PORT = Number(process.env.LOCAL_MYSQL_PORT ?? 3306);
+// --docker: the PostgreSQL container from infra/docker-compose.yml (port 5433, its password in infra/.env)
+const DOCKER = process.argv.includes('--docker');
+const PORT = Number(process.env.LOCAL_PG_PORT ?? (DOCKER ? 5433 : 5432));
+const HOST = process.env.LOCAL_PG_HOST ?? '127.0.0.1';
+const ADMIN = process.env.PG_ADMIN_USER ?? 'postgres';
+const DATABASE = process.env.DB_NAME ?? 'snackhub';
+const MIGRATOR = 'sh_migrator';
 
 const infraEnv = new URL('../../infra/.env', import.meta.url);
 const apiEnv = new URL('../.env', import.meta.url);
-if (!existsSync(infraEnv) || !existsSync(apiEnv)) {
+const parse = (text) => Object.fromEntries(text.split(/\r?\n/).filter((l) => l.includes('=') && !l.startsWith('#')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
+const fromInfra = existsSync(infraEnv) ? parse(readFileSync(infraEnv, 'utf8')) : {};
+const migratorPassword = process.env.MIGRATOR_PASSWORD ?? fromInfra.MIGRATOR_PASSWORD;
+const modulePassword = process.env.MODULE_DB_PASSWORD ?? fromInfra.MODULE_DB_PASSWORD;
+if (!migratorPassword || !modulePassword) {
   console.error('Run `npm run setup` first: it creates infra/.env and backend/.env with local passwords.');
   process.exit(1);
 }
-const parse = (text) => Object.fromEntries(text.split(/\r?\n/).filter((l) => l.includes('=') && !l.startsWith('#')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
-const { MIGRATOR_PASSWORD, MODULE_DB_PASSWORD } = parse(readFileSync(infraEnv, 'utf8'));
 
-const rootPassword = await askHidden(`MySQL root password for 127.0.0.1:${PORT} (input hidden): `);
-const conn = await mysql.createConnection({ host: '127.0.0.1', port: PORT, user: 'root', password: rootPassword }).catch((err) => {
-  console.error(`Could not sign in as root on port ${PORT}: ${err.code ?? err.message}`);
-  process.exit(1);
-});
+const where = `${HOST}:${PORT}`;
+const adminPassword = process.env.PG_ADMIN_PASSWORD ?? (DOCKER ? fromInfra.POSTGRES_PASSWORD : undefined) ?? (await askHidden(`PostgreSQL password for ${ADMIN} on ${where} (input hidden): `));
+const connect = async (database) => {
+  const c = adminClient({ host: HOST, port: PORT, user: ADMIN, password: adminPassword, database });
+  await c.connect().catch((err) => {
+    console.error(`Could not sign in as ${ADMIN} on ${where}: ${err.code ?? err.message}. Is PostgreSQL running, and is the password right?`);
+    process.exit(1);
+  });
+  return c;
+};
 
 try {
-  const run = (sql, params = []) => conn.query(sql, params);
-  await run('CREATE DATABASE IF NOT EXISTS snackhub CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci');
-  for (const s of SCHEMAS) await run(`CREATE DATABASE IF NOT EXISTS \`${s}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci`);
-
-  // users can only connect from this machine (127.0.0.1)
-  await run("CREATE USER IF NOT EXISTS 'sh_migrator'@'127.0.0.1' IDENTIFIED BY ?", [MIGRATOR_PASSWORD]);
-  await run("ALTER USER 'sh_migrator'@'127.0.0.1' IDENTIFIED BY ?", [MIGRATOR_PASSWORD]);
-  for (const s of ['snackhub', ...SCHEMAS]) await run(`GRANT ALL PRIVILEGES ON \`${s}\`.* TO 'sh_migrator'@'127.0.0.1'`);
-
-  for (const [schema, user] of Object.entries(MODULE_USERS)) {
-    await run(`CREATE USER IF NOT EXISTS '${user}'@'127.0.0.1' IDENTIFIED BY ?`, [MODULE_DB_PASSWORD]);
-    await run(`ALTER USER '${user}'@'127.0.0.1' IDENTIFIED BY ?`, [MODULE_DB_PASSWORD]);
-    await run(`GRANT SELECT, INSERT, UPDATE, DELETE ON \`${schema}\`.* TO '${user}'@'127.0.0.1'`);
+  // roles and the database live at the server level, so this part uses the maintenance db
+  const server = await connect('postgres');
+  try {
+    await ensureRoles(server, { migrator: MIGRATOR, migratorPassword, modulePassword });
+    const { rowCount } = await server.query('SELECT 1 FROM pg_database WHERE datname = $1', [DATABASE]);
+    if (!rowCount) await server.query(`CREATE DATABASE ${DATABASE} OWNER ${MIGRATOR} ENCODING 'UTF8' TEMPLATE template0`);
+  } finally {
+    await server.end();
   }
-  // lets the migrator create the append-only ledger triggers while binary logging is on
-  await run('SET PERSIST log_bin_trust_function_creators = 1');
-  await run('FLUSH PRIVILEGES');
-  console.log(`Schemas and users ready on 127.0.0.1:${PORT}: snackhub, ${SCHEMAS.join(', ')}`);
+  const db = await connect(DATABASE);
+  try {
+    await ensureSchemas(db, { database: DATABASE, migrator: MIGRATOR });
+  } finally {
+    await db.end();
+  }
+  console.log(`Database ${DATABASE} ready on ${where}: schemas and roles for every module, owned by ${MIGRATOR}.`);
 } catch (err) {
   console.error(`Setup failed: ${err.code ?? ''} ${err.message}`);
-  process.exitCode = 1;
-} finally {
-  await conn.end();
+  process.exit(1);
 }
 
-if (!process.exitCode) {
-  // point the API at the local server; only the DB_HOST and DB_PORT lines change
-  const text = readFileSync(apiEnv, 'utf8')
-    .replace(/^DB_HOST=.*$/m, 'DB_HOST=127.0.0.1')
-    .replace(/^DB_PORT=.*$/m, `DB_PORT=${PORT}`);
+if (process.env.SKIP_ENV_UPDATE !== '1' && existsSync(apiEnv)) {
+  // point the API at this server; only the connection lines change
+  let text = readFileSync(apiEnv, 'utf8');
+  const set = (key, value) => {
+    text = new RegExp(`^${key}=.*$`, 'm').test(text) ? text.replace(new RegExp(`^${key}=.*$`, 'm'), `${key}=${value}`) : `${text.replace(/\s*$/, '')}\n${key}=${value}\n`;
+  };
+  set('DB_HOST', HOST);
+  set('DB_PORT', String(PORT));
+  set('DB_NAME', DATABASE);
   writeFileSync(apiEnv, text);
-  console.log(`${fileURLToPath(apiEnv)} now uses 127.0.0.1:${PORT}`);
+  console.log(`${fileURLToPath(apiEnv)} now uses ${where}, database ${DATABASE}`);
 }

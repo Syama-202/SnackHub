@@ -26,7 +26,7 @@ export const addressModel = {
       await lockOwner(trx, userId);
       const [{ n }] = await trx(TABLE).where({ user_id: userId }).count({ n: '*' });
       if (Number(n) >= max) return null;
-      const [id] = await trx(TABLE).insert({ user_id: userId, ...pick(fields), is_default: false });
+      const [{ id }] = await trx(TABLE).insert({ user_id: userId, ...pick(fields), is_default: false }).returning('id');
       if (Number(n) === 0 || makeItDefault) await makeDefault(trx, id, userId);
       return id;
     }),

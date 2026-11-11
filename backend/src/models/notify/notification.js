@@ -16,10 +16,10 @@ export const portalOfType = (type) => Object.keys(PREFIX).find((p) => type.start
 export const notificationModel = {
   /** Returns false when this notification was already sent. */
   create: (db, { userId, orderId = null, type, body }) =>
-    db.raw(`INSERT IGNORE INTO ${TABLE} (user_id, order_id, type, body, created_at) VALUES (?, ?, ?, ?, ?)`, [userId, orderId, type, body, new Date()]).then(([r]) => r.affectedRows === 1),
+    db(TABLE).insert({ user_id: userId, order_id: orderId, type, body, created_at: new Date() }).onConflict().ignore().returning('id').then((rows) => rows.length === 1),
   listForUser: (db, userId, limit = 50, portal = null) => db(TABLE).where({ user_id: userId }).modify(forPortal(portal)).orderBy('created_at', 'desc').limit(limit),
   unreadCount: (db, userId) => db(TABLE).where({ user_id: userId }).whereNull('read_at').count({ n: '*' }).first().then((r) => Number(r.n)),
   markAllRead: (db, userId, portal = null) => db(TABLE).where({ user_id: userId }).modify(forPortal(portal)).whereNull('read_at').update({ read_at: new Date() }),
   markRead: (db, id, userId) => db(TABLE).where({ id, user_id: userId }).whereNull('read_at').update({ read_at: new Date() }),
-  purgeOlderThan: (db, days = 30, batch = 5000) => db.raw(`DELETE FROM ${TABLE} WHERE created_at < NOW() - INTERVAL ? DAY LIMIT ?`, [days, batch]).then(([r]) => r.affectedRows),
+  purgeOlderThan: (db, days = 30, batch = 5000) => db(TABLE).whereIn('id', db(TABLE).select('id').where('created_at', '<', new Date(Date.now() - days * 86_400_000)).limit(batch)).del(),
 };

@@ -12,6 +12,7 @@ import { sellerModel } from '../models/catalog/seller.js';
 import { auditLogModel } from '../models/identity/auditLog.js';
 import { priceSpread } from '../../../shared/domain/catalogue.js';
 import { artFor, slugFor } from '../../../shared/domain/menu.js';
+import { isUniqueViolation } from '../db/errors.js';
 
 export function itemView(row, extra = {}) {
   const a = row.attrs || {};
@@ -124,7 +125,7 @@ export function catalogueController({ dbs }) {
     const c = copyOfItem(item, p.attrs ?? {});
     // the unique (shop, entry) key settles two links racing for the same shop
     await dbs.catalog('products').where({ id: p.id, catalog_item_id: null }).update({ ...c, attrs: JSON.stringify(c.attrs), catalog_item_id: item.id }).catch((e) => {
-      throw e.code === 'ER_DUP_ENTRY' ? new AppError(409, 'ALREADY_ON_MENU', 'That shop already sells this entry') : e;
+      throw isUniqueViolation(e) ? new AppError(409, 'ALREADY_ON_MENU', 'That shop already sells this entry') : e;
     });
     const shop = await sellerModel.findById(dbs.catalog, p.seller_id);
     await audit(req, 'catalogue.link', `product:${p.id}`, { title: p.title }, { catalogueId: item.id, shop: shop?.shop_name });

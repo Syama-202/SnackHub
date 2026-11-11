@@ -59,7 +59,7 @@ export const productModel = {
       : Promise.resolve([]),
   linkedTo: (db, itemId) => db(TABLE).where({ catalog_item_id: itemId }).then((rows) => rows.map(parse)),
   slugsForSeller: (db, sellerId) => db(TABLE).where({ seller_id: sellerId }).pluck('slug'),
-  create: (db, sellerId, p) => db(TABLE).insert({ ...p, seller_id: sellerId, attrs: p.attrs ? JSON.stringify(p.attrs) : null }).then(([id]) => id),
+  create: (db, sellerId, p) => db(TABLE).insert({ ...p, seller_id: sellerId, attrs: p.attrs ? JSON.stringify(p.attrs) : null }).returning('id').then(([r]) => r.id),
   updateForSeller: (db, id, sellerId, changes) => db(TABLE).where({ id, seller_id: sellerId }).update(changes.attrs ? { ...changes, attrs: JSON.stringify(changes.attrs) } : changes),
   setActive: (db, id, active) => db(TABLE).where({ id }).update({ active }),
 };

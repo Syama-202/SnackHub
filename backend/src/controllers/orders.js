@@ -30,8 +30,8 @@ import { riderModel } from '../models/dispatch/rider.js';
 import { deliveryPromise } from '../../../shared/domain/promise.js';
 import { canTransition } from '../../../shared/domain/orderStates.js';
 import { distanceM } from '../../../shared/domain/geo.js';
+import { isUniqueViolation } from '../db/errors.js';
 
-const DUPLICATE = 1062;
 // how long a checkout's stock hold lives if the order row is never written (crash, timeout)
 const HOLD_MINUTES = 2;
 
@@ -147,7 +147,7 @@ export function ordersController({ env, dbs }) {
       });
     } catch (err) {
       // the same checkout sent twice at once: the first one made the order and owns the hold
-      if (err.errno === DUPLICATE) {
+      if (isUniqueViolation(err)) {
         const twin = await replay(customerId, idemKey);
         if (twin) return res.json(twin);
       }
@@ -206,7 +206,7 @@ export function ordersController({ env, dbs }) {
     try {
       await orderReviewModel.create(dbs.ordering, { orderId: order.id, customerId: req.user.userId, ...req.body });
     } catch (err) {
-      if (err.errno === DUPLICATE) throw new AppError(409, 'ALREADY_REVIEWED', 'You already rated this order');
+      if (isUniqueViolation(err)) throw new AppError(409, 'ALREADY_REVIEWED', 'You already rated this order');
       throw err;
     }
     res.status(201).json({ ok: true, rating: req.body.rating });

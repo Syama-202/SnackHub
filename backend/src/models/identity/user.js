@@ -23,7 +23,7 @@ export const userModel = {
         terms_version: termsVersion,
         terms_accepted_at: termsVersion ? new Date() : null,
       })
-      .then(([id]) => id),
+      .returning('id').then(([r]) => r.id),
   /** Links Google to an account that has none yet; false if it already has one. */
   linkGoogle: (db, id, sub) => db(TABLE).where({ id }).whereNull('google_sub').update({ google_sub: sub }).then((n) => n === 1),
   /** Marks the email verified, but only if it is still the address the link was sent to. */
@@ -39,7 +39,7 @@ export const userModel = {
     const base = db(TABLE)
       .modify((x) => status && x.where(`${TABLE}.status`, status))
       .modify((x) => role && x.whereExists(db('user_roles').whereRaw('user_roles.user_id = users.id').where({ role })))
-      .modify((x) => q && x.where((w) => w.where('email', 'like', `%${q}%`).orWhere('name', 'like', `%${q}%`)));
+      .modify((x) => q && x.where((w) => w.where('email', 'ilike', `%${q}%`).orWhere('name', 'ilike', `%${q}%`)));
     return Promise.all([
       base.clone().count('* as n').first().then((r) => Number(r.n)),
       base.clone().select(PUBLIC.map((c) => `${TABLE}.${c}`)).orderBy('id', 'desc').limit(pageSize).offset((page - 1) * pageSize),

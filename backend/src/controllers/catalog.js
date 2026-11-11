@@ -1,5 +1,5 @@
 // Catalog for customers (doc 11.2): cities, the shops that can deliver to a point, a shop's
-// menu, the products near a point and search. Everything is read from MySQL; the delivery
+// menu, the products near a point and search. Everything is read from PostgreSQL; the delivery
 // promise comes from the shared rules with the current delivery_policy.
 import { AppError } from '../utils/AppError.js';
 import { sellerModel, VISIBLE_STATUSES, hoursOf, shopOpenState } from '../models/catalog/seller.js';

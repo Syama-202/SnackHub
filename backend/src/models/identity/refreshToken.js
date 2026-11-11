@@ -22,7 +22,7 @@ export const refreshTokenModel = {
         mfa_at: mfaAt,
         amr,
       })
-      .then(([id]) => id),
+      .returning('id').then(([r]) => r.id),
   findByHash: (db, tokenHash) => db(TABLE).where({ token_hash: tokenHash }).first(),
   /** Marks a live token used; false if it was already used, revoked or expired. */
   use: (db, id) =>
@@ -56,10 +56,10 @@ export const refreshTokenModel = {
       .whereNull('revoked_at')
       .andWhere('expires_at', '>', new Date())
       .groupBy('family_id')
-      .select('family_id', db.raw('MIN(created_at) AS started_at'), db.raw('MAX(created_at) AS last_used_at'), db.raw('ANY_VALUE(portal) AS portal'), db.raw('ANY_VALUE(kind) AS kind'), db.raw('ANY_VALUE(device_id) AS device_id'), db.raw('ANY_VALUE(user_agent) AS user_agent'))
-      .havingRaw('SUM(used_at IS NULL) > 0')
+      .select('family_id', db.raw('MIN(created_at) AS started_at'), db.raw('MAX(created_at) AS last_used_at'), db.raw('MIN(portal) AS portal'), db.raw('MIN(kind) AS kind'), db.raw('MIN(device_id) AS device_id'), db.raw('MIN(user_agent) AS user_agent'))
+      .havingRaw('COUNT(*) FILTER (WHERE used_at IS NULL) > 0')
       .orderBy('last_used_at', 'desc'),
   /** A step-up code renews the second-factor time for the live token of a family. */
   setMfaAt: (db, familyId, mfaAt) => db(TABLE).where({ family_id: familyId }).whereNull('used_at').whereNull('revoked_at').update({ mfa_at: mfaAt }),
-  purgeExpired: (db, batch = 5000) => db.raw(`DELETE FROM ${TABLE} WHERE expires_at < NOW(3) LIMIT ?`, [batch]).then(([r]) => r.affectedRows),
+  purgeExpired: (db, batch = 5000) => db(TABLE).whereIn('id', db(TABLE).select('id').where('expires_at', '<', new Date()).limit(batch)).del(),
 };

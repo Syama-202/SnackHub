@@ -148,14 +148,14 @@ describe.skipIf(h.skip)('verification', () => {
     it('an unapproved seller cannot publish products; an approved one can; hiding is always allowed', async () => {
       const s = await readySeller(t);
       const shop = await t.trx.catalog('sellers').where({ user_id: s.user.id }).first();
-      const [productId] = await t.trx.catalog('products').insert({ seller_id: shop.id, slug: `test-${h.uniq()}`, title: 'Test bajji (demo)', category: 'fried', serving_temp: 'HOT', prep_minutes: 8, price_paise: 4000, active: false });
+      const [{ id: productId }] = await t.trx.catalog('products').insert({ seller_id: shop.id, slug: `test-${h.uniq()}`, title: 'Test bajji (demo)', category: 'fried', serving_temp: 'HOT', prep_minutes: 8, price_paise: 4000, active: false }).returning('id');
       const res = await request(t.app).patch(`/api/v1/seller/products/${productId}`).set(bearer(s.token)).send({ active: true }).expect(403);
       expect(res.body.error).toMatchObject({ code: 'NOT_ELIGIBLE', details: { reasons: expect.arrayContaining([expect.objectContaining({ code: 'NOT_APPROVED' })]) } });
       await request(t.app).patch(`/api/v1/seller/products/${productId}`).set(bearer(s.token)).send({ active: false }).expect(200);
 
       await approveAll(t, staff.token, await refOf(t, s.token, 'seller'));
       await request(t.app).patch(`/api/v1/seller/products/${productId}`).set(bearer(s.token)).send({ active: true }).expect(200);
-      expect((await t.trx.catalog('products').where({ id: productId }).first()).active).toBe(1);
+      expect((await t.trx.catalog('products').where({ id: productId }).first()).active).toBe(true);
       // another seller cannot touch it by id
       const other = await readySeller(t);
       await request(t.app).patch(`/api/v1/seller/products/${productId}`).set(bearer(other.token)).send({ active: false }).expect(404);

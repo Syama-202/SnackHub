@@ -1,4 +1,4 @@
-// npm run seed: loads the demo data into MySQL as the migrator user.
+// npm run seed: loads the demo data into PostgreSQL as the migrator role.
 import { loadDbEnv as loadEnv } from '../src/config/env.js';
 import { migratorDb } from '../src/db/connection.js';
 import { seed } from '../src/db/seeds/demo.js';

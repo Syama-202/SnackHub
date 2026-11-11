@@ -1,4 +1,4 @@
-// The API under test: real MySQL (every test in transactions that are rolled back), with
+// The API under test: real PostgreSQL (every test in transactions that are rolled back), with
 // fakes for Google, the mail server, file storage (a temp folder) and the malware scanner.
 // Emails go through the real outbox and relay, so a test reads the link a person would click.
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import pino from 'pino';
 import request from 'supertest';
-import { connect } from './db.js';
+import { connect, survivable } from './db.js';
 import { moduleDb } from '../../src/db/connection.js';
 import { loadEnv } from '../../src/config/env.js';
 import { createApp } from '../../src/app.js';
@@ -30,7 +30,7 @@ const fakeVerify = async (credential) => {
   return { sub: c.sub, email: c.email, emailVerified: c.email_verified !== false, name: c.name ?? 'Test (demo)' };
 };
 
-/** Pools, settings and a temp storage folder for one test file; null when MySQL is not there. */
+/** Pools, settings and a temp storage folder for one test file; null when PostgreSQL is not there. */
 export async function openHarness(overrides = {}) {
   const { db: migrator, env: dbEnv, reason } = await connect();
   if (!migrator) return { skip: reason };
@@ -68,7 +68,7 @@ export async function openHarness(overrides = {}) {
  * Call end() in afterEach.
  */
 export async function beginTest(h, { scan = 'not_scanned', sms = false, paymentProvider, push = { enabled: false, publicKey: null }, geocoder } = {}) {
-  const trx = Object.fromEntries(await Promise.all(MODULES.map(async (m) => [m, await h.pools[m].transaction()])));
+  const trx = Object.fromEntries(await Promise.all(MODULES.map(async (m) => [m, survivable(await h.pools[m].transaction())])));
   const sent = [];
   const mailer = { enabled: true, send: async (m) => sent.push(m) };
   const smsFake = { enabled: sms, send: async (m) => sent.push({ ...m, sms: true }) };
@@ -87,7 +87,7 @@ export async function beginTest(h, { scan = 'not_scanned', sms = false, paymentP
   /** An account with the given roles; a password, a verified email and optionally an authenticator. */
   async function makeUser({ roles = ['customer'], password = PASSWORD, verified = true, mfa = false, status = 'active', name = 'Test person (demo)', email } = {}) {
     const address = email ?? `user-${h.uniq()}@example.test`;
-    const [id] = await trx.identity('users').insert({ email: address, name, email_verified_at: verified ? new Date() : null, status, status_reason: status === 'active' ? null : 'Test suspension' });
+    const [{ id }] = await trx.identity('users').insert({ email: address, name, email_verified_at: verified ? new Date() : null, status, status_reason: status === 'active' ? null : 'Test suspension' }).returning('id');
     if (password) await trx.identity('credentials').insert({ user_id: id, password_hash: await hashPassword(password), changed_at: new Date() });
     for (const role of roles) await trx.identity('user_roles').insert({ user_id: id, role, granted_at: new Date() });
     let secret = null;

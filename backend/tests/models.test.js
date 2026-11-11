@@ -7,6 +7,7 @@ import {
   sellerModel, productModel, stockModel, stockHoldModel, orderModel, webhookEventModel, assignmentModel,
   notificationModel, paymentModel, ledgerEntryModel, outboxModel, addressModel,
 } from '../src/models/index.js';
+import { DISTANCE_SQL } from '../src/models/catalog/seller.js';
 
 const { db: migrator, env, reason } = await connect();
 if (!migrator) console.warn(`model tests skipped: ${reason}`);
@@ -29,7 +30,8 @@ const BRODIPET = { lat: 16.3152, lng: 80.4301 }; // demo home address in Guntur
 
 describe.skipIf(!migrator)('catalog models', () => {
   it('measures distance with the right axis order (Guntur to Vijayawada is about 31 km)', async () => {
-    const [[row]] = await dbs.catalog.raw('SELECT ST_Distance_Sphere(POINT(80.4365, 16.3067), POINT(80.648, 16.5062)) AS m');
+    // the query's own formula, from Vijayawada (the row) to Guntur (the point)
+    const { rows: [row] } = await dbs.catalog.raw(`SELECT ${DISTANCE_SQL} AS m FROM (SELECT 16.5062::numeric AS lat, 80.648::numeric AS lng) AS place`, [16.3067, 16.3067, 80.4365]);
     expect(row.m).toBeGreaterThan(28_000);
     expect(row.m).toBeLessThan(35_000);
   });

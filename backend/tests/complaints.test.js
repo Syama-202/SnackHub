@@ -75,7 +75,7 @@ describe.skipIf(h.skip)('complaints, credit and operations', () => {
     const { customer: c, order, shop } = await deliveredOrder(t, staff);
     const made = (await report(t, c.token, order.id, { category: 'FOOD_QUALITY', subtype: 'UNSAFE', description: 'Smelled off' }, [jpeg()]).expect(201)).body;
     expect(made).toMatchObject({ status: 'IN_REVIEW', safety: true, autoDecided: false });
-    expect((await t.trx.catalog('sellers').where({ id: shop.shop.id }).first()).paused).toBe(1);
+    expect((await t.trx.catalog('sellers').where({ id: shop.shop.id }).first()).paused).toBe(true);
     const alert = await t.trx.ordering('outbox').where({ type: 'admin.alert' }).orderBy('id', 'desc').first();
     expect(typeof alert.payload === 'string' ? JSON.parse(alert.payload) : alert.payload).toMatchObject({ type: 'unsafe_food_report', orderId: order.id });
   });

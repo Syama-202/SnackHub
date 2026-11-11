@@ -3,23 +3,17 @@
 name: snackhub
 
 services:
-  mysql:
-    image: mysql:8.4
-    # lets the migrator create the append-only triggers on ledger_entries without SUPER
-    command: ['--log-bin-trust-function-creators=1']
+  postgres:
+    image: postgres:17
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in infra/.env}
-      MYSQL_DATABASE: snackhub
-      MIGRATOR_PASSWORD: ${MIGRATOR_PASSWORD:?set MIGRATOR_PASSWORD in infra/.env}
-      MODULE_DB_PASSWORD: ${MODULE_DB_PASSWORD:?set MODULE_DB_PASSWORD in infra/.env}
-    # 3307 on the host so it does not clash with a MySQL already installed on the machine
-    ports: ['127.0.0.1:3307:3306']
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in infra/.env}
+    # 5433 on the host so it does not clash with a PostgreSQL already installed on the machine.
+    # The schemas and roles come from `npm run db:docker` once the container is up.
+    ports: ['127.0.0.1:5433:5432']
     volumes:
-      - mysql:/var/lib/mysql
-      # one schema and one least-privilege user per module, created on first start
-      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+      - postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-u', 'root', '-p$$MYSQL_ROOT_PASSWORD']
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
       interval: 5s
       timeout: 5s
       retries: 30
@@ -73,7 +67,7 @@ services:
     ports: ['127.0.0.1:8025:8025', '127.0.0.1:1025:1025']
 
 volumes:
-  mysql: {}
+  postgres: {}
   redis: {}
   elastic: {}
   minio: {}

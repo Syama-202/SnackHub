@@ -1,6 +1,6 @@
 // Who is calling and what they may do (doc 16.1, 16.2). The user id and role come from the
 // signed access token, never the body, a URL or local storage. requireRole and
-// requirePermission also re-read the account and the role membership from MySQL, so a
+// requirePermission also re-read the account and the role membership from the database, so a
 // suspension works at once, not only at the next refresh; a token whose role the account does
 // not hold (a forged or stale claim) is refused.
 import { AppError } from '../utils/AppError.js';

@@ -35,7 +35,7 @@ if (existsSync(infraPath)) {
   modules = secret();
   write(infraPath, [
     '# Local only. Created by `npm run setup`.',
-    `MYSQL_ROOT_PASSWORD=${secret()}`,
+    `POSTGRES_PASSWORD=${secret()}`,
     `MIGRATOR_PASSWORD=${migrator}`,
     `MODULE_DB_PASSWORD=${modules}`,
     'MINIO_ROOT_USER=snackhub',
@@ -61,7 +61,8 @@ const created = write(backendEnvPath, [
   'LOG_LEVEL=info',
   'CORS_ORIGINS=http://localhost:5180,http://localhost:5181',
   'DB_HOST=127.0.0.1',
-  'DB_PORT=3307',
+  'DB_PORT=5432',
+  'DB_NAME=snackhub',
   'DB_MIGRATOR_USER=sh_migrator',
   `DB_MIGRATOR_PASSWORD=${migrator}`,
   `DB_MODULE_PASSWORD=${modules}`,

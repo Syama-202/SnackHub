@@ -18,6 +18,7 @@ import { sellerModel } from '../models/catalog/seller.js';
 import { paymentModel } from '../models/payment/payment.js';
 import { refundModel } from '../models/payment/refund.js';
 import { ledgerEntryModel } from '../models/payment/ledgerEntry.js';
+import { attempt, isUniqueViolation } from '../db/errors.js';
 
 /** The provider in use, set once by createApp (like realtime): closeOrder reaches it from anywhere. */
 export const gateway = {
@@ -42,9 +43,9 @@ const ledgerCharge = (trx, paymentId, amountPaise) => ledgerEntryModel.append(tr
 
 export async function recordCod(dbs, order) {
   try {
-    await paymentModel.create(dbs.payment, { order_id: order.id, method: 'COD', amount_paise: order.total_paise, status: 'COD_PENDING' });
+    await attempt(dbs.payment, (db) => paymentModel.create(db, { order_id: order.id, method: 'COD', amount_paise: order.total_paise, status: 'COD_PENDING' }));
   } catch (err) {
-    if (err.errno !== 1062) throw err; // already recorded
+    if (!isUniqueViolation(err)) throw err; // already recorded
   }
 }
 
@@ -70,9 +71,9 @@ export async function startOnlinePayment(dbs, env, order) {
   let p = await paymentModel.findByOrder(dbs.payment, order.id);
   if (!p) {
     try {
-      await paymentModel.create(dbs.payment, { order_id: order.id, method: provider.name, provider_order_id: merchantOrderId, amount_paise: order.total_paise, status: 'CREATED', expires_at: new Date(Date.now() + windowSec * 1000) });
+      await attempt(dbs.payment, (db) => paymentModel.create(db, { order_id: order.id, method: provider.name, provider_order_id: merchantOrderId, amount_paise: order.total_paise, status: 'CREATED', expires_at: new Date(Date.now() + windowSec * 1000) }));
     } catch (err) {
-      if (err.errno !== 1062) throw err; // the same checkout, twice at once
+      if (!isUniqueViolation(err)) throw err; // the same checkout, twice at once
     }
     p = await paymentModel.findByOrder(dbs.payment, order.id);
   }

@@ -62,7 +62,7 @@ export function verificationController({ env, dbs }) {
     let userIds;
     if (q) {
       const like = q.replace(/[%_\\]/g, (c) => `\\${c}`);
-      userIds = (await dbs.identity('users').where('email', 'like', `%${like}%`).orWhere('name', 'like', `%${like}%`).limit(200).pluck('id')).map(Number);
+      userIds = (await dbs.identity('users').where('email', 'ilike', `%${like}%`).orWhere('name', 'ilike', `%${like}%`).limit(200).pluck('id')).map(Number);
     }
     let statuses = status === 'all' ? STATUSES.filter((s) => s !== 'DRAFT') : status === 'open' ? OPEN_FOR_REVIEW : status === 'renewals' ? ['APPROVED'] : [status];
     if (status === 'renewals') {

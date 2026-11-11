@@ -1,4 +1,4 @@
-// The customer order flow end to end on MySQL: a real approved shop and rider, the cart,
+// The customer order flow end to end on PostgreSQL: a real approved shop and rider, the cart,
 // pay-on-delivery checkout, the seller's board, rider offers, GPS pings, the delivery code
 // and the clocks. Times are moved in the database instead of waiting.
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -241,7 +241,7 @@ describe.skipIf(h.skip)('the order flow', () => {
       await s.api.post(`/seller/orders/${order.id}/accept`).expect(200);
       // the nearer rider gets the first offer; give the other one too, as a second process might
       const [first] = (await a.api.get('/rider/offers').expect(200)).body;
-      const [second] = await t.trx.dispatch('assignments').insert({ order_id: order.id, rider_id: b.row.id, status: 'OFFERED', offered_at: new Date() });
+      const [{ id: second }] = await t.trx.dispatch('assignments').insert({ order_id: order.id, rider_id: b.row.id, status: 'OFFERED', offered_at: new Date() }).returning('id');
       const results = await Promise.all([a.api.post(`/rider/offers/${first.id}/accept`), b.api.post(`/rider/offers/${second}/accept`)]);
       const [won, lost] = results.map((x) => x.status).sort();
       expect(won).toBe(200);

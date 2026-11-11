@@ -1,4 +1,4 @@
-// Online payments and refunds on MySQL with a fake PhonePe that answers like the real API
+// Online payments and refunds on PostgreSQL with a fake PhonePe that answers like the real API
 // (utils/phonepe.js): success, failure, an abandoned payment, a late success, a wrong amount,
 // the provider being down, repeated and forged webhooks, refunds full and partial, and cash
 // on delivery recorded the same way. Nothing here trusts the browser or a webhook body.

@@ -1,10 +1,12 @@
 // Deadlock retry for every transaction (doc 10.8). When two transactions lock the same rows
-// in opposite orders, MySQL rolls one of them back whole with ER_LOCK_DEADLOCK; running it
-// again is safe because transactions here only touch the database (anything that reaches the
-// outside world goes through the outbox after the commit). Only the callback form is retried:
-// a transaction opened without a callback is managed by its caller.
+// in opposite orders, PostgreSQL rolls one of them back whole (deadlock_detected, 40P01);
+// running it again is safe because transactions here only touch the database (anything that
+// reaches the outside world goes through the outbox after the commit). Only the callback form
+// is retried: a transaction opened without a callback is managed by its caller. A nested
+// transaction (a savepoint) is not retried on its own: the whole outer one is.
+import { PG } from './errors.js';
 
-const RETRYABLE = new Set(['ER_LOCK_DEADLOCK']);
+const RETRYABLE = new Set([PG.DEADLOCK, PG.SERIALIZATION]);
 export const DEADLOCK_TRIES = 3;
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

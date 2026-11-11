@@ -24,6 +24,7 @@ import { auditLogModel } from '../models/identity/auditLog.js';
 import { passwordProblems } from '../../../shared/domain/passwords.js';
 import { mfaRequiredFor } from '../../../shared/domain/permissions.js';
 import { REFRESH_COOKIE } from './auth.js';
+import { isUniqueViolation } from '../db/errors.js';
 
 const MOBILE_CODE_MINUTES = 10;
 const MOBILE_CODE_TRIES = 5;
@@ -162,7 +163,7 @@ export function securityController({ env, dbs, sms }) {
         await auditLogModel.append(trx, { actorId: userId, action: 'auth.mobile.verified', target: `user:${userId}` });
       });
     } catch (err) {
-      if (err.errno === 1062) throw new AppError(409, 'MOBILE_IN_USE', 'This number is verified on another account');
+      if (isUniqueViolation(err)) throw new AppError(409, 'MOBILE_IN_USE', 'This number is verified on another account');
       throw err;
     }
     res.json({ verified: true });

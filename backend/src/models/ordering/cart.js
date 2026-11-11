@@ -19,7 +19,7 @@ export const cartModel = {
       if (cart && cart.seller_id !== sellerId) await trx(ITEMS).where({ customer_id: customerId }).delete();
       if (cart) await trx(CARTS).where({ customer_id: customerId }).update({ seller_id: sellerId, updated_at: now });
       else await trx(CARTS).insert({ customer_id: customerId, seller_id: sellerId, updated_at: now });
-      if (qty > 0) await trx.raw(`INSERT INTO ${ITEMS} (customer_id, product_id, qty, added_at) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE qty = VALUES(qty)`, [customerId, productId, qty, now]);
+      if (qty > 0) await trx(ITEMS).insert({ customer_id: customerId, product_id: productId, qty, added_at: now }).onConflict(['customer_id', 'product_id']).merge(['qty']);
       else await trx(ITEMS).where({ customer_id: customerId, product_id: productId }).delete();
       const [{ n }] = await trx(ITEMS).where({ customer_id: customerId }).count({ n: '*' });
       if (Number(n) === 0) await trx(CARTS).where({ customer_id: customerId }).delete();

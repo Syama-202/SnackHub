@@ -1,4 +1,4 @@
-// Saved addresses on MySQL: kinds and rider details, one default per customer, edits that never
+// Saved addresses on PostgreSQL: kinds and rider details, one default per customer, edits that never
 // reach a placed order, and the place search for the map pin (with a fake server).
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openHarness, beginTest } from './helpers/app.js';
@@ -60,7 +60,7 @@ describe.skipIf(h.skip)('saved addresses', () => {
     await c.api.del(`/me/addresses/${b.id}`).expect(200);
     expect(await defaults()).toEqual([a.id]);
 
-    // MySQL itself refuses a second default for one customer
+    // the database itself refuses a second default for one customer
     await expectError(t.trx.identity('addresses').where({ id: d.id }).update({ is_default: true }), ER.DUP_ENTRY);
   });
 

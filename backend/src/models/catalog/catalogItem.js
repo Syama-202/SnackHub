@@ -5,7 +5,7 @@ const TABLE = 'catalog_items';
 const parse = (row) => row && { ...row, attrs: typeof row.attrs === 'string' ? JSON.parse(row.attrs) : (row.attrs ?? {}) };
 // a title search: every word must appear, matched with bindings (LIKE wildcards escaped)
 const likeWords = (q, term) => {
-  for (const w of term.split(/\s+/).filter(Boolean).slice(0, 5)) q.where('title', 'like', `%${w.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
+  for (const w of term.split(/\s+/).filter(Boolean).slice(0, 5)) q.where('title', 'ilike', `%${w.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
 };
 
 export const catalogItemModel = {
@@ -20,6 +20,6 @@ export const catalogItemModel = {
       .limit(limit)
       .then((rows) => rows.map(parse)),
   slugs: (db) => db(TABLE).pluck('slug'),
-  create: (db, item) => db(TABLE).insert({ ...item, attrs: JSON.stringify(item.attrs ?? {}) }).then(([id]) => id),
+  create: (db, item) => db(TABLE).insert({ ...item, attrs: JSON.stringify(item.attrs ?? {}) }).returning('id').then(([r]) => r.id),
   update: (db, id, changes) => db(TABLE).where({ id }).update(changes.attrs ? { ...changes, attrs: JSON.stringify(changes.attrs) } : changes),
 };

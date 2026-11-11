@@ -20,7 +20,7 @@ describe.skipIf(h.skip)('reliability', () => {
   });
   afterEach(() => t.end());
 
-  const email = (attempts) => t.trx.identity('outbox').insert({ type: 'email.send', payload: JSON.stringify({ to: 'asha@example.test', template: 'password_changed', data: { name: 'Asha' } }), attempts }).then(([id]) => id);
+  const email = (attempts) => t.trx.identity('outbox').insert({ type: 'email.send', payload: JSON.stringify({ to: 'asha@example.test', template: 'password_changed', data: { name: 'Asha' } }), attempts }).returning('id').then(([r]) => r.id);
 
   it('reports a message it has given up on, once, and stops trying it', async () => {
     const down = { enabled: true, send: async () => { throw Object.assign(new Error('timed out'), { code: 'ETIMEDOUT' }); } };

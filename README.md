@@ -5,7 +5,7 @@
 [![CI](https://github.com/Syama-202/SnackHub/actions/workflows/ci.yml/badge.svg)](https://github.com/Syama-202/SnackHub/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%3E%3D20.6-339933?logo=node.js&logoColor=white)
 ![React](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=black)
-![MySQL](https://img.shields.io/badge/mysql-8-4479A1?logo=mysql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/postgresql-17-4169E1?logo=postgresql&logoColor=white)
 
 **Live demo:** https://snackhub-india.netlify.app
 
@@ -82,16 +82,16 @@ promise is calculated from distance, preparation time and riding speed rather th
 | --- | --- |
 | Front end | React 19, Redux Toolkit, React Router, react-hook-form, Tailwind CSS v4, Vite, MapLibre GL, Motion |
 | Back end | Node.js, Express, Knex, zod, Socket.IO, pino |
-| Data | MySQL 8 (six schemas), Redis |
+| Data | PostgreSQL 17 (six schemas), Redis |
 | Auth and security | Argon2id, JWT access tokens, rotating refresh cookies, TOTP (otplib), Google Identity, helmet |
 | Files and messages | S3-compatible private storage, nodemailer, Web Push |
 | Testing | Vitest, Supertest, GitHub Actions |
-| Hosting | Netlify (sites), Render (API), Aiven (MySQL), Upstash (Redis), Backblaze B2 (files) |
+| Hosting | Netlify (sites), Render (API), Neon (PostgreSQL), Upstash (Redis), Backblaze B2 (files) |
 
 ## Architecture
 
 SnackHub is a **modular monolith**: one Express API, split into six modules that each own their
-own MySQL schema and their own database user. A module can only reach its own tables, so the
+own PostgreSQL schema and their own database role. A module can only reach its own tables, so the
 boundaries are enforced by the database rather than by convention, and any module could later
 be moved into a service of its own.
 
@@ -105,7 +105,7 @@ flowchart TB
     R["Routes: auth, permission,<br/>rate limit, zod validation"] --> C["Thin controllers"] --> D["Workflows and shared rules"] --> M["Models, one per table"]
     J["Background jobs: outbox relay,<br/>order timers, document expiry"]
   end
-  DB[("MySQL 8<br/>identity, catalog, ordering,<br/>dispatch, payment, notify")]
+  DB[("PostgreSQL 17<br/>identity, catalog, ordering,<br/>dispatch, payment, notify")]
   RD[("Redis<br/>rate limits, socket rooms")]
   S3[("Private file storage")]
   EXT["Email, web push"]
@@ -192,9 +192,9 @@ SnackHub/
 |   |   |-- middleware/  Auth, permissions, rate limits, uploads, errors
 |   |   |-- utils/       Workflows (orders, dispatch, payments) and helpers
 |   |   `-- jobs/        Outbox relay, order timers, expiry and clean-up
-|   `-- tests/           Integration tests against MySQL
+|   `-- tests/           Integration tests against PostgreSQL
 |-- shared/              Business rules and demo seed data used by both sides
-|-- infra/               Docker Compose for local MySQL, Redis and Mailpit
+|-- infra/               Docker Compose for local PostgreSQL, Redis and Mailpit
 `-- scripts/             Setup and local development helpers
 ```
 
@@ -203,7 +203,8 @@ SnackHub/
 ### Prerequisites
 
 - **Node.js 20.6 or newer**
-- **MySQL 8**, either installed locally or through Docker
+- **PostgreSQL 17**, either installed locally (on Windows: `winget install --id PostgreSQL.PostgreSQL.17 -e --interactive`,
+  which opens the EnterpriseDB installer: keep the server and its Command Line Tools) or through Docker
 - **Docker** (optional) for Redis; without it, rate limits and live updates still work within a single process
 
 ### 1. Clone and install
@@ -228,23 +229,28 @@ prints a secret and never overwrites a file that already exists. Both files are 
 
 Choose one.
 
-**A. MySQL installed on your machine (port 3306)**
+**A. PostgreSQL installed on your machine (port 5432)**
 
 ```bash
 npm run db:local
 ```
 
-It asks once for your MySQL root password (never stored), then creates the six schemas, one
-user per module with access to its own schema only, and a migrator user. It also points
-`backend/.env` at your local server.
+It asks once for the password of the `postgres` superuser (never stored), then creates the
+`snackhub` database, the six schemas, one role per module with access to its own schema only,
+and a migrator role that owns them. It also points `backend/.env` at your local server.
 
-**B. MySQL in Docker (port 3307)**
+**B. PostgreSQL in Docker (port 5433)**
 
 ```bash
 npm run db:up
 ```
 
-Starts MySQL, Redis and Mailpit. The schemas and users are created on the first start.
+```bash
+npm run db:docker
+```
+
+The first starts PostgreSQL, Redis and Mailpit; the second creates the database, schemas and
+roles in the container (its password is in `infra/.env`).
 
 ### 4. Create the tables and load demo data
 
@@ -322,14 +328,14 @@ Restart the API and the web app after changing a settings file.
 npm test
 ```
 
-The back-end suite runs against the real MySQL database from the setup above, using Vitest and
+The back-end suite runs against the real PostgreSQL database from the setup above, using Vitest and
 Supertest. Each test runs inside database transactions that are rolled back afterwards, so your
 local data is never changed. The tests cover accounts and sessions, two-step sign-in, roles and
 permissions, onboarding and uploads, the full order flow, payments, complaints, live updates,
 rate limits and database constraints, including races such as two customers buying the last
 unit at the same moment.
 
-GitHub Actions runs the same suite on every push and pull request against a MySQL 8.4 service,
+GitHub Actions runs the same suite on every push and pull request against a PostgreSQL 17 service,
 and builds the front end.
 
 ## Scripts
@@ -339,8 +345,9 @@ Run from the repository root.
 | Command | Description |
 | --- | --- |
 | `npm run setup` | Create the local settings files |
-| `npm run db:local` | Create the schemas and users on a locally installed MySQL |
-| `npm run db:up` / `npm run db:down` | Start or stop MySQL, Redis and Mailpit in Docker |
+| `npm run db:local` | Create the database, schemas and roles on a locally installed PostgreSQL |
+| `npm run db:up` / `npm run db:down` | Start or stop PostgreSQL, Redis and Mailpit in Docker |
+| `npm run db:docker` | Create the database, schemas and roles in the Docker PostgreSQL |
 | `npm run redis:up` / `npm run redis:down` | Start or stop only Redis |
 | `npm run migrate` | Apply all database migrations |
 | `npm run migrate:status` | Show applied and pending migrations |
@@ -370,7 +377,7 @@ each request, so it always matches the code. Errors have one shape:
 | --- | --- |
 | Web app | Netlify, with a strict Content Security Policy and HSTS |
 | API, real-time and background jobs | Render (Docker image from `backend/Dockerfile`, blueprint in `render.yaml`) |
-| MySQL 8 | Aiven, over TLS |
+| PostgreSQL 17 | Neon (serverless: sleeps when idle, wakes on the next query), over TLS |
 | Redis | Upstash, over TLS |
 | Uploaded documents | Backblaze B2, a private S3-compatible bucket |
 

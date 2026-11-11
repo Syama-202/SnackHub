@@ -5,7 +5,7 @@
 // - refreshes docs_valid_until on the shop or rider row, so an expired licence hides the shop
 //   and keeps the rider out of every assignment, whatever the job's timing
 // - takes riders offline whose required documents have lapsed
-// A MySQL named lock keeps two API processes from running it at the same time.
+// A PostgreSQL advisory lock keeps two API processes from running it at the same time.
 import { queueEmail } from '../utils/notify.js';
 import { KINDS, kindDb, refreshValidity } from '../utils/applicants.js';
 import { userModel } from '../models/identity/user.js';
@@ -20,15 +20,12 @@ export function reminderDue(daysLeft) {
 }
 
 export async function runDocumentExpiry({ env, dbs, logger, now = Date.now() }) {
-  // a named lock belongs to one connection, so it is taken and released inside one transaction
+  // an advisory lock held for this transaction, so two servers never run the pass at once; it
+  // is released with the transaction, whatever happens inside
   return dbs.identity.transaction(async (lockConn) => {
-    const [[lock]] = await lockConn.raw("SELECT GET_LOCK('snackhub.document_expiry', 0) AS got");
+    const { rows: [lock] } = await lockConn.raw("SELECT pg_try_advisory_xact_lock(hashtext('snackhub.document_expiry')) AS got");
     if (!lock.got) return { skipped: true };
-    try {
-      return await expiryPass({ env, dbs, logger, now });
-    } finally {
-      await lockConn.raw("SELECT RELEASE_LOCK('snackhub.document_expiry')");
-    }
+    return expiryPass({ env, dbs, logger, now });
   });
 }
 

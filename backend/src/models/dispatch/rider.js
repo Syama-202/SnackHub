@@ -12,10 +12,12 @@ export const riderModel = {
   listOnlineInCity: (db, city) => db(TABLE).where({ city, status: 'ONLINE' }).whereNotNull('last_lat').andWhere(docsValid).orderBy('id'),
   /**
    * The rider row for an approved application. riders.id has no auto-increment (the seed
-   * fixes ids), so the next id is taken under a lock inside the approval transaction.
+   * fixes ids), so the next id is taken under a lock inside the approval transaction: an
+   * advisory lock, held until that transaction ends, so two approvals never pick the same id.
    */
   createApproved: async (trx, { userId, name, city, vehicle }) => {
-    const [[{ next }]] = await trx.raw(`SELECT COALESCE(MAX(id), 0) + 1 AS next FROM ${TABLE} FOR UPDATE`);
+    await trx.raw("SELECT pg_advisory_xact_lock(hashtext('dispatch.riders.next_id'))");
+    const { next } = await trx(TABLE).first(trx.raw('COALESCE(MAX(id), 0) + 1 AS next'));
     await trx(TABLE).insert({ id: next, user_id: userId, name, city, vehicle, status: 'OFFLINE' });
     return next;
   },

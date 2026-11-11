@@ -4,6 +4,7 @@
 // pay-on-delivery offers until they deposit; prepaid orders still reach them.
 import { AppError } from './AppError.js';
 import { DEFAULT_POLICY } from '../../../shared/domain/policy.js';
+import { isUniqueViolation } from '../db/errors.js';
 
 export const cashLimitOf = (policy) => policy?.cashLimitPaise ?? DEFAULT_POLICY.cashLimitPaise;
 
@@ -51,7 +52,7 @@ export async function recordDeposit(dbs, { riderId, amountPaise, note, staffId }
     const [{ deposited }] = await trx('cash_deposits').where({ rider_id: riderId }).select(trx.raw("COALESCE(SUM(CASE kind WHEN 'DEPOSIT' THEN amount_paise ELSE -amount_paise END), 0) AS deposited"));
     const held = Number(collected ?? 0) - Number(deposited);
     if (amountPaise > held) throw new AppError(409, 'MORE_THAN_HELD', `This rider holds ${held} paise; a deposit cannot be more than that`, { heldPaise: held });
-    const [id] = await trx('cash_deposits').insert({ rider_id: riderId, kind: 'DEPOSIT', amount_paise: amountPaise, received_by: staffId, note: note ?? null });
+    const [{ id }] = await trx('cash_deposits').insert({ rider_id: riderId, kind: 'DEPOSIT', amount_paise: amountPaise, received_by: staffId, note: note ?? null }).returning('id');
     return { id, heldBefore: held, heldAfter: held - amountPaise };
   });
 }
@@ -62,10 +63,10 @@ export async function reverseDeposit(dbs, { depositId, staffId, note }) {
     const d = await trx('cash_deposits').where({ id: depositId, kind: 'DEPOSIT' }).forUpdate().first();
     if (!d) throw new AppError(404, 'NOT_FOUND', 'Deposit not found');
     try {
-      const [id] = await trx('cash_deposits').insert({ rider_id: d.rider_id, kind: 'REVERSAL', amount_paise: d.amount_paise, reverses_id: d.id, received_by: staffId, note });
+      const [{ id }] = await trx('cash_deposits').insert({ rider_id: d.rider_id, kind: 'REVERSAL', amount_paise: d.amount_paise, reverses_id: d.id, received_by: staffId, note }).returning('id');
       return { id, deposit: d };
     } catch (err) {
-      if (err.errno === 1062) throw new AppError(409, 'ALREADY_REVERSED', 'This deposit was already reversed');
+      if (isUniqueViolation(err)) throw new AppError(409, 'ALREADY_REVERSED', 'This deposit was already reversed');
       throw err;
     }
   });

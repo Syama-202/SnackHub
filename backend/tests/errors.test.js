@@ -21,11 +21,13 @@ describe('error rules', () => {
     const a = fingerprintParts({ source: 'api', kind: 'TypeError', where: 'GET /x', message: 'order 12 not found' });
     expect(fingerprintParts({ source: 'api', kind: 'TypeError', where: 'GET /x', message: 'order 99 not found' })).toBe(a);
     expect(fingerprintParts({ source: 'web', kind: 'TypeError', where: 'GET /x', message: 'order 12 not found' })).not.toBe(a);
-    // a database error keeps MySQL's message without the SQL or its values
-    const db = Object.assign(new Error("insert into `addresses` (`line`) values ('12 MG Road') - Duplicate entry '12 MG Road' for key 'uq'"), { sqlMessage: "Duplicate entry '12 MG Road' for key 'uq'", code: 'ER_DUP_ENTRY' });
+    // a database error keeps PostgreSQL's own message, without the SQL or its values
+    const db = Object.assign(new Error(`insert into "addresses" ("line") values ('12 MG Road') - duplicate key value violates unique constraint "addresses_uq_default"`), { severity: 'ERROR', code: '23505', constraint: 'addresses_uq_default' });
     const d = describeError(db);
-    expect(d).toMatchObject({ kind: 'ER_DUP_ENTRY', message: "Duplicate entry '?' for key '?'" });
+    expect(d).toMatchObject({ kind: '23505', message: 'duplicate key value violates unique constraint "addresses_uq_default"' });
     expect(d.stack).not.toContain('MG Road');
+    const typed = Object.assign(new Error('select 1 - invalid input syntax for type integer: "12 MG Road"'), { severity: 'ERROR', code: '22P02' });
+    expect(describeError(typed).message).toBe('invalid input syntax for type integer: "?"');
   });
 });
 
