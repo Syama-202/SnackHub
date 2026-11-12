@@ -14,6 +14,7 @@ import { existsSync, writeFileSync, rmSync } from 'node:fs';
 import { mkdir, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import tls from 'node:tls';
 import { loadDbEnv } from '../src/config/env.js';
 import { MODULES, META_SCHEMA } from '../src/config/database.js';
 
@@ -34,11 +35,14 @@ const stamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace
 const file = path.join(dir, `snackhub-${env.NODE_ENV}-${stamp}.dump`);
 await mkdir(dir, { recursive: true });
 
-// a CA certificate given as text goes to a temporary file for pg_dump, removed afterwards
+// pg_dump checks the server's certificate against a file of trusted CAs, written to a temporary
+// file and removed afterwards: DB_SSL_CA when it is set, or else the CAs Node trusts, which are
+// the ones the API checks the same server with (Neon needs no DB_SSL_CA). pg_dump's own
+// "system" store is empty in the Windows build, so it cannot be used there.
 let caFile = null;
-if (env.DB_SSL && env.DB_SSL_CA) {
+if (env.DB_SSL) {
   caFile = path.join(os.tmpdir(), `snackhub-ca-${process.pid}.pem`);
-  writeFileSync(caFile, env.DB_SSL_CA.replace(/\\n/g, '\n'), { mode: 0o600 });
+  writeFileSync(caFile, env.DB_SSL_CA ? env.DB_SSL_CA.replace(/\\n/g, '\n') : tls.rootCertificates.join('\n'), { mode: 0o600 });
 }
 
 const schemas = [META_SCHEMA, ...Object.values(MODULES).map((m) => m.schema)];
@@ -52,7 +56,7 @@ const child = spawn(findPgDump(), args, {
     PGDATABASE: env.DB_NAME,
     PGUSER: env.DB_MIGRATOR_USER,
     PGPASSWORD: env.DB_MIGRATOR_PASSWORD,
-    ...(env.DB_SSL ? { PGSSLMODE: 'verify-full', PGSSLROOTCERT: caFile ?? 'system' } : {}),
+    ...(env.DB_SSL ? { PGSSLMODE: 'verify-full', PGSSLROOTCERT: caFile } : {}),
   },
 });
 const code = await new Promise((resolve) => {
