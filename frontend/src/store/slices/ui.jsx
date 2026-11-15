@@ -1,15 +1,19 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// the chosen saved address, or 0 for "where I am now" (the current location, kept as guestPoint)
 const ADDRESS_KEY = 'snackhub.addressId';
+export const HERE = 0;
 const savedAddress = () => {
   try {
-    return Number(localStorage.getItem(ADDRESS_KEY)) || 1;
+    const v = localStorage.getItem(ADDRESS_KEY);
+    return v === String(HERE) ? HERE : Number(v) || 1;
   } catch {
     return 1;
   }
 };
 
-// a guest's chosen city or current location (this browser only; signed-in customers use addresses)
+// a chosen city or the current location (this browser only): a guest's browsing point, and a
+// signed-in customer's when they browse from where they are instead of a saved address
 const GUEST_KEY = 'snackhub.guestPoint';
 const savedGuestPoint = () => {
   try {
@@ -57,6 +61,17 @@ const uiSlice = createSlice({
         /* storage blocked */
       }
     },
+    // browse from a city or the current location, also when signed in with saved addresses
+    pickCurrentPoint: (state, action) => {
+      state.guestPoint = action.payload;
+      state.addressId = HERE;
+      try {
+        localStorage.setItem(GUEST_KEY, JSON.stringify(action.payload));
+        localStorage.setItem(ADDRESS_KEY, String(HERE));
+      } catch {
+        /* storage blocked */
+      }
+    },
     openProduct: (state, action) => {
       state.selectedProduct = action.payload;
     },
@@ -72,5 +87,5 @@ const uiSlice = createSlice({
   },
 });
 
-export const { openCart, closeCart, bumpCart, setAddress, setGuestPoint, openProduct, closeProduct, setCartConflict, setSignInPrompt } = uiSlice.actions;
+export const { openCart, closeCart, bumpCart, setAddress, setGuestPoint, pickCurrentPoint, openProduct, closeProduct, setCartConflict, setSignInPrompt } = uiSlice.actions;
 export default uiSlice.reducer;

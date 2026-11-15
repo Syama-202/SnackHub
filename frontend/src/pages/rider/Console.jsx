@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ConsoleLayout from '../../components/layout/Console';
 import RiderApproved from './Approved';
-import { isDemoSession } from '../../store/slices/auth';
 import Notifications from '../common/Notifications';
 import RiderToday from './Today';
 import RiderEarnings from './Earnings';
@@ -12,9 +11,8 @@ const TABS = [
 ];
 
 /**
- * Rider PWA (doc 11.3): offers, delivery steps, earnings. The demo rider runs on the
- * in-browser mock; a real account works on the API once approved, and until then is sent to
- * onboarding.
+ * Rider PWA (doc 11.3): offers, delivery steps, earnings. An account works here once it is
+ * approved, and until then is sent to onboarding.
  */
 const RiderConsole = () => {
   const screens = (
@@ -28,7 +26,7 @@ const RiderConsole = () => {
   );
   return (
     <ConsoleLayout title="Rider app" tabs={TABS} mobileTabs>
-      {isDemoSession() ? screens : <RiderApproved>{screens}</RiderApproved>}
+      <RiderApproved>{screens}</RiderApproved>
     </ConsoleLayout>
   );
 };

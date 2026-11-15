@@ -2,8 +2,8 @@
  * What a seller may put on the menu (doc 11.2). Money is integer paise. A new snack has no
  * photo yet, so it shows a drawing: the seller picks the shape, the category gives the colours.
  */
-export const CATEGORIES = ['sweet', 'fried', 'baked', 'namkeen'];
-export const CATEGORY_LABELS = { sweet: 'Sweet', fried: 'Fried', baked: 'Baked', namkeen: 'Namkeen' };
+export const CATEGORIES = ['sweet', 'fried', 'baked', 'namkeen', 'tiffin', 'chaat'];
+export const CATEGORY_LABELS = { sweet: 'Sweet', fried: 'Fried', baked: 'Baked', namkeen: 'Namkeen', tiffin: 'Tiffin', chaat: 'Chaat' };
 export const SHAPES = ['bajji', 'samosa', 'spiral', 'square', 'disc', 'vada', 'bun', 'pile', 'wrap', 'biscuit', 'roll', 'chips', 'ball'];
 
 const COLOURS = {
@@ -11,6 +11,8 @@ const COLOURS = {
   fried: ['#D9822B', '#8C4A12', '#F6C26B'],
   baked: ['#C98F4E', '#7A4B21', '#EED2A6'],
   namkeen: ['#E8B44A', '#9C5B16', '#F9DD8E'],
+  tiffin: ['#F3E7CF', '#C98A3A', '#FFF6E2'],
+  chaat: ['#E9B35A', '#B5462A', '#F7D79A'],
 };
 
 export const MIN_PRICE_PAISE = 500;

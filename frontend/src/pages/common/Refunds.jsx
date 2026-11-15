@@ -30,7 +30,7 @@ const SECTIONS = [
     title: 'How refunds are paid',
     body: (
       <ul>
-        <li>Online payments go back to the way you paid, through PhonePe. Your bank usually shows the refund within 5 to 7 working days.</li>
+        <li>Online payments go back to the way you paid, through Razorpay, our payment partner. Your bank usually shows the refund within 5 to 7 working days.</li>
         <li>For pay-on-delivery orders nothing is collected until delivery, so a cancelled order costs nothing.</li>
         <li>Your order page shows the refund’s progress. If a refund is delayed, we tell you and our team follows it up.</li>
       </ul>

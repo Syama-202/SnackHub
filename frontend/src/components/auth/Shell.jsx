@@ -14,7 +14,7 @@ export default function AuthShell({ portal, title, sub, children, footer, wide =
         <div className="flex items-center gap-3">
           <LogoMark className="h-14 w-14 shadow-[0_10px_26px_-10px_rgba(232,106,0,0.7)]" />
           {p && (
-            <span className={cx('inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-grey-900', p.tone)}>
+            <span className={cx('inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r px-3 py-1 text-xs font-bold uppercase tracking-wider text-grey-900', p.tone)}>
               <Icon name={p.icon} className="h-3.5 w-3.5" /> {p.label} portal
             </span>
           )}
@@ -25,7 +25,7 @@ export default function AuthShell({ portal, title, sub, children, footer, wide =
         {footer && <div className="mt-6 border-t border-grey-800/10 pt-4 text-sm text-grey-600">{footer}</div>}
       </Card>
       <p className="mt-4 text-center text-xs text-grey-600">
-        Demo project: accounts and data here are for testing. <Link to="/" className="font-bold text-orange-text">Back home</Link>
+        <Link to="/" className="font-semibold text-orange-text">Back home</Link>
       </p>
     </div>
   );

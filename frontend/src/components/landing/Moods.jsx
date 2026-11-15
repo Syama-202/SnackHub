@@ -30,8 +30,8 @@ export default function Moods() {
       <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {MOODS.map((m, i) => (
           <button key={m.id} onClick={() => navigate(`/shop?mood=${m.id}`)} className={cx('reveal group lift relative flex min-h-44 flex-col justify-between overflow-hidden rounded-[26px] bg-gradient-to-br p-5 text-left ring-1 ring-grey-800/5', m.tint)} style={{ transitionDelay: `${i * 50}ms` }}>
-            <span className="relative z-10 max-w-[70%] sm:max-w-[60%] font-display text-[clamp(1.25rem,2.4vw,1.9rem)] font-extrabold leading-tight text-grey-800">{m.label}</span>
-            <span className="relative z-10 inline-flex items-center gap-1 text-sm font-extrabold text-orange-text">Show me <Icon name="arrowRight" className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+            <span className="relative z-10 max-w-[70%] sm:max-w-[60%] font-display text-[clamp(1.25rem,2.4vw,1.9rem)] font-bold leading-tight text-grey-800">{m.label}</span>
+            <span className="relative z-10 inline-flex items-center gap-1 text-sm font-bold text-orange-text">Show me <Icon name="arrowRight" className="h-4 w-4 transition group-hover:translate-x-1" /></span>
             <LoopVideo id={`mood-${m.id}`} label={m.label} className="absolute inset-0 -z-0 opacity-90" fallback={<MoodPicture mood={m} />} />
           </button>
         ))}

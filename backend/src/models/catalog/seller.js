@@ -1,6 +1,6 @@
 // catalog.sellers: shops, their delivery radius, opening hours, pincodes and verification
 // state (doc 12.1, 16.4).
-import { scheduleOf, openState, hoursLabel } from '../../../../shared/domain/hours.js';
+import { scheduleOf, openState, hoursLabel, DEFAULT_TZ } from '../../../../shared/domain/hours.js';
 
 const TABLE = 'sellers';
 // states a customer can order from; draft, pending, suspended and rejected shops stay hidden
@@ -12,18 +12,19 @@ export const isListed = (row) =>
 
 const json = (v) => (v == null ? null : typeof v === 'string' ? JSON.parse(v) : v);
 
-/** The shop's week, holidays and pincodes, from its row. */
+/** The shop's week, holidays, pincodes and time zone, from its row. */
 export const hoursOf = (row) => ({
+  tz: row.timezone || DEFAULT_TZ,
   schedule: scheduleOf({ weeklyHours: json(row.weekly_hours), openHours: row.open_hours }),
   weeklyHours: json(row.weekly_hours),
   closedDates: json(row.closed_dates) ?? [],
   pincodes: json(row.pincodes) ?? [],
 });
 
-/** Open or closed right now in India time, and when that changes. */
+/** Open or closed right now in the shop's own time, and when that changes. */
 export const shopOpenState = (row, now = Date.now()) => {
   const h = hoursOf(row);
-  return openState(h.schedule, h.closedDates, now);
+  return openState(h.schedule, h.closedDates, now, h.tz);
 };
 
 /** Whether a customer can order from this shop right now (the same rules as the listings). */
@@ -33,7 +34,7 @@ export const isOpenForOrders = (row, now = Date.now()) => isListed(row) && shopO
 export function closedReason(row, now = Date.now()) {
   if (!isListed(row)) return 'This shop is not taking orders right now';
   const st = shopOpenState(row, now);
-  return st.open ? null : `${row.shop_name} is closed now. ${hoursLabel(st, now)}.`;
+  return st.open ? null : `${row.shop_name} is taking a little break. ${hoursLabel(st, now, hoursOf(row).tz)}.`;
 }
 
 /**

@@ -26,7 +26,7 @@ const STEPS = [
         stored: 'backgroundConsentAt',
         gapFields: ['backgroundConsentAt'],
         type: 'checkbox',
-        label: 'I agree to a background check by SnackHub’s verification partner, as part of keeping customers safe (demo: no real check is made).',
+        label: 'I agree that SnackHub checks my identity and documents before I can deliver, as part of keeping customers safe.',
       },
     ],
   },

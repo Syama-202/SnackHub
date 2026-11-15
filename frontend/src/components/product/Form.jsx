@@ -71,7 +71,7 @@ export default function ProductForm({ product, onSave, onCancel }) {
       {locked ? (
         // the catalogue's fields are shown, not edited; they keep their values for the form
         <div className="sm:col-span-2 rounded-xl bg-sun/15 p-3 text-sm">
-          <p className="font-bold">{product.title} · {CATEGORY_LABELS[product.category]} · {product.servingTemp === 'HOT' ? 'Hot' : 'Room temperature'}{product.weight ? ` · ${product.weight}` : ''}</p>
+          <p className="font-semibold">{product.title} · {CATEGORY_LABELS[product.category]} · {product.servingTemp === 'HOT' ? 'Hot' : 'Room temperature'}{product.weight ? ` · ${product.weight}` : ''}</p>
           <p className="mt-1 text-grey-600">From the SnackHub catalogue: the name and details are the same at every shop. You set the price, MRP, prep time and description.</p>
         </div>
       ) : (

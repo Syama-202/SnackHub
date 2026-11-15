@@ -58,12 +58,12 @@ const Errors = () => {
       <div className="mt-6 flex flex-wrap items-center gap-2">
         <div role="tablist" aria-label="Status" className="inline-flex rounded-full bg-grey-50 p-1">
           {TABS.map(([k, label]) => (
-            <button key={k} role="tab" aria-selected={status === k} onClick={() => pick(k)} className={cx('h-9 rounded-full px-4 text-sm font-bold', status === k ? 'bg-white shadow-sm' : 'text-grey-600')}>
+            <button key={k} role="tab" aria-selected={status === k} onClick={() => pick(k)} className={cx('h-9 rounded-full px-4 text-sm font-semibold', status === k ? 'bg-white shadow-sm' : 'text-grey-600')}>
               {label}{data?.counts?.[k] ? ` (${data.counts[k]})` : ''}
             </button>
           ))}
         </div>
-        <label className="ml-auto flex items-center gap-2 text-sm font-bold">
+        <label className="ml-auto flex items-center gap-2 text-sm font-semibold">
           From
           <select value={source} onChange={(e) => setSource(e.target.value)} className="field h-11 w-auto">
             <option value="">Everywhere</option>
@@ -83,21 +83,21 @@ const Errors = () => {
                   {g.regressedAt && g.status === 'open' && <Pill tone="sun">Came back</Pill>}
                   <span className="break-all font-mono text-xs text-grey-600">{g.where}</span>
                 </span>
-                <span className="mt-1 block break-words font-bold"><span className="text-red-text">{g.kind}</span>: {g.message}</span>
+                <span className="mt-1 block break-words font-semibold"><span className="text-red-text">{g.kind}</span>: {g.message}</span>
               </span>
               <span className="text-right text-sm">
-                <span className="block font-extrabold">{g.seen.toLocaleString('en-IN')}×</span>
+                <span className="block font-bold">{g.seen.toLocaleString('en-IN')}×</span>
                 <span className="block text-xs text-grey-600">last {ago(g.lastSeen)}</span>
               </span>
             </button>
             {open?.id === g.id && (
               <div className="border-t border-grey-800/10 p-4 text-sm">
                 <dl className="grid gap-x-6 gap-y-1 sm:grid-cols-3">
-                  <div><dt className="text-grey-600">First seen</dt><dd className="font-bold">{when(open.firstSeen)}</dd></div>
-                  <div><dt className="text-grey-600">Last seen</dt><dd className="font-bold">{when(open.lastSeen)}</dd></div>
+                  <div><dt className="text-grey-600">First seen</dt><dd className="font-semibold">{when(open.firstSeen)}</dd></div>
+                  <div><dt className="text-grey-600">Last seen</dt><dd className="font-semibold">{when(open.lastSeen)}</dd></div>
                   <div><dt className="text-grey-600">Release</dt><dd className="font-mono">{open.release ?? '–'}</dd></div>
                   {open.requestId && <div className="sm:col-span-3"><dt className="text-grey-600">Latest request id</dt><dd className="font-mono text-xs">{open.requestId}</dd></div>}
-                  {Object.entries(open.context ?? {}).filter(([, v]) => v != null).map(([k, v]) => <div key={k}><dt className="capitalize text-grey-600">{k}</dt><dd className="font-bold">{String(v)}</dd></div>)}
+                  {Object.entries(open.context ?? {}).filter(([, v]) => v != null).map(([k, v]) => <div key={k}><dt className="capitalize text-grey-600">{k}</dt><dd className="font-semibold">{String(v)}</dd></div>)}
                 </dl>
                 {open.stack && <pre className="mt-3 max-h-72 overflow-auto rounded-xl bg-grey-900 p-3 text-xs leading-relaxed text-grey-50" tabIndex={0} aria-label="Stack trace">{open.stack}</pre>}
                 <div className="mt-3 flex flex-wrap gap-2">

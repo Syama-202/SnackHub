@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button, Card, Icon, Input, Spinner, cx } from '../ui';
 import { Check, Select } from '../auth/Fields';
@@ -7,7 +6,6 @@ import Stepper from './Stepper';
 import DocumentCard from './DocumentCard';
 import StatusPanel from './StatusPanel';
 import { loadOnboarding, restartApplication, saveProfile, saveVehicle, submitApplication } from '../../store/slices/onboarding';
-import { isDemoSession } from '../../store/slices/auth';
 import { addToast } from '../../store/slices/toast';
 
 const READY = ['pending', 'approved', 'expiring', 'renewal-pending'];
@@ -31,10 +29,9 @@ export default function Wizard({ kind, title, intro, steps: formSteps, homePath 
   const dispatch = useDispatch();
   const { view, loading, saving, error } = useSelector((s) => s.onboarding[kind]);
   const [current, setCurrent] = useState(0);
-  const demo = isDemoSession();
   useEffect(() => {
-    if (!demo) dispatch(loadOnboarding({ kind }));
-  }, [dispatch, kind, demo]);
+    dispatch(loadOnboarding({ kind }));
+  }, [dispatch, kind]);
 
   const steps = useMemo(() => {
     if (!view) return [];
@@ -47,17 +44,6 @@ export default function Wizard({ kind, title, intro, steps: formSteps, homePath 
     ];
   }, [view, formSteps]);
 
-  if (demo) {
-    return (
-      <div className="page py-10">
-        <Card className="max-w-xl p-6">
-          <h1 className="text-2xl font-extrabold">{title}</h1>
-          <p className="mt-2 text-grey-600">The demo {kind} is already approved, so there is nothing to fill in. Create a real {kind} account to try the application, uploads and review.</p>
-          <Link to={homePath} className="mt-4 inline-flex h-11 items-center rounded-full bg-grey-800 px-5 font-bold text-white">Open the demo console</Link>
-        </Card>
-      </div>
-    );
-  }
   if (loading || !view) {
     return <div className="grid min-h-[50vh] place-items-center text-orange-text" role="status">{error ? <p className="text-red-text">{error.message}</p> : <Spinner className="h-8 w-8" />}</div>;
   }
@@ -71,7 +57,7 @@ export default function Wizard({ kind, title, intro, steps: formSteps, homePath 
 
   return (
     <div className="page page-narrow py-8">
-      <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-orange-text">{kind === 'seller' ? 'Seller application' : 'Delivery partner application'}</p>
+      <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-text">{kind === 'seller' ? 'Seller application' : 'Delivery partner application'}</p>
       <h1 className="mt-1 page-title">{title}</h1>
       <p className="mt-2 max-w-2xl text-grey-600">{intro}</p>
 
@@ -96,7 +82,7 @@ export default function Wizard({ kind, title, intro, steps: formSteps, homePath 
         </div>
       ) : (
         <div className="mt-6 grid gap-4">
-          <h2 className="text-2xl font-extrabold">Your documents</h2>
+          <h2 className="text-2xl font-bold">Your documents</h2>
           <DocumentList kind={kind} view={view} canUpload={view.canUpload} />
         </div>
       )}
@@ -141,7 +127,7 @@ function FormStep({ kind, step, view, saving, onNext }) {
 
   return (
     <form onSubmit={save} noValidate>
-      <h2 className="text-2xl font-extrabold">{step.title}</h2>
+      <h2 className="text-2xl font-bold">{step.title}</h2>
       {step.sub && <p className="mt-1 text-grey-600">{step.sub}</p>}
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         {step.fields.map((f) => (
@@ -172,14 +158,14 @@ function Field({ field: f, value, onChange, error, view }) {
   if (f.type === 'cards') {
     return (
       <fieldset className="sm:col-span-2">
-        <legend className="mb-2 text-sm font-bold text-grey-800">{f.label}</legend>
+        <legend className="mb-2 text-sm font-semibold text-grey-800">{f.label}</legend>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {f.options.map(([v, l, icon, note]) => (
             <label key={v} className={cx('flex cursor-pointer items-start gap-3 rounded-2xl border-2 bg-white p-3 transition', value === v ? 'border-orange' : 'border-transparent ring-1 ring-grey-800/10')}>
               <input type="radio" name={f.name} value={v} checked={value === v} onChange={() => onChange(v)} className="sr-only" />
               <span className={cx('grid h-10 w-10 shrink-0 place-items-center rounded-xl', value === v ? 'bg-primary' : 'bg-grey-50')}><Icon name={icon} /></span>
               <span>
-                <span className="block font-bold">{l}</span>
+                <span className="block font-semibold">{l}</span>
                 {note && <span className="block text-xs text-grey-600">{note}</span>}
               </span>
             </label>
@@ -194,7 +180,7 @@ function Field({ field: f, value, onChange, error, view }) {
     const [from = '', to = ''] = String(value || '').split('-');
     return (
       <fieldset className={wide}>
-        <legend className="mb-1.5 text-sm font-bold text-grey-800">{f.label}</legend>
+        <legend className="mb-1.5 text-sm font-semibold text-grey-800">{f.label}</legend>
         <div className="grid grid-cols-2 gap-2">
           <Input type="time" aria-label="Opens at" id={`${id}-from`} value={from} onChange={(e) => onChange(`${e.target.value}-${to}`)} />
           <Input type="time" aria-label="Closes at" id={`${id}-to`} value={to} onChange={(e) => onChange(`${from}-${e.target.value}`)} />
@@ -212,7 +198,7 @@ function Field({ field: f, value, onChange, error, view }) {
       );
     return (
       <fieldset className="sm:col-span-2">
-        <legend className="mb-1.5 text-sm font-bold text-grey-800">{f.label}</legend>
+        <legend className="mb-1.5 text-sm font-semibold text-grey-800">{f.label}</legend>
         <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
           <Input aria-label="Latitude" placeholder="Latitude, like 16.3067" inputMode="decimal" id={`${id}-lat`} value={value.lat} onChange={(e) => onChange({ ...value, lat: e.target.value })} />
           <Input aria-label="Longitude" placeholder="Longitude, like 80.4365" inputMode="decimal" id={`${id}-lng`} value={value.lng} onChange={(e) => onChange({ ...value, lng: e.target.value })} />
@@ -249,7 +235,7 @@ function Documents({ kind, view, onNext }) {
   const missing = required.filter((d) => !READY.includes(d.state));
   return (
     <div>
-      <h2 className="text-2xl font-extrabold">Documents</h2>
+      <h2 className="text-2xl font-bold">Documents</h2>
       <p className="mt-1 text-grey-600">
         {view.requirements.length ? 'Upload a clear photo or PDF of each. Only the documents that apply to your answers are listed.' : 'Fill in the earlier steps first; the documents you need depend on your answers.'}
       </p>
@@ -285,12 +271,12 @@ function Review({ kind, view, steps, saving, onFix, formSteps }) {
   const ready = view.checklist.ready;
   return (
     <div>
-      <h2 className="text-2xl font-extrabold">Review and submit</h2>
+      <h2 className="text-2xl font-bold">Review and submit</h2>
       <p className="mt-1 text-grey-600">Check the list. Once submitted, your answers and documents are locked while the team reviews them.</p>
       <ul className="mt-5 grid gap-2">
         {steps.slice(0, -1).map((s, i) => (
           <li key={s.id} className="flex items-center justify-between gap-3 rounded-2xl bg-white/80 p-3 ring-1 ring-grey-800/10">
-            <span className="flex items-center gap-2 font-bold">
+            <span className="flex items-center gap-2 font-semibold">
               <Icon name={s.complete ? 'check' : 'alert'} className={cx('h-5 w-5', s.complete ? 'text-emerald-600' : 'text-orange-text')} /> {s.label}
             </span>
             {!s.complete && <Button variant="quiet" size="sm" onClick={() => onFix(i)}>Finish</Button>}
@@ -303,7 +289,7 @@ function Review({ kind, view, steps, saving, onFix, formSteps }) {
           <ul className="mt-1 flex flex-wrap gap-2">
             {gaps.map((g) => (
               <li key={g.field}>
-                <button type="button" className="rounded-full bg-white px-3 py-1 font-bold" onClick={() => onFix(Math.max(0, stepOf(g.field)))}>{g.label}</button>
+                <button type="button" className="rounded-full bg-white px-3 py-1 font-semibold" onClick={() => onFix(Math.max(0, stepOf(g.field)))}>{g.label}</button>
               </li>
             ))}
           </ul>

@@ -25,6 +25,7 @@ import { decide, isOverdue, OPEN_FOR_REVIEW, CHECKS, emptyChecks, OVERDUE_HOURS,
 import { readyToApprove } from '../../../shared/domain/eligibility.js';
 import { DOC_TYPES, docTypesFor, BUSINESS_TYPES, DELIVERY_MODES, DELIVERY_MODE_LABELS, STATES, EXPIRY_WARN_DAYS, expiryState, daysUntil, maskNumber } from '../../../shared/domain/documents.js';
 import { can } from '../../../shared/domain/permissions.js';
+import { queueSearchSync } from '../utils/searchSync.js';
 
 const refuse = (code) =>
   ({
@@ -191,6 +192,7 @@ export function verificationController({ env, dbs }) {
       if (kind === 'seller' && app.seller_id) {
         if (outcome.status === 'APPROVED') await sellerModel.markVerified(trx, app.seller_id, 'probation');
         else if (SELLER_STATUS_AFTER[outcome.status]) await sellerModel.setStatus(trx, app.seller_id, SELLER_STATUS_AFTER[outcome.status]);
+        await queueSearchSync(trx, { sellerId: app.seller_id, reason: `application.${outcome.status.toLowerCase()}` });
       }
       if (kind === 'rider' && outcome.status === 'SUSPENDED') {
         const rider = await riderModel.findByUser(trx, app.user_id);

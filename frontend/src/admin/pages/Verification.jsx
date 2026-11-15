@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button, Card, CloseButton, Icon, Modal, Pill, Spinner, cx } from '../../components/ui';
 import { decideItem, documentLink, itemClosed, loadItem, loadQueue, revealNumber, reviewDocument, tickCheck } from '../../store/slices/verification';
-import { isDemoSession } from '../../store/slices/auth';
 import { addToast } from '../../store/slices/toast';
 import { useAdmin } from '../App';
 import { BUSINESS_TYPE_LABELS, DELIVERY_MODE_LABELS } from '@shared/domain/documents';
@@ -34,24 +33,12 @@ export default function Verification() {
   const [overdue, setOverdue] = useState(false);
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
-  const demo = isDemoSession();
   const load = () => dispatch(loadQueue({ kind, status, overdue, q: q.trim().length >= 2 ? q.trim() : undefined, page, pageSize: 20 }));
   useEffect(() => {
-    if (!demo) load();
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, status, overdue, page, demo]);
+  }, [kind, status, overdue, page]);
 
-  if (demo) {
-    return (
-      <div>
-        <h1 className="page-title">Verification</h1>
-        <Card className="mt-6 max-w-2xl p-6">
-          <p className="font-bold">The verification queue runs on the real backend.</p>
-          <p className="mt-1 text-sm text-grey-600">The demo admin lives in the browser mock, so it cannot review real uploads. Sign out and sign in with your staff Google account and authenticator (made with npm run create-admin).</p>
-        </Card>
-      </div>
-    );
-  }
   const pages = queue ? Math.max(1, Math.ceil(queue.total / queue.pageSize)) : 1;
   const counts = queue?.counts ?? {};
   return (
@@ -63,7 +50,7 @@ export default function Verification() {
         </div>
         <div className="flex gap-1 rounded-full bg-white/70 p-1 ring-1 ring-grey-800/10" role="tablist">
           {[['seller', 'Sellers', 'box'], ['rider', 'Riders', 'scooter']].map(([k, l, icon]) => (
-            <button key={k} role="tab" aria-selected={kind === k} onClick={() => (setKind(k), setPage(1))} className={cx('flex h-10 items-center gap-2 rounded-full px-4 text-sm font-bold', kind === k ? 'chip-on' : 'text-grey-800')}>
+            <button key={k} role="tab" aria-selected={kind === k} onClick={() => (setKind(k), setPage(1))} className={cx('flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold', kind === k ? 'chip-on' : 'text-grey-800')}>
               <Icon name={icon} className="h-4 w-4" /> {l}
             </button>
           ))}
@@ -72,12 +59,12 @@ export default function Verification() {
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         {FILTERS.map(([v, l]) => (
-          <button key={v} onClick={() => (setStatus(v), setPage(1))} className={cx('h-9 rounded-full px-3.5 text-[13px] font-bold', status === v ? 'chip-on' : 'chip-off')}>
+          <button key={v} onClick={() => (setStatus(v), setPage(1))} className={cx('h-9 rounded-full px-3.5 text-[13px] font-semibold', status === v ? 'chip-on' : 'chip-off')}>
             {l}
             {v === 'open' && (counts.SUBMITTED ?? 0) + (counts.UNDER_REVIEW ?? 0) > 0 ? ` (${(counts.SUBMITTED ?? 0) + (counts.UNDER_REVIEW ?? 0)})` : ''}
           </button>
         ))}
-        <label className="ml-1 flex items-center gap-2 text-sm font-bold">
+        <label className="ml-1 flex items-center gap-2 text-sm font-semibold">
           <input type="checkbox" checked={overdue} onChange={(e) => (setOverdue(e.target.checked), setPage(1))} className="h-4 w-4 accent-orange-deep" /> Overdue only (48 h+)
         </label>
         <form
@@ -114,7 +101,7 @@ export default function Verification() {
             {queue?.items.map((a) => (
               <tr key={a.ref} onClick={() => dispatch(loadItem({ ref: a.ref }))} className="cursor-pointer border-t border-grey-800/5 hover:bg-white/70">
                 <td className="p-3">
-                  <button className="text-left font-bold hover:underline">{a.name}</button>
+                  <button className="text-left font-semibold hover:underline">{a.name}</button>
                   <span className="block text-xs text-grey-600">{a.applicant.email} · {a.ref}</span>
                 </td>
                 <td className="p-3">{kind === 'seller' ? BUSINESS_TYPE_LABELS[a.type] ?? '–' : DELIVERY_MODE_LABELS[a.type] ?? '–'}</td>
@@ -182,7 +169,7 @@ function Detail({ item, role, onClose }) {
   const missing = item.checklist.filter((c) => !current.some((d) => d.docType === c.docType));
   const gap = (c) => (
     <div key={c.docType} className="flex items-center justify-between rounded-2xl bg-white p-3 text-sm ring-1 ring-grey-800/10">
-      <span className="font-bold">{c.label}</span>
+      <span className="font-semibold">{c.label}</span>
       <Pill tone={c.required ? 'red' : 'grey'}>{c.required ? 'Required, not uploaded' : 'Optional, not uploaded'}</Pill>
     </div>
   );
@@ -196,7 +183,7 @@ function Detail({ item, role, onClose }) {
         {item.overdue && <Pill tone="red">Overdue</Pill>}
         {open && item.ready && <Pill tone="green">Ready to approve</Pill>}
       </div>
-      <h2 className="mt-3 text-2xl font-extrabold">{item.name}</h2>
+      <h2 className="mt-3 text-2xl font-bold">{item.name}</h2>
       <p className="text-sm text-grey-600">
         {item.applicant.name} · {item.applicant.email} {item.applicant.emailVerified ? '(verified)' : '(email not verified)'}
         {item.applicant.mobile && ` · ${item.applicant.mobile}${item.applicant.mobileVerified ? ' (verified)' : ''}`} · submitted <span className="whitespace-nowrap">{when(item.submittedAt)}</span>
@@ -229,13 +216,13 @@ function Detail({ item, role, onClose }) {
         )}
       </section>
 
-      <h3 className="mt-6 text-lg font-extrabold">Documents</h3>
+      <h3 className="mt-6 text-lg font-bold">Documents</h3>
       <div className="mt-2 grid gap-2">
         {missing.filter((c) => c.required).map(gap)}
         {current.map((d) => (
           <div key={d.ref} className="rounded-2xl bg-white p-3 text-sm ring-1 ring-grey-800/10">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-bold">{d.label} <span className="font-normal text-grey-600">v{d.version}</span></span>
+              <span className="font-semibold">{d.label} <span className="font-normal text-grey-600">v{d.version}</span></span>
               <span className="flex flex-wrap gap-1">
                 <Pill tone={DOC_TONE[d.status]}>{words(d.status)}</Pill>
                 {d.expiry === 'expiring' && <Pill tone="orange">expires in {d.daysLeft} days</Pill>}
@@ -244,7 +231,7 @@ function Detail({ item, role, onClose }) {
               </span>
             </div>
             <p className="mt-1 text-grey-600">
-              {d.hasNumber && <>No. {numbers[d.ref] ?? d.number} {!numbers[d.ref] && <button className="font-bold text-orange-text" onClick={() => reveal(d)}>show</button>} · </>}
+              {d.hasNumber && <>No. {numbers[d.ref] ?? d.number} {!numbers[d.ref] && <button className="font-semibold text-orange-text" onClick={() => reveal(d)}>show</button>} · </>}
               {d.issuer && `${d.issuer} · `}
               {d.issuedOn && `issued ${d.issuedOn} · `}
               {d.expiresOn && `expires ${d.expiresOn} · `}
@@ -266,7 +253,7 @@ function Detail({ item, role, onClose }) {
         {older.length > 0 && <p className="text-xs text-grey-600">{older.length} earlier version{older.length === 1 ? '' : 's'} replaced or withdrawn.</p>}
       </div>
 
-      <h3 className="mt-6 text-lg font-extrabold">Checks</h3>
+      <h3 className="mt-6 text-lg font-bold">Checks</h3>
       <ul className="mt-2 grid gap-1.5">
         {item.checkNames.map((k) => (
           <li key={k}>
@@ -289,7 +276,7 @@ function Detail({ item, role, onClose }) {
       {open && !item.ready && <p className="mt-2 text-xs text-grey-600">Approve unlocks when every required document is approved and every check is ticked.</p>}
 
       <details className="mt-5">
-        <summary className="cursor-pointer text-sm font-bold">History ({item.history.length})</summary>
+        <summary className="cursor-pointer text-sm font-semibold">History ({item.history.length})</summary>
         <ol className="mt-2 grid gap-1.5 border-l-2 border-orange/30 pl-4 text-sm">
           {item.history.map((h, i) => (
             <li key={i}>
@@ -308,8 +295,8 @@ function Detail({ item, role, onClose }) {
 function Info({ label, value, link }) {
   return (
     <div>
-      <p className="text-xs font-bold uppercase tracking-wider text-grey-400">{label}</p>
-      <p className="mt-0.5">{value || '–'} {link && <a href={link} target="_blank" rel="noopener noreferrer" className="font-bold text-orange-text">map</a>}</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-grey-400">{label}</p>
+      <p className="mt-0.5">{value || '–'} {link && <a href={link} target="_blank" rel="noopener noreferrer" className="font-semibold text-orange-text">map</a>}</p>
     </div>
   );
 }
@@ -322,7 +309,7 @@ function Ask({ ask, onClose }) {
   if (!ask) return null;
   return (
     <div className="mt-5 rounded-2xl bg-sun/20 p-4" role="dialog" aria-label={ask.title}>
-      <p className="font-bold">{ask.title}</p>
+      <p className="font-semibold">{ask.title}</p>
       {ask.needsReason && (
         <>
           <label htmlFor="decision-reason" className="mt-2 block text-sm">Reason (the applicant sees this)</label>

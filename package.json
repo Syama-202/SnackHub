@@ -21,6 +21,8 @@
     "db:hosted": "npm --prefix backend run db:hosted",
     "migrate:hosted": "npm --prefix backend run migrate:hosted",
     "seed:hosted": "npm --prefix backend run seed:hosted",
+    "search:up": "npm --prefix backend run search:up",
+    "search:reindex": "npm --prefix backend run search:reindex",
     "create-admin:hosted": "npm --prefix backend run create-admin:hosted --",
     "backup": "npm --prefix backend run backup",
     "backup:hosted": "npm --prefix backend run backup:hosted",

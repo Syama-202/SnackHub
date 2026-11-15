@@ -86,14 +86,14 @@ export default function ScrollStory() {
           <div data-stage className={`${reduced ? '' : 'sticky top-0 h-[100dvh]'} flex items-center overflow-hidden`} style={{ backgroundColor: c.colors[reduced ? 1 : 0] }}>
             <div className="page grid items-center gap-10 py-16 md:grid-cols-[1fr_1.1fr]">
               <div className="relative z-10">
-                <p data-line className="text-sm font-extrabold uppercase tracking-[0.16em] text-orange-ink">{c.eyebrow}</p>
-                <h2 id={`ch-${c.id}`} data-line className="mt-3 text-[clamp(2.4rem,5.4vw,4.4rem)] font-extrabold leading-[1]">{c.title}</h2>
+                <p data-line className="text-sm font-bold uppercase tracking-[0.16em] text-orange-ink">{c.eyebrow}</p>
+                <h2 id={`ch-${c.id}`} data-line className="mt-3 text-[clamp(2rem,1.4rem+2.6vw,3rem)] font-bold leading-[1]">{c.title}</h2>
                 <p data-line className="mt-5 max-w-lg text-lg text-grey-800/80">{c.body}</p>
                 <dl className="mt-8 grid max-w-md grid-cols-3 gap-3">
                   {c.stats.map(([v, l]) => (
                     <div data-stat key={l} className="rounded-2xl bg-white/70 px-2 py-3 text-center xs:p-3 shadow-sm ring-1 ring-white">
                       <dt className="sr-only">{l}</dt>
-                      <dd className="whitespace-nowrap font-display text-2xl font-extrabold text-grey-800 xs:text-3xl">{v}</dd>
+                      <dd className="whitespace-nowrap font-display text-2xl font-bold text-grey-800 xs:text-3xl">{v}</dd>
                       <dd className="text-xs font-semibold text-grey-600">{l}</dd>
                     </div>
                   ))}
@@ -109,7 +109,7 @@ export default function ScrollStory() {
                   </div>
                 </div>
                 {c.labels.map(([text, x, y]) => (
-                  <span key={text} data-label className="absolute whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-xs font-extrabold xs:px-4 xs:py-2 xs:text-sm text-grey-800 shadow-[0_12px_30px_rgba(31,41,55,0.18)]" style={x >= 50 ? { right: 0, top: `${y}%` } : { left: `${Math.max(0, x)}%`, top: `${y}%` }}>
+                  <span key={text} data-label className="absolute whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-xs font-bold xs:px-4 xs:py-2 xs:text-sm text-grey-800 shadow-[0_12px_30px_rgba(31,41,55,0.18)]" style={x >= 50 ? { right: 0, top: `${y}%` } : { left: `${Math.max(0, x)}%`, top: `${y}%` }}>
                     <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-orange align-middle" aria-hidden="true" />
                     {text}
                   </span>

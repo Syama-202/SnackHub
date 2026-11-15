@@ -18,7 +18,8 @@ export const fetchProducts = apiThunk(
     condition: (point, { getState }) => {
       const s = getState().products;
       if (s.isLoading && s.loadingKey === pointKey(point)) return false;
-      return !(s.itemsKey === pointKey(point) && Date.now() - s.fetchedAt < FRESH_MS);
+      // fresh: the clock changed something (useAvailabilityRefresh), ask even if just fetched
+      return Boolean(point.fresh) || !(s.itemsKey === pointKey(point) && Date.now() - s.fetchedAt < FRESH_MS);
     },
   },
 );
@@ -30,10 +31,17 @@ export const fetchSellers = apiThunk('products/fetchSellers', async (point, { ap
 
 export const fetchShop = apiThunk('products/fetchShop', async ({ id, point }, { apiFetch }) => apiFetch(`/sellers/${id}?${near(point)}`));
 
-// Search: Elasticsearch in the real stack, with a MySQL FULLTEXT fallback (doc 12.2)
-export const searchProducts = apiThunk('products/search', async ({ q, point }, { apiFetch }) =>
-  apiFetch(`/search?q=${encodeURIComponent(q)}&${near(point)}`),
-);
+// Search (doc 12.3): Elasticsearch where it runs, PostgreSQL otherwise; the server decides what
+// can be ordered. filters: { category, minPrice, maxPrice, minRating, maxKm, availability, shopId }
+const searchQuery = ({ q, point, filters = {}, sort, page }) => {
+  // defaults (any availability, relevance, the first page) are left out of the address
+  const extra = Object.entries({ ...filters, sort, page }).filter(([k, v]) => v != null && v !== '' && v !== 'any' && v !== 'relevance' && !(k === 'page' && Number(v) === 1));
+  return `q=${encodeURIComponent(q)}&${near(point)}${extra.map(([k, v]) => `&${k}=${encodeURIComponent(v)}`).join('')}`;
+};
+export const searchProducts = apiThunk('products/search', async (args, { apiFetch }) => ({ key: searchQuery(args), ...(await apiFetch(`/search?${searchQuery(args)}`)) }));
+
+// autocomplete while typing: snack and shop names that reach the delivery point
+export const suggestSearch = apiThunk('products/suggest', async ({ q, point }, { apiFetch }) => apiFetch(`/search/suggest?q=${encodeURIComponent(q)}&${near(point)}`));
 
 // one catalogue snack at every open shop that delivers here, cheapest first
 export const fetchOffers = apiThunk('products/fetchOffers', async ({ itemId, point }, { apiFetch }) => apiFetch(`/catalogue/${itemId}/offers?${near(point)}`));
@@ -48,13 +56,14 @@ const productsSlice = createSlice({
     sellers: [],
     shops: {},
     shopErrors: {},
-    search: { q: '', results: [] },
+    search: { key: null, pending: null, q: '', results: [], total: 0, page: 1, pages: 1, location: null, loading: false, error: null },
+    suggest: { q: '', pending: null, suggestions: [] },
     isLoading: false,
     error: null,
   },
   reducers: {
     clearSearch: (state) => {
-      state.search = { q: '', results: [] };
+      state.suggest = { q: '', pending: null, suggestions: [] };
     },
   },
   extraReducers: (builder) => {
@@ -84,12 +93,27 @@ const productsSlice = createSlice({
       .addCase(fetchShop.rejected, (state, action) => {
         state.shopErrors[action.meta.arg.id] = action.payload?.message || 'Shop not found';
       })
-      .addCase(searchProducts.fulfilled, (state, action) => {
-        // Ignore answers for an older query that arrive late
-        if (action.meta.arg.q === state.search.pending) state.search = { q: action.meta.arg.q, results: action.payload.results };
-      })
       .addCase(searchProducts.pending, (state, action) => {
-        state.search.pending = action.meta.arg.q;
+        state.search.pending = searchQuery(action.meta.arg);
+        state.search.loading = true;
+        state.search.error = null;
+      })
+      .addCase(searchProducts.fulfilled, (state, action) => {
+        // an answer for an older query that arrives late is dropped
+        if (action.payload.key !== state.search.pending) return;
+        const { key, results, total, page, pages, location, q } = action.payload;
+        state.search = { ...state.search, key, q, results, total, page, pages, location, loading: false, error: null };
+      })
+      .addCase(searchProducts.rejected, (state, action) => {
+        if (searchQuery(action.meta.arg) !== state.search.pending) return;
+        state.search.loading = false;
+        state.search.error = action.payload?.message ?? 'Search is not answering';
+      })
+      .addCase(suggestSearch.pending, (state, action) => {
+        state.suggest.pending = action.meta.arg.q;
+      })
+      .addCase(suggestSearch.fulfilled, (state, action) => {
+        if (action.meta.arg.q === state.suggest.pending) state.suggest = { q: action.meta.arg.q, pending: null, suggestions: action.payload.suggestions };
       });
   },
 });

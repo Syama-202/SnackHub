@@ -3,11 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AnimatePresence, m } from 'motion/react';
-import { fetchSellerOrders, fetchSellerProducts, fetchShopProfile, sellerOrderAction, simulateIncomingOrder } from '../../store/slices/seller';
+import { fetchSellerOrders, fetchSellerProducts, fetchShopProfile, sellerOrderAction } from '../../store/slices/seller';
 import { addToast } from '../../store/slices/toast';
 import { rupees } from '@shared/domain/money';
 import { useNow, usePolling } from '../../hooks';
-import { isDemoSession } from '../../store/slices/auth';
 import { Button, Card, Icon, Pill, TempBadge, Skeleton, cx } from '../../components/ui';
 
 const COLUMNS = [
@@ -65,15 +64,6 @@ const SellerOrders = () => {
     was.current = now;
   }, [orders, ordersLoaded, sound, dispatch]);
 
-  const simulate = async () => {
-    try {
-      await dispatch(simulateIncomingOrder()).unwrap();
-      dispatch(fetchSellerOrders());
-    } catch (e) {
-      dispatch(addToast({ type: 'error', title: 'Could not create', message: e.message }));
-    }
-  };
-
   const done = orders.filter((o) => DONE.includes(o.status)).slice(0, 8);
   const steps = shop && productsLoaded ? firstSteps(shop, products) : null;
   const sellable = steps ? steps[2].done : true;
@@ -84,8 +74,7 @@ const SellerOrders = () => {
         <h1 className="page-title">Orders</h1>
         {shop && <Pill tone={shop.paused ? 'red' : sellable ? 'green' : 'orange'}>{shop.paused ? 'Shop paused' : sellable ? 'Taking orders' : 'No snacks listed'}</Pill>}
         {shop?.busyExtraMin > 0 && <Pill tone="orange">Busy +{shop.busyExtraMin} min</Pill>}
-        {isDemoSession() && <Button size="sm" variant="ghost" className="ml-auto" onClick={simulate}>Simulate an incoming order (demo)</Button>}
-        <label className={cx('flex items-center gap-2 text-sm font-bold', !isDemoSession() && 'ml-auto')}>
+        <label className="ml-auto flex items-center gap-2 text-sm font-semibold">
           <input type="checkbox" checked={sound} onChange={(e) => setSound(e.target.checked)} className="h-4 w-4 accent-orange-deep" /> Sound alert
         </label>
       </div>
@@ -103,7 +92,7 @@ const SellerOrders = () => {
           const list = orders.filter((o) => c.match.includes(o.status));
           return (
             <section key={c.id} className="rounded-[22px] border border-white/70 bg-white/45 p-3 shadow-sm" aria-labelledby={`col-${c.id}`}>
-              <h2 id={`col-${c.id}`} className="flex items-center justify-between px-1 pb-2 font-display text-lg font-extrabold">
+              <h2 id={`col-${c.id}`} className="flex items-center justify-between px-1 pb-2 font-display text-lg font-bold">
                 {c.title} <span className="grid h-7 min-w-7 place-items-center rounded-full bg-white px-2 text-sm">{list.length}</span>
               </h2>
               <div className="space-y-3">
@@ -121,7 +110,7 @@ const SellerOrders = () => {
           );
         })}
       </div>
-      <h2 className="mt-8 text-xl font-extrabold">Recent</h2>
+      <h2 className="mt-8 text-xl font-bold">Recent</h2>
       <div className="mt-3 overflow-x-auto rounded-2xl bg-white" tabIndex={0} role="region" aria-label="Recent orders">
         <table className="w-full min-w-[560px] text-sm">
           <thead className="text-left text-grey-600"><tr><th className="p-3">Order</th><th className="p-3">Items</th><th className="p-3">Status</th><th className="p-3 text-right">Value</th></tr></thead>
@@ -129,10 +118,10 @@ const SellerOrders = () => {
             {done.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-grey-600">Finished, cancelled and rejected orders show here.</td></tr>}
             {done.map((o) => (
               <tr key={o.id} className="border-t border-grey-800/5">
-                <td className="p-3 font-bold">#{o.id}</td>
+                <td className="p-3 font-semibold">#{o.id}</td>
                 <td className="p-3">{o.items.map((i) => `${i.title} × ${i.qty}`).join(', ')}</td>
                 <td className="p-3"><Pill tone={o.status === 'DELIVERED' ? 'green' : o.status === 'CANCELLED' || o.status === 'REJECTED' ? 'red' : 'sun'}>{STATE_LABEL[o.status] ?? o.status}</Pill></td>
-                <td className="p-3 text-right font-bold">{rupees(o.subtotalPaise)}</td>
+                <td className="p-3 text-right font-semibold">{rupees(o.subtotalPaise)}</td>
               </tr>
             ))}
           </tbody>
@@ -145,8 +134,8 @@ const SellerOrders = () => {
 function Stat({ label, value, hint }) {
   return (
     <Card className="p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-grey-600">{label}</p>
-      <p className="mt-1 font-display text-2xl font-extrabold">{value}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-grey-600">{label}</p>
+      <p className="mt-1 font-display text-2xl font-bold">{value}</p>
       {hint && <p className="text-xs text-grey-600">{hint}</p>}
     </Card>
   );
@@ -168,11 +157,10 @@ function OrderCard({ order: o }) {
     <Card className="p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-extrabold">#{o.id} <TempBadge temp={o.tempClass} /></p>
+          <p className="font-bold">#{o.id} <TempBadge temp={o.tempClass} /></p>
           <p className="text-xs text-grey-600">{new Date(o.placedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · {o.paymentMode === 'COD' ? 'Pay on delivery' : 'Paid online'}</p>
         </div>
-        {o.status === 'PLACED' && <span className={cx('rounded-full px-2 py-0.5 text-xs font-extrabold', secsLeft < 30 ? 'bg-red-strong text-white' : 'bg-sun text-grey-800')} aria-label={`${secsLeft} seconds to accept`}>{Math.floor(secsLeft / 60)}:{String(secsLeft % 60).padStart(2, '0')}</span>}
-        {o.simulated && <Pill tone="grey">Auto (demo)</Pill>}
+        {o.status === 'PLACED' && <span className={cx('rounded-full px-2 py-0.5 text-xs font-bold', secsLeft < 30 ? 'bg-red-strong text-white' : 'bg-sun text-grey-800')} aria-label={`${secsLeft} seconds to accept`}>{Math.floor(secsLeft / 60)}:{String(secsLeft % 60).padStart(2, '0')}</span>}
       </div>
       <ul className="mt-2 text-sm">
         {o.items.map((i) => <li key={i.productId}><b>{i.qty} ×</b> {i.title}</li>)}
@@ -219,17 +207,17 @@ function FirstSteps({ steps }) {
   return (
     <Card className="mt-4 p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-extrabold">Get your shop ready</h2>
-        <p className="text-sm font-bold text-grey-600">{steps.filter((x) => x.done).length} of {steps.length} done</p>
+        <h2 className="text-xl font-bold">Get your shop ready</h2>
+        <p className="text-sm font-semibold text-grey-600">{steps.filter((x) => x.done).length} of {steps.length} done</p>
       </div>
       <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((x, i) => (
           <li key={x.title} className={cx('rounded-2xl border p-4', i === next ? 'border-orange-deep/40 bg-sun/15' : 'border-grey-800/10')}>
             <div className="flex items-center gap-2">
-              <span className={cx('grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-extrabold', x.done ? 'bg-emerald-600 text-white' : 'bg-grey-800/10 text-grey-800')}>
+              <span className={cx('grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold', x.done ? 'bg-emerald-600 text-white' : 'bg-grey-800/10 text-grey-800')}>
                 {x.done ? <Icon name="check" className="h-4 w-4" /> : i + 1}
               </span>
-              <p className={cx('font-bold', x.done && 'text-grey-600 line-through decoration-grey-400')}>{x.title}</p>
+              <p className={cx('font-semibold', x.done && 'text-grey-600 line-through decoration-grey-400')}>{x.title}</p>
             </div>
             {!x.done && <p className="mt-2 text-sm text-grey-600">{x.body}</p>}
             {i === next && (

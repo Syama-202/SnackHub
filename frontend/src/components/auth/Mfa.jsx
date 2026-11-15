@@ -29,10 +29,10 @@ export function MfaVerify({ onDone }) {
         Verify and sign in
       </Button>
       <div className="mt-4 flex flex-wrap justify-between gap-2 text-sm">
-        <button type="button" className="font-bold text-orange-text" onClick={() => (setRecovery((r) => !r), setCode(''))}>
+        <button type="button" className="font-semibold text-orange-text" onClick={() => (setRecovery((r) => !r), setCode(''))}>
           {recovery ? 'Use the app code instead' : 'Lost your phone? Use a recovery code'}
         </button>
-        <button type="button" className="font-bold text-grey-600" onClick={() => dispatch(mfaCancelled())}>Start again</button>
+        <button type="button" className="font-semibold text-grey-600" onClick={() => dispatch(mfaCancelled())}>Start again</button>
       </div>
     </form>
   );
@@ -75,7 +75,7 @@ export function MfaEnrol({ portalLabel }) {
             <li>Scan the QR code.</li>
             <li>Type the 6-digit code it shows.</li>
           </ol>
-          <button type="button" className="mt-3 font-bold text-orange-text" onClick={() => setShowKey((s) => !s)}>{showKey ? 'Hide the setup key' : "Can't scan? Type a setup key instead"}</button>
+          <button type="button" className="mt-3 font-semibold text-orange-text" onClick={() => setShowKey((s) => !s)}>{showKey ? 'Hide the setup key' : "Can't scan? Type a setup key instead"}</button>
           {showKey && <p className="mt-2 break-all rounded-xl bg-grey-50 p-2 font-mono text-xs">{enrolment.secret}</p>}
         </div>
       </div>
@@ -85,7 +85,7 @@ export function MfaEnrol({ portalLabel }) {
       <Button type="submit" className="mt-5 w-full" loading={isLoading} disabled={code.length !== 6}>
         Turn on two-step sign-in
       </Button>
-      <button type="button" className="mt-4 text-sm font-bold text-grey-600" onClick={() => dispatch(mfaCancelled())}>Cancel</button>
+      <button type="button" className="mt-4 text-sm font-semibold text-grey-600" onClick={() => dispatch(mfaCancelled())}>Cancel</button>
     </form>
   );
 }

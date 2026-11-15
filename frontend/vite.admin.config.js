@@ -44,7 +44,7 @@ export default defineConfig({
   ],
   // the host header stays localhost:5181, which is on the backend's ADMIN_HOSTS list, and the
   // admin refresh cookie works because the API is on the same origin
-  server: { port: 5181, strictPort: true, fs: { allow: ['..'] }, proxy: { ...Object.fromEntries(['admin', 'auth', 'me', 'files', 'client-errors'].map((p) => [`/api/v1/${p}`, backend])), '/api/v1/socket': { target: backend, ws: true } } },
+  server: { port: 5181, strictPort: true, fs: { allow: ['..'] }, proxy: { '/api/v1/socket': { target: backend, ws: true }, '/api/v1': backend } },
   // MapLibre is one 1 MB chunk (290 kB gzipped), loaded only by the live map
   build: { outDir: 'dist-admin', assetsDir: 'static', chunkSizeWarningLimit: 1100, rollupOptions: { input: 'admin.html', output: { manualChunks: vendorChunks } } },
 });

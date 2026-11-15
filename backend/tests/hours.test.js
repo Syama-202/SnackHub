@@ -36,11 +36,23 @@ describe('opening hours rules (India time)', () => {
     expect(scheduleOf({ openHours: '16:00-22:00' }).sat).toEqual([['16:00', '22:00']]);
   });
 
-  it('refuses windows that close before they open, overlap, or are too many', () => {
+  it('runs a window past midnight; refuses empty, overlapping or too many windows', () => {
     expect(scheduleProblem(SPLIT)).toBeNull();
-    expect(scheduleProblem({ mon: [['22:00', '02:00']] })).toMatch(/close after it opens/);
+    // a late-night window ends the next day, also from Sunday into Monday
+    const night = week([['19:00', '02:00']]);
+    expect(scheduleProblem(night)).toBeNull();
+    expect(openState(night, [], at(2026, 11, 3, 1, 30))).toEqual({ open: true, closesAt: at(2026, 11, 3, 2, 0), opensAt: null });
+    expect(hoursLabel(openState(night, [], at(2026, 11, 3, 3, 0)), at(2026, 11, 3, 3, 0))).toBe('Opens today 7:00 pm');
+    expect(openState(night, [], at(2026, 11, 2, 0, 30)).open).toBe(true); // Monday 00:30, from Sunday night
+    // a holiday drops the windows that start on it, not the night before running into it
+    expect(openState(night, ['2026-11-03'], at(2026, 11, 3, 1, 0)).open).toBe(true);
+    expect(openState(night, ['2026-11-03'], at(2026, 11, 3, 20, 0)).open).toBe(false);
+    expect(scheduleProblem({ mon: [['09:00', '09:00']] })).toMatch(/same time/);
+    expect(scheduleProblem({ mon: [['20:00', '02:00']], tue: [['01:00', '05:00']] })).toMatch(/overlap/);
+    expect(scheduleProblem({ sun: [['22:00', '03:00']], mon: [['02:00', '06:00']] })).toMatch(/overlap/);
     expect(scheduleProblem({ mon: [['09:00', '13:00'], ['12:00', '18:00']] })).toMatch(/overlap/);
     expect(scheduleProblem({ mon: [['06:00', '07:00'], ['08:00', '09:00'], ['10:00', '11:00']] })).toMatch(/up to 2/);
+    expect(scheduleProblem({ mon: [['06:00', '07:00'], ['08:00', '09:00'], ['10:00', '11:00']] }, { maxWindows: 3 })).toBeNull();
     expect(pincodeServed([], '522001')).toBe(true);
     expect(pincodeServed(['522002'], '522001')).toBe(false);
     expect(pincodeServed(['522002'], null)).toBe(false);
@@ -65,7 +77,9 @@ describe.skipIf(h.skip)('shop hours and pincodes', () => {
     // a holiday today closes the shop whatever the hour
     expect(shop.hours.label).toMatch(/^Opens /);
 
-    await s.api.patch('/seller/shop', { weeklyHours: { ...SPLIT, mon: [['22:00', '02:00']] } }).expect(400);
+    // a window past midnight is fine; one that opens and closes at once is not
+    await s.api.patch('/seller/shop', { weeklyHours: { ...SPLIT, mon: [['22:00', '02:00']] } }).expect(200);
+    await s.api.patch('/seller/shop', { weeklyHours: { ...SPLIT, mon: [['22:00', '22:00']] } }).expect(400);
     await s.api.patch('/seller/shop', { weeklyHours: { ...SPLIT, funday: [] } }).expect(400);
     await s.api.patch('/seller/shop', { closedDates: ['2020-01-01'] }).expect(400);
     await s.api.patch('/seller/shop', { pincodes: ['012345'] }).expect(400);
@@ -75,7 +89,7 @@ describe.skipIf(h.skip)('shop hours and pincodes', () => {
     expect(back).toMatchObject({ weeklyHours: null, closedDates: [], pincodes: [], hours: { openNow: true } });
   });
 
-  it('a closed shop can be browsed but not ordered from, and its snacks leave the lists', async () => {
+  it('a closed shop can be browsed but not ordered from; its snacks stay listed, marked closed', async () => {
     const s = await H.openShop(t, staff);
     const c = await H.customerAt(t);
     const where = `lat=${H.HOME.lat}&lng=${H.HOME.lng}`;
@@ -85,12 +99,17 @@ describe.skipIf(h.skip)('shop hours and pincodes', () => {
 
     const shops = (await c.api.get(`/sellers?${where}`).expect(200)).body;
     expect(shops.find((x) => x.id === s.shop.id)).toMatchObject({ hours: { openNow: false, label: 'Not open this week' } });
-    expect((await c.api.get(`/products?${where}`).expect(200)).body.map((p) => p.sellerId)).not.toContain(s.shop.id);
+    // still found, with why it cannot be ordered now
+    const listed = (await c.api.get(`/products?${where}`).expect(200)).body.find((p) => p.id === s.product.id);
+    expect(listed.availability).toMatchObject({ status: 'SHOP_CLOSED', orderable: false, label: 'Shop closed' });
     expect((await c.api.get(`/sellers/${s.shop.id}?${where}`).expect(200)).body.hours.openNow).toBe(false);
 
     const add = await c.api.put('/cart', { productId: s.product.id, qty: 2 }).expect(409);
-    expect(add.body.error).toMatchObject({ code: 'SHOP_UNAVAILABLE', message: expect.stringMatching(/is closed now/) });
-    expect((await c.api.get('/cart').expect(200)).body.shopOpen).toBe(false);
+    expect(add.body.error).toMatchObject({ code: 'SHOP_UNAVAILABLE', message: expect.stringMatching(/taking a little break/) });
+    const cart = (await c.api.get('/cart').expect(200)).body;
+    expect(cart).toMatchObject({ shopOpen: false, blocked: [{ productId: s.product.id, status: 'SHOP_CLOSED' }] });
+    // the quote still answers (with the blocked line); only placing the order is refused
+    await c.api.post('/orders/quote', { addressId: c.address.id }).expect(200);
     const placed = await c.api.post('/orders', { addressId: c.address.id, paymentMode: 'COD' }, { 'Idempotency-Key': H.key() }).expect(409);
     expect(placed.body.error.code).toBe('SHOP_UNAVAILABLE');
 

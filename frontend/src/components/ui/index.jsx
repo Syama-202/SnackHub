@@ -28,7 +28,7 @@ export const Button = forwardRef(function Button({ variant = 'primary', size = '
     <button
       ref={ref}
       className={cx(
-        'inline-flex min-h-11 select-none items-center justify-center gap-2 rounded-full font-bold transition-[transform,box-shadow,background-color,border-color,filter,opacity] duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100',
+        'inline-flex min-h-11 select-none items-center justify-center gap-2 rounded-full font-semibold transition-[transform,box-shadow,background-color,border-color,filter,opacity] duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100',
         BTN[variant],
         SIZE[size],
         size === 'sm' && 'min-h-9',
@@ -92,7 +92,7 @@ const PILL = {
 };
 export function Pill({ tone = 'grey', className, children, ...rest }) {
   return (
-    <span className={cx('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold whitespace-nowrap', PILL[tone], className)} {...rest}>
+    <span className={cx('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap', PILL[tone], className)} {...rest}>
       {children}
     </span>
   );
@@ -103,7 +103,7 @@ export function Pill({ tone = 'grey', className, children, ...rest }) {
 // red text, so it does not rely on colour alone.
 export function FieldLabel({ children, optional }) {
   return (
-    <span className="mb-1.5 flex items-baseline justify-between gap-2 text-sm font-bold text-grey-800">
+    <span className="mb-1.5 flex items-baseline justify-between gap-2 text-sm font-semibold text-grey-800">
       <span>{children}</span>
       {optional && <span className="text-xs font-semibold text-grey-600">Optional</span>}
     </span>
@@ -276,11 +276,11 @@ export function Skeleton({ className }) {
 export function Price({ paise, mrp, className }) {
   return (
     <span className={cx('nums inline-flex items-baseline gap-1.5', className)}>
-      <span className="font-extrabold text-grey-800">{rupees(paise)}</span>
+      <span className="font-bold text-grey-800">{rupees(paise)}</span>
       {mrp ? (
         <>
           <s className="text-xs text-grey-600">{rupees(mrp)}</s>
-          <span className="text-xs font-bold text-red-text">{Math.round((1 - paise / mrp) * 100)}% off</span>
+          <span className="text-xs font-semibold text-red-text">{Math.round((1 - paise / mrp) * 100)}% off</span>
         </>
       ) : null}
     </span>
@@ -319,7 +319,7 @@ export function QtyControl({ qty, onChange, max = 99, disabled, size = 'md', lab
       <button
         onClick={() => onChange(1)}
         disabled={disabled}
-        className={cx(h, 'shine min-w-[88px] rounded-xl bg-primary px-4 text-sm font-extrabold tracking-wide text-grey-900 shadow-cta transition hover:shadow-lg active:scale-95 disabled:bg-none disabled:bg-grey-50 disabled:text-grey-400 disabled:shadow-none')}
+        className={cx(h, 'shine min-w-[88px] rounded-xl bg-primary px-4 text-sm font-bold tracking-wide text-grey-900 shadow-cta transition hover:shadow-lg active:scale-95 disabled:bg-none disabled:bg-grey-50 disabled:text-grey-400 disabled:shadow-none')}
         aria-label={disabled ? `Sold out, ${label}` : `Add ${label}`}
       >
         {disabled ? 'SOLD OUT' : 'ADD'}
@@ -327,9 +327,9 @@ export function QtyControl({ qty, onChange, max = 99, disabled, size = 'md', lab
     );
   return (
     <div className={cx(h, 'inline-flex min-w-[84px] items-center justify-between rounded-xl bg-primary px-1 text-grey-800')} role="group" aria-label={`Quantity of ${label}`}>
-      <button className="grid h-8 w-8 place-items-center rounded-lg text-lg font-black hover:bg-white/30" onClick={() => onChange(qty - 1)} aria-label={`Remove one ${label}`}>−</button>
-      <span className="min-w-6 text-center text-sm font-extrabold" aria-live="polite">{qty}</span>
-      <button className="grid h-8 w-8 place-items-center rounded-lg text-lg font-black hover:bg-white/30 disabled:opacity-40" onClick={() => onChange(qty + 1)} disabled={qty >= max} aria-label={`Add one more ${label}`}>+</button>
+      <button className="grid h-8 w-8 place-items-center rounded-lg text-lg font-bold hover:bg-white/30" onClick={() => onChange(qty - 1)} aria-label={`Remove one ${label}`}>−</button>
+      <span className="min-w-6 text-center text-sm font-bold" aria-live="polite">{qty}</span>
+      <button className="grid h-8 w-8 place-items-center rounded-lg text-lg font-bold hover:bg-white/30 disabled:opacity-40" onClick={() => onChange(qty + 1)} disabled={qty >= max} aria-label={`Add one more ${label}`}>+</button>
     </div>
   );
 }
@@ -344,7 +344,7 @@ export function Logo({ className = '', compact = false, tone = 'dark' }) {
     <span className={cx('inline-flex items-center gap-2', className)}>
       <LogoMark className="h-11 w-11 shadow-[0_6px_18px_-6px_rgba(232,106,0,0.6)]" />
       {!compact && (
-        <span className="font-display text-[1.4375rem] font-extrabold leading-none tracking-[-0.035em]">
+        <span className="font-display text-[1.4375rem] font-bold leading-none tracking-[-0.035em]">
           <span className="text-gradient">Snack</span>
           <span className={tone === 'dark' ? 'text-grey-800' : 'text-white'}>Hub</span>
         </span>
@@ -371,7 +371,7 @@ export function EmptyState({ title, body, action, art, icon = 'box', compact = f
           <Icon name={icon} className={compact ? 'h-5 w-5' : 'h-7 w-7'} />
         </span>
       )}
-      <h2 className={cx('font-extrabold text-grey-800', compact ? 'mt-3 text-base' : 'mt-5 text-xl')}>{title}</h2>
+      <h2 className={cx('font-bold text-grey-800', compact ? 'mt-3 text-base' : 'mt-5 text-xl')}>{title}</h2>
       {body && <p className={cx('mt-1.5 max-w-sm text-grey-600', compact && 'text-sm')}>{body}</p>}
       {action && <div className="mt-5 flex flex-wrap justify-center gap-2">{action}</div>}
     </div>
@@ -388,7 +388,7 @@ export function ErrorState({ title = 'Could not load this', body = 'Check your c
       <span className={cx('grid place-items-center rounded-full bg-red/10 text-red-text ring-8 ring-red/5', compact ? 'h-12 w-12' : 'h-16 w-16')} aria-hidden="true">
         <Icon name="alert" className={compact ? 'h-5 w-5' : 'h-7 w-7'} />
       </span>
-      <h2 className={cx('font-extrabold text-grey-800', compact ? 'mt-3 text-base' : 'mt-5 text-xl')}>{title}</h2>
+      <h2 className={cx('font-bold text-grey-800', compact ? 'mt-3 text-base' : 'mt-5 text-xl')}>{title}</h2>
       {body && <p className={cx('mt-1.5 max-w-sm text-grey-600', compact && 'text-sm')}>{body}</p>}
       {(onRetry || action) && (
         <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -413,7 +413,7 @@ export function Note({ tone = 'info', title, children, className, ...rest }) {
     <div role={tone === 'error' ? 'alert' : 'status'} className={cx('flex items-start gap-2.5 rounded-2xl p-3.5 text-sm', look, className)} {...rest}>
       <Icon name={icon} className="mt-0.5 h-4 w-4 shrink-0" />
       <div className="min-w-0">
-        {title && <p className="font-bold">{title}</p>}
+        {title && <p className="font-semibold">{title}</p>}
         <div className={cx(tone === 'error' && !title && 'font-semibold')}>{children}</div>
       </div>
     </div>
@@ -459,8 +459,8 @@ export function SplitWords({ text, as: Tag = 'span', className, delay = 0 }) {
 export function SectionTitle({ eyebrow, title, sub, className, align = 'left' }) {
   return (
     <div className={cx(align === 'center' && 'mx-auto text-center', 'max-w-2xl', className)}>
-      {eyebrow && <p className="mb-3 inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-[0.14em] text-orange-text"><span className="h-px w-8 bg-orange-text/60" aria-hidden="true" />{eyebrow}</p>}
-      <SplitWords as="h2" text={title} className="text-[clamp(2rem,4.4vw,3.4rem)] font-extrabold leading-[1.04] text-grey-800" />
+      {eyebrow && <p className="mb-3 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-orange-text"><span className="h-px w-8 bg-orange-text/60" aria-hidden="true" />{eyebrow}</p>}
+      <SplitWords as="h2" text={title} className="text-[clamp(1.75rem,1.2rem+2vw,2.5rem)] font-bold leading-[1.1] text-grey-800" />
       {sub && <p className="mt-3 text-lg text-grey-600">{sub}</p>}
     </div>
   );

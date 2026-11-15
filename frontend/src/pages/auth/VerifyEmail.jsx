@@ -40,7 +40,7 @@ export default function VerifyEmail() {
         <div className="flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-800">
           <Icon name="check" className="h-5 w-5" /> Thanks. This address is now verified on your SnackHub account.
         </div>
-        <Link to={signInPath(state.portal)} className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-full bg-primary font-bold text-grey-800 shadow-cta">Sign in</Link>
+        <Link to={signInPath(state.portal)} className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-full bg-primary font-semibold text-grey-800 shadow-cta">Sign in</Link>
       </AuthShell>
     );
   }
@@ -61,7 +61,7 @@ export default function VerifyEmail() {
           <Button type="submit" disabled={!email.includes('@')}>Send a new link</Button>
         </form>
       )}
-      <Link to="/join" className="mt-4 inline-block text-sm font-bold text-orange-text">Back to sign in</Link>
+      <Link to="/join" className="mt-4 inline-block text-sm font-semibold text-orange-text">Back to sign in</Link>
     </AuthShell>
   );
 }

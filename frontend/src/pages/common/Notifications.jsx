@@ -47,7 +47,7 @@ const Notifications = () => {
             <Card key={n.id} as={to ? Link : 'div'} to={to ?? undefined} className={cx('flex items-start gap-3 p-4', !n.readAt && 'ring-2 ring-sun')}>
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-sun/30"><Icon name="bell" className="h-5 w-5" /></span>
               <div className="flex-1">
-                <p className="font-bold">{n.body}</p>
+                <p className="font-semibold">{n.body}</p>
                 <p className="text-xs text-grey-600">{n.orderId ? `Order #${n.orderId} · ` : ''}{new Date(n.createdAt).toLocaleString([], { timeStyle: 'short', dateStyle: 'medium' })}</p>
               </div>
             </Card>
@@ -128,7 +128,7 @@ function PushAlerts({ role }) {
     <Card className="mt-5 flex flex-wrap items-center gap-3 p-4" role="region" aria-label="Alerts on this device">
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-sun/30"><Icon name="bell" className="h-5 w-5" /></span>
       <div className="min-w-[200px] flex-1">
-        <p className="font-bold">Alerts on this device {state.subscribed ? <span className="text-emerald-700">· on</span> : null}</p>
+        <p className="font-semibold">Alerts on this device {state.subscribed ? <span className="text-emerald-700">· on</span> : null}</p>
         <p className="text-sm text-grey-600">{note ?? (state.subscribed ? `On${state.devices > 1 ? ` (${state.devices} devices in all)` : ''}. Signing out of this device turns them off.` : ASK[role])}</p>
       </div>
       {!note && (

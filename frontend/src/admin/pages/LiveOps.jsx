@@ -5,16 +5,15 @@ import { rupees } from '@shared/domain/money';
 import { STATE_LABEL, isActive } from '@shared/domain/orderStates';
 import { Card, Pill, Icon, Button, cx } from '../../components/ui';
 import { TrackMap } from '../../components/tracking/TrackMap';
-import { tokenReplaced } from '../../store/slices/auth';
 import { LIST_MAX, LIST_STEP, fetchAdminOrders, fetchAdminRiders, fetchAdminSellers, fetchReconciliation, fetchSla, searchAdminOrders } from '../../store/slices/admin';
 
 function Metric({ label, value, format = (v) => Math.round(v), tone }) {
   const v = useCountUp(value || 0);
   return (
     <Card className="p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-grey-600">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-grey-600">{label}</p>
       {/* one line however narrow the card: "42 min" must not break in two */}
-      <p className={cx('nums mt-1 whitespace-nowrap font-display text-[clamp(1.375rem,1rem+1vw,1.875rem)] font-extrabold', tone)}>{format(v)}</p>
+      <p className={cx('nums mt-1 whitespace-nowrap font-display text-[clamp(1.375rem,1rem+1vw,1.875rem)] font-bold', tone)}>{format(v)}</p>
     </Card>
   );
 }
@@ -22,7 +21,6 @@ function Metric({ label, value, format = (v) => Math.round(v), tone }) {
 /** Live orders, SLA dashboard and alerts (doc 11.4). */
 const LiveOps = () => {
   const dispatch = useDispatch();
-  const token = useSelector((state) => state.auth.accessToken);
   const { sla: m, orders, riders, sellers, reconciliation: recon } = useSelector((state) => state.admin);
   const [picked, setPicked] = useState(() => {
     try {
@@ -68,17 +66,10 @@ const LiveOps = () => {
     ...(m?.lateOrders > 2 ? [{ tone: 'orange', text: `${m.lateOrders} late deliveries: consider slow mode for the area` }] : []),
   ];
 
-  // Demo helper: pretend the second factor was checked 6 minutes ago, to show the step-up
-  const expireMfa = () => {
-    const [, , id] = token.split('.');
-    dispatch(tokenReplaced(`demo.admin.${id}.${Date.now() - 6 * 60000}`));
-  };
-
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="page-title">Live operations</h1>
-        {token?.startsWith('demo.') && <Button size="sm" variant="ghost" className="ml-auto" onClick={expireMfa}>Expire my MFA (demo step-up)</Button>}
       </div>
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
         <Metric label="Active orders" value={m?.activeOrders} />
@@ -93,7 +84,7 @@ const LiveOps = () => {
       {alerts.length > 0 && (
         <div className="mt-4 space-y-2" role="alert">
           {alerts.map((a, i) => (
-            <p key={i} className={cx('flex items-center gap-2 rounded-2xl p-3 text-sm font-bold', a.tone === 'red' ? 'bg-red-strong text-white' : 'bg-sun/30 text-grey-800')}>
+            <p key={i} className={cx('flex items-center gap-2 rounded-2xl p-3 text-sm font-semibold', a.tone === 'red' ? 'bg-red-strong text-white' : 'bg-sun/30 text-grey-800')}>
               <Icon name="alert" className="h-4 w-4" /> {a.text}
             </p>
           ))}
@@ -103,7 +94,7 @@ const LiveOps = () => {
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_1fr]">
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-extrabold">Live map</h2>
+            <h2 className="text-lg font-bold">Live map</h2>
             <select value={city ?? ''} onChange={(e) => pick(e.target.value)} className="field h-11 w-auto rounded-full text-sm capitalize" aria-label="City">
               {cities.map((c) => <option key={c} value={c}>{c.replace(/-/g, ' ')}</option>)}
             </select>
@@ -111,13 +102,13 @@ const LiveOps = () => {
           <OpsMap city={city} sellers={sellers} riders={riders} orders={live} />
         </Card>
         <Card className="p-4">
-          <h2 className="text-lg font-extrabold">Live orders</h2>
+          <h2 className="text-lg font-bold">Live orders</h2>
           <div className="mt-3 max-h-[420px] space-y-2 overflow-y-auto">
             {live.length === 0 && <p className="py-8 text-center text-sm text-grey-600">No active orders right now. New ones appear here as they are placed.</p>}
             {live.map((o) => (
               <div key={o.id} className="rounded-xl bg-grey-50 p-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold">#{o.id} · {o.seller.shopName}</span>
+                  <span className="font-semibold">#{o.id} · {o.seller.shopName}</span>
                   <Pill tone={o.tempClass === 'HOT' ? 'red' : 'orange'}>{o.tempClass}</Pill>
                 </div>
                 <p className="text-grey-600">{STATE_LABEL[o.status]} · {o.rider ? o.rider.name : 'no rider yet'} · promised {new Date(o.promisedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
@@ -131,7 +122,7 @@ const LiveOps = () => {
       <OrderFinder />
 
       <Card className="mt-6 overflow-x-auto p-4" tabIndex={0} role="region" aria-label="Cash reconciliation">
-        <h2 className="text-lg font-extrabold">Cash reconciliation</h2>
+        <h2 className="text-lg font-bold">Cash reconciliation</h2>
         <p className="text-sm text-grey-600">Pay-on-delivery orders: what the rider recorded against the order total.</p>
         <table className="mt-3 w-full min-w-[480px] text-sm">
           <thead className="text-left text-grey-600"><tr><th className="py-2">Order</th><th>Rider</th><th>Total</th><th>Collected</th><th>Status</th></tr></thead>
@@ -139,7 +130,7 @@ const LiveOps = () => {
             {recon.length === 0 && <tr><td colSpan="5" className="py-4 text-grey-600">No delivered pay-on-delivery orders yet.</td></tr>}
             {recon.map((r) => (
               <tr key={r.orderId} className="border-t border-grey-800/5">
-                <td className="py-2 font-bold">#{r.orderId}</td><td>#{r.riderId}</td><td>{rupees(r.totalPaise)}</td><td>{rupees(r.collectedPaise)}</td>
+                <td className="py-2 font-semibold">#{r.orderId}</td><td>#{r.riderId}</td><td>{rupees(r.totalPaise)}</td><td>{rupees(r.collectedPaise)}</td>
                 <td>{r.mismatch ? <Pill tone="red">Mismatch</Pill> : <Pill tone="green">Matches</Pill>}</td>
               </tr>
             ))}
@@ -176,13 +167,13 @@ function OrderFinder() {
   };
   return (
     <Card className="mt-6 p-4">
-      <h2 className="text-lg font-extrabold">Find an order</h2>
+      <h2 className="text-lg font-bold">Find an order</h2>
       <form onSubmit={find} className="mt-3 flex flex-wrap items-end gap-2">
-        <label className="grow text-sm font-bold">
+        <label className="grow text-sm font-semibold">
           Order number or shop name
           <input value={q} onChange={(e) => setQ(e.target.value)} maxLength={60} placeholder="#1042 or Irani Bakery" className="field mt-1 h-11 font-normal" />
         </label>
-        <label className="text-sm font-bold">
+        <label className="text-sm font-semibold">
           Status
           <select value={status} onChange={(e) => setStatus(e.target.value)} className="field mt-1 block h-11 w-auto font-normal">
             <option value="">Any</option>
@@ -191,7 +182,7 @@ function OrderFinder() {
         </label>
         <Button type="submit" size="sm" loading={busy} disabled={!q.trim() && !status}>Find</Button>
       </form>
-      {error && <p role="alert" className="mt-3 text-sm font-bold text-red-text">{error}</p>}
+      {error && <p role="alert" className="mt-3 text-sm font-semibold text-red-text">{error}</p>}
       {rows && (
         <div className="mt-3 overflow-x-auto" tabIndex={0} role="region" aria-label="Orders found">
           <table className="w-full min-w-[640px] text-sm">
@@ -200,7 +191,7 @@ function OrderFinder() {
               {rows.length === 0 && <tr><td colSpan="7" className="py-4 text-grey-600">No order matches.</td></tr>}
               {rows.map((o) => (
                 <tr key={o.id} className="border-t border-grey-800/5">
-                  <td className="py-2 font-bold">#{o.id}</td>
+                  <td className="py-2 font-semibold">#{o.id}</td>
                   <td>{o.seller?.shopName ?? '-'}</td>
                   <td>{STATE_LABEL[o.status] ?? o.status}</td>
                   <td>{rupees(o.totalPaise)} · {o.paymentMode === 'COD' ? 'cash' : 'online'}</td>

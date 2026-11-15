@@ -170,7 +170,7 @@ export default function MapCanvas({ points, lines = null, height = 280, label })
       {/* inline, because maplibre-gl.css sets the map container to position: relative */}
       <div ref={box} style={{ position: 'absolute', inset: 0 }} role="region" aria-label={label} />
       {moved && (
-        <button type="button" onClick={recenter} className="absolute bottom-3 left-3 z-10 inline-flex h-9 items-center rounded-full bg-white px-3 text-sm font-bold text-grey-800 shadow-lg">
+        <button type="button" onClick={recenter} className="absolute bottom-3 left-3 z-10 inline-flex h-9 items-center rounded-full bg-white px-3 text-sm font-semibold text-grey-800 shadow-lg">
           Recenter
         </button>
       )}

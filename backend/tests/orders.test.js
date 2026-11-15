@@ -44,9 +44,9 @@ describe.skipIf(h.skip)('the order flow', () => {
       expect(other.body.error).toMatchObject({ code: 'CART_OTHER_SELLER', details: { currentSellerId: a.shop.id } });
       expect((await c.api.put('/cart', { productId: b.product.id, qty: 1, replace: true }).expect(200)).body.sellerId).toBe(b.shop.id);
 
-      // a seeded demo shop shows how SnackHub works but takes no real order
+      // a seeded shop shows how SnackHub works but takes no real order
       await t.trx.catalog('sellers').where({ id: a.shop.id }).update({ is_demo: true });
-      expect((await c.api.put('/cart', { productId: a.product.id, qty: 1, replace: true }).expect(409)).body.error.code).toBe('DEMO_SHOP');
+      expect((await c.api.put('/cart', { productId: a.product.id, qty: 1, replace: true }).expect(409)).body.error).toMatchObject({ code: 'NOT_TAKING_ORDERS', message: expect.stringMatching(/isn't taking orders on SnackHub yet/) });
 
       // the price changes after it went in the cart: the quote and the order use the new one
       await b.api.patch(`/seller/products/${b.product.id}`, { pricePaise: 7000 }).expect(200);

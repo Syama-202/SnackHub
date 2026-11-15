@@ -30,6 +30,7 @@ import { ownedFieldsIn } from '../../../shared/domain/catalogue.js';
 import { catalogItemModel } from '../models/catalog/catalogItem.js';
 import { copyOfItem, itemView, spreadsFor } from './catalogue.js';
 import { isUniqueViolation } from '../db/errors.js';
+import { queueSearchSync } from '../utils/searchSync.js';
 
 const refuse = (verdict) => new AppError(403, 'NOT_ELIGIBLE', verdict.reasons[0]?.message ?? 'Not allowed yet', { reasons: verdict.reasons });
 const ACTIONS = { accept: 'ACCEPTED', reject: 'REJECTED', start: 'PACKING', packed: 'PACKED' };
@@ -80,9 +81,13 @@ export function shopController({ dbs }) {
   async function updateShop(req, res) {
     const userId = req.user.userId;
     const before = await ownShop(userId);
-    if ('busyExtraMin' in req.body) await sellerModel.setBusyExtra(dbs.catalog, before.id, req.body.busyExtraMin);
-    if ('paused' in req.body) await sellerModel.setPaused(dbs.catalog, before.id, req.body.paused);
-    await sellerModel.setHoursAndArea(dbs.catalog, before.id, req.body);
+    // the shop's settings and the search index note change together
+    await dbs.catalog.transaction(async (trx) => {
+      if ('busyExtraMin' in req.body) await sellerModel.setBusyExtra(trx, before.id, req.body.busyExtraMin);
+      if ('paused' in req.body) await sellerModel.setPaused(trx, before.id, req.body.paused);
+      await sellerModel.setHoursAndArea(trx, before.id, req.body);
+      if ('paused' in req.body) await queueSearchSync(trx, { sellerId: before.id, reason: 'shop.paused' });
+    });
     const was = hoursOf(before);
     await audit(userId, 'shop.settings', `seller:${before.id}`, { busyExtraMin: before.busy_extra_min, paused: Boolean(before.paused), weeklyHours: was.weeklyHours, closedDates: was.closedDates, pincodes: was.pincodes }, req.body);
     res.json(await shopView(await sellerModel.findById(dbs.catalog, before.id)));
@@ -145,6 +150,10 @@ export function shopController({ dbs }) {
     ...(b.prepMinutes !== undefined && { prep_minutes: b.prepMinutes }),
     ...(b.pricePaise !== undefined && { price_paise: b.pricePaise }),
     ...(b.mrpPaise !== undefined && { mrp_paise: b.mrpPaise }),
+    ...(b.availableHours !== undefined && { available_hours: b.availableHours == null ? null : JSON.stringify(b.availableHours) }),
+    // switched off for a while (until a time, or until switched back on); on again clears the time
+    ...(b.unavailable !== undefined && { unavailable: b.unavailable, ...(b.unavailable === false && { unavailable_until: null }) }),
+    ...(b.unavailableUntil !== undefined && { unavailable_until: b.unavailableUntil == null ? null : new Date(b.unavailableUntil) }),
     ...(attrs && { attrs }),
   });
   const attrsOf = (b, prev = {}) => {
@@ -165,6 +174,7 @@ export function shopController({ dbs }) {
     const id = await dbs.catalog.transaction(async (trx) => {
       const pid = await productModel.create(trx, s.id, { slug, region: s.region, active: false, ...columns(b), attrs: { ...attrsOf(b), art: artFor(b.category, b.shape) } });
       await stockModel.set(trx, pid, 0);
+      await queueSearchSync(trx, { productIds: [pid], reason: 'product.create' });
       return pid;
     });
     await audit(userId, 'product.create', `product:${id}`, null, { title: b.title, pricePaise: b.pricePaise });
@@ -185,7 +195,10 @@ export function shopController({ dbs }) {
     if (mrp != null && mrp < price) throw new AppError(422, 'MRP_BELOW_PRICE', 'The MRP cannot be below the price');
     const touchesAttrs = ['weight', 'spice', 'vegetarian', 'allergens', 'shape', 'category'].some((k) => b[k] !== undefined);
     const changes = { ...columns(b, touchesAttrs ? attrsOf({ ...b, category: b.category ?? p.category }, p.attrs ?? {}) : null), ...(b.active !== undefined && { active: b.active }) };
-    await productModel.updateForSeller(dbs.catalog, p.id, s.id, changes);
+    await dbs.catalog.transaction(async (trx) => {
+      await productModel.updateForSeller(trx, p.id, s.id, changes);
+      await queueSearchSync(trx, { productIds: [p.id], reason: 'product.update' });
+    });
     if (b.active !== undefined && b.active !== Boolean(p.active)) await audit(userId, b.active ? 'product.publish' : 'product.unpublish', `product:${p.id}`);
     else await audit(userId, 'product.update', `product:${p.id}`, null, Object.keys(b));
     res.json((await menuView(s, [await productModel.findWithStock(dbs.catalog, p.id)]))[0]);
@@ -223,8 +236,11 @@ export function shopController({ dbs }) {
           prep_minutes: b.prepMinutes,
           price_paise: b.pricePaise,
           mrp_paise: b.mrpPaise ?? null,
+          // the catalogue's usual serving times (breakfast, evening...), unless the shop sets its own
+          available_hours: b.availableHours !== undefined ? (b.availableHours == null ? null : JSON.stringify(b.availableHours)) : item.default_hours == null ? null : JSON.stringify(item.default_hours),
         });
         await stockModel.set(trx, pid, 0);
+        await queueSearchSync(trx, { productIds: [pid], reason: 'product.create' });
         return pid;
       })
       // the unique (shop, entry) key settles two adds racing

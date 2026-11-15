@@ -37,7 +37,7 @@ export default function StatusPanel({ view, onRestart, home }) {
       <div className="flex flex-wrap items-center gap-3">
         <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/80"><Icon name={s.icon} className="h-6 w-6 text-grey-800" /></span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-extrabold">{s.title}</h2>
+          <h2 className="text-2xl font-bold">{s.title}</h2>
           <p className="text-sm text-grey-600">{s.body}</p>
         </div>
         {view.applicationId && <Pill tone="dark">{view.applicationId}</Pill>}
@@ -67,17 +67,17 @@ export default function StatusPanel({ view, onRestart, home }) {
         </div>
       )}
       {view.status === 'APPROVED' && home && (
-        <Link to={home} className="mt-4 inline-flex h-12 items-center rounded-full bg-grey-800 px-6 font-bold text-white">
+        <Link to={home} className="mt-4 inline-flex h-12 items-center rounded-full bg-grey-800 px-6 font-semibold text-white">
           Open your console <Icon name="arrowRight" className="ml-1 h-4 w-4" />
         </Link>
       )}
       {view.history.length > 0 && (
         <details className="mt-4">
-          <summary className="cursor-pointer text-sm font-bold text-grey-800">History ({view.history.length})</summary>
+          <summary className="cursor-pointer text-sm font-semibold text-grey-800">History ({view.history.length})</summary>
           <ol className="mt-3 grid gap-2 border-l-2 border-orange/30 pl-4 text-sm">
             {view.history.map((h, i) => (
               <li key={i}>
-                <span className="font-bold">{ACTION[h.action] ?? h.action}</span> <span className="text-grey-600">· {h.by} · {when(h.at)}</span>
+                <span className="font-semibold">{ACTION[h.action] ?? h.action}</span> <span className="text-grey-600">· {h.by} · {when(h.at)}</span>
                 {h.reason && <span className="block text-grey-600">{h.reason}</span>}
               </li>
             ))}

@@ -25,7 +25,7 @@ export default function SnackStrip() {
       {[...list, ...list].map((id, i) => (
         <span key={i} className="flex shrink-0 items-center gap-3 rounded-full border border-white/90 bg-white/80 py-2 pl-2 pr-5 shadow-[0_10px_28px_-10px_rgba(226,55,68,0.35)] backdrop-blur-sm">
           <AssetImage id={id} alt="" sizes="64px" className="block h-14 w-14 overflow-hidden rounded-full" imgClassName="block h-full w-full scale-125 object-cover" />
-          <span className="font-display text-lg font-bold text-grey-800">{name(id)}</span>
+          <span className="font-display text-lg font-semibold text-grey-800">{name(id)}</span>
         </span>
       ))}
     </div>
@@ -43,7 +43,7 @@ export default function SnackStrip() {
         type="button"
         onClick={() => setPaused((p) => !p)}
         aria-pressed={paused}
-        className={cx('absolute bottom-2 right-4 z-20 inline-flex h-9 items-center gap-1.5 rounded-full border border-white/80 bg-white/80 px-3 text-xs font-bold text-grey-800 shadow-sm backdrop-blur transition hover:bg-white')}
+        className={cx('absolute bottom-2 right-4 z-20 inline-flex h-9 items-center gap-1.5 rounded-full border border-white/80 bg-white/80 px-3 text-xs font-semibold text-grey-800 shadow-sm backdrop-blur transition hover:bg-white')}
       >
         <Icon name={paused ? 'play' : 'pause'} className="h-3.5 w-3.5" />
         {paused ? 'Play' : 'Pause'} snacks

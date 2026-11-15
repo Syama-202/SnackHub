@@ -71,7 +71,7 @@ export default function SignUp({ portal }) {
           <Button variant="ghost" disabled={resent} onClick={async () => (await dispatch(resendVerification({ email: sentTo })), setResent(true))}>
             {resent ? 'Sent again' : 'Send the link again'}
           </Button>
-          <Link to={signInPath(portal)} className="inline-flex h-12 items-center justify-center rounded-full bg-primary font-bold text-grey-800 shadow-cta">Go to sign in</Link>
+          <Link to={signInPath(portal)} className="inline-flex h-12 items-center justify-center rounded-full bg-primary font-semibold text-grey-800 shadow-cta">Go to sign in</Link>
         </div>
         <p className="mt-4 text-xs text-grey-600">Running SnackHub locally? Emails are saved as files in backend/storage/mail; open the newest one.</p>
       </AuthShell>
@@ -85,7 +85,7 @@ export default function SignUp({ portal }) {
       sub={copy.sub}
       footer={
         <>
-          Already registered? <Link to={signInPath(portal)} className="font-bold text-orange-text">Sign in to the {p.label.toLowerCase()} portal</Link>
+          Already registered? <Link to={signInPath(portal)} className="font-semibold text-orange-text">Sign in to the {p.label.toLowerCase()} portal</Link>
         </>
       }
     >
@@ -110,8 +110,8 @@ export default function SignUp({ portal }) {
           label={
             <>
               I accept the SnackHub{' '}
-              <Link to="/terms" target="_blank" className="font-bold text-orange-text hover:underline">terms of use</Link> and{' '}
-              <Link to="/privacy" target="_blank" className="font-bold text-orange-text hover:underline">privacy policy</Link> (demo). We use your details only to run your account{portal !== 'customer' ? ' and to verify you' : ''}.
+              <Link to="/terms" target="_blank" className="font-semibold text-orange-text hover:underline">terms of use</Link> and{' '}
+              <Link to="/privacy" target="_blank" className="font-semibold text-orange-text hover:underline">privacy policy</Link>. We use your details only to run your account{portal !== 'customer' ? ' and to verify you' : ''}.
             </>
           }
         />

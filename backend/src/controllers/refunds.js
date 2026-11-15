@@ -1,6 +1,6 @@
-// Refunds PhonePe refused (doc 10.9). The customer was told their refund is delayed; an admin
-// sees each one here and sends it again once the cause is sorted (for example the customer's
-// account was closed and PhonePe now allows it):
+// Refunds the payment provider (Razorpay or PhonePe) refused (doc 10.9). The customer was told
+// their refund is delayed; an admin sees each one here and sends it again once the cause is
+// sorted (for example the account's balance was topped up and the provider now allows it):
 //   GET  /admin/refunds/failed           refused refunds nobody has sent again yet
 //   POST /admin/refunds/:id/retry        send it again (a new refund id; fresh second factor)
 import { failedRefunds, gateway, retryRefund } from '../utils/payments.js';
@@ -9,7 +9,7 @@ import { auditLogModel } from '../models/identity/auditLog.js';
 
 export function refundsController({ dbs }) {
   async function failed(req, res) {
-    res.json({ providerEnabled: gateway.enabled, refunds: await failedRefunds(dbs) });
+    res.json({ providerEnabled: gateway.enabled, provider: gateway.enabled ? gateway.provider.name : null, refunds: await failedRefunds(dbs) });
   }
 
   async function retry(req, res) {

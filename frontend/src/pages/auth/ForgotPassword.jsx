@@ -33,7 +33,7 @@ export default function ForgotPassword() {
           <Button type="submit" loading={busy} disabled={!email.includes('@')}>Send the reset link</Button>
         </form>
       )}
-      <Link to="/join" className="mt-5 inline-block text-sm font-bold text-orange-text">Back to sign in</Link>
+      <Link to="/join" className="mt-5 inline-block text-sm font-semibold text-orange-text">Back to sign in</Link>
     </AuthShell>
   );
 }

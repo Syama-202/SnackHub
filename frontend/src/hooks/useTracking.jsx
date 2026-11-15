@@ -5,9 +5,9 @@ import { addToast } from '../store/slices/toast';
 import { usePolling } from './index';
 
 /**
- * Live tracking for one order, kept in the orders slice. Stands in for the
- * socket events order:update and rider:location: the mock server computes
- * stage, progress, distance and ETA, so every client agrees (doc 10.4).
+ * Live tracking for one order, kept in the orders slice, alongside the socket events
+ * order:update and rider:location: the server computes stage, progress, distance and ETA,
+ * so every client agrees (doc 10.4).
  */
 export function useTracking(orderId, { enabled = true } = {}) {
   const dispatch = useDispatch();

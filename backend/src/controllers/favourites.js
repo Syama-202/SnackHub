@@ -9,7 +9,8 @@ import { cartModel } from '../models/ordering/cart.js';
 import { orderModel } from '../models/ordering/order.js';
 import { orderItemModel } from '../models/ordering/orderItem.js';
 import { productModel } from '../models/catalog/product.js';
-import { sellerModel, isOpenForOrders, closedReason } from '../models/catalog/seller.js';
+import { sellerModel, closedReason } from '../models/catalog/seller.js';
+import { snackAvailability } from '../utils/availability.js';
 import { productView } from './catalog.js';
 import { cartView } from './cart.js';
 
@@ -18,10 +19,12 @@ export const MAX_FAVOURITES = 200;
 /** Why a product cannot go in the cart now, or null. */
 const unavailable = (p, shop) => {
   if (!p || !p.active) return 'No longer on the menu';
-  if (!shop || shop.is_demo) return 'This shop takes no orders';
-  if (!isOpenForOrders(shop)) return closedReason(shop);
-  if (Number(p.qty ?? 0) <= 0) return 'Sold out today';
-  return null;
+  const a = snackAvailability(p, shop);
+  if (a.orderable) return null;
+  if (a.status === 'AVAILABLE') return 'This shop is not taking orders on SnackHub yet';
+  // a closed shop says which shop and when it opens
+  if (a.status === 'SHOP_CLOSED') return closedReason(shop) ?? a.label;
+  return a.label;
 };
 
 export function favouritesController({ dbs }) {

@@ -7,7 +7,8 @@ import { AppError } from '../utils/AppError.js';
 import { currentPolicy } from '../utils/orders.js';
 import { cartModel } from '../models/ordering/cart.js';
 import { productModel } from '../models/catalog/product.js';
-import { sellerModel, isOpenForOrders, closedReason } from '../models/catalog/seller.js';
+import { sellerModel, isOpenForOrders } from '../models/catalog/seller.js';
+import { assertOrderable } from '../utils/availability.js';
 import { productView, sellerView } from './catalog.js';
 import { cartTempClass } from '../../../shared/domain/promise.js';
 
@@ -25,7 +26,8 @@ export async function cartView(dbs, customerId) {
       const p = byId.get(i.productId);
       if (!p || !p.active || p.seller_id !== cart.sellerId) return null;
       const v = productView(p, seller);
-      return { productId: p.id, slug: v.slug, qty: i.qty, title: v.title, pricePaise: v.pricePaise, servingTemp: v.servingTemp, stock: v.stock, art: v.art, weight: v.weight };
+      // a line can stop being orderable while it waits (its serving time ends, it sells out)
+      return { productId: p.id, slug: v.slug, qty: i.qty, title: v.title, pricePaise: v.pricePaise, servingTemp: v.servingTemp, stock: v.stock, art: v.art, weight: v.weight, availability: v.availability };
     })
     .filter(Boolean);
   return {
@@ -36,6 +38,8 @@ export async function cartView(dbs, customerId) {
     deliveryFeePaise: items.length ? policy.deliveryFeePaise : 0,
     tempClass: items.length ? cartTempClass(items) : null,
     shopOpen: items.length ? isOpenForOrders(seller) : true,
+    // lines that cannot be ordered right now: checkout refuses until they are removed or come back
+    blocked: items.filter((i) => !i.availability.orderable).map((i) => ({ productId: i.productId, title: i.title, status: i.availability.status, label: i.availability.label, nextAt: i.availability.nextAt })),
   };
 }
 
@@ -47,13 +51,11 @@ export function cartController({ dbs }) {
   async function setLine(req, res) {
     const customerId = req.user.userId;
     const { productId, qty, replace } = req.body;
-    const product = await productModel.findById(dbs.catalog, productId);
+    const product = await productModel.findWithStock(dbs.catalog, productId);
     if (!product || !product.active) throw new AppError(404, 'NOT_FOUND', 'This snack is not on the menu any more');
     const seller = await sellerModel.findById(dbs.catalog, product.seller_id);
-    if (qty > 0) {
-      if (seller?.is_demo) throw new AppError(409, 'DEMO_SHOP', `${seller.shop_name} is a demo shop: it shows how SnackHub works but takes no real orders. Use the demo sign-in to try it.`);
-      if (!isOpenForOrders(seller)) throw new AppError(409, 'SHOP_UNAVAILABLE', closedReason(seller));
-    }
+    // the same rule as the listings and checkout; stock is reserved only at checkout
+    if (qty > 0) assertOrderable(product, seller, { qty: 0 });
     const cart = await cartModel.get(dbs.ordering, customerId);
     if (qty > 0 && cart.sellerId && cart.sellerId !== product.seller_id && cart.items.length && !replace) {
       const other = await sellerModel.findById(dbs.catalog, cart.sellerId);

@@ -5,12 +5,13 @@ import { apiUpload } from '../../services/api';
 // Checkout: the server recomputes prices, re-runs serviceability and reserves stock
 export const fetchQuote = apiThunk('orders/quote', async ({ addressId }, { apiFetch }) => apiFetch('/orders/quote', { method: 'POST', body: { addressId } }));
 
-export const placeOrder = apiThunk('orders/place', async ({ addressId, paymentMode, note, simulate, idempotencyKey }, { apiFetch }) =>
-  apiFetch('/orders', { method: 'POST', idempotencyKey, body: { addressId, paymentMode, note: note?.trim() || undefined, simulate } }),
+export const placeOrder = apiThunk('orders/place', async ({ addressId, paymentMode, note, idempotencyKey }, { apiFetch }) =>
+  apiFetch('/orders', { method: 'POST', idempotencyKey, body: { addressId, paymentMode, note: note?.trim() || undefined } }),
 );
 
-// Online payment (doc 10.9): placing an ONLINE order returns PhonePe's pay page; afterwards the
-// server asks PhonePe itself. The browser's return from the pay page proves nothing.
+// Online payment (doc 10.9): placing an ONLINE order returns what opens the provider's window
+// (Razorpay) or its pay page (PhonePe); afterwards the server asks the provider itself. What the
+// browser says about the payment proves nothing.
 export const checkPayment = apiThunk('orders/checkPayment', async (orderId, { apiFetch }) => apiFetch(`/orders/${orderId}/payment/check`, { method: 'POST' }));
 
 export const fetchOrders = apiThunk('orders/fetchAll', async (_, { apiFetch }) => apiFetch('/orders'));
@@ -29,9 +30,8 @@ export const fetchOtp = apiThunk('orders/otp', async (id, { apiFetch }) => apiFe
 export const reorder = apiThunk('orders/reorder', async (id, { apiFetch }) => apiFetch(`/orders/${id}/reorder`, { method: 'POST', body: {} }));
 export const cancelOrder = apiThunk('orders/cancel', async (id, { apiFetch }) => apiFetch(`/orders/${id}/cancel`, { method: 'POST' }));
 export const reviewOrder = apiThunk('orders/review', async ({ id, rating }, { apiFetch }) => apiFetch(`/orders/${id}/review`, { method: 'POST', body: { rating } }));
-// A real account sends the photos as multipart; the demo mock only needs their count
-export const fileComplaint = apiThunk('orders/complaint', async ({ id, files, demo, ...body }, { apiFetch }) => {
-  if (demo) return apiFetch(`/orders/${id}/complaints`, { method: 'POST', body });
+// The photos go as multipart, with the other fields
+export const fileComplaint = apiThunk('orders/complaint', async ({ id, files, ...body }) => {
   const form = new FormData();
   form.append('category', body.category);
   form.append('subtype', body.subtype);

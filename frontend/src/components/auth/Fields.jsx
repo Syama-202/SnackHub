@@ -18,7 +18,7 @@ export const PasswordField = forwardRef(function PasswordField({ label = 'Passwo
   const problems = strength ? passwordProblems(value ?? '', { email: personEmail, name: personName }) : [];
   return (
     <label className="block" htmlFor={fid}>
-      <span className="mb-1.5 block text-sm font-bold text-grey-800">{label}</span>
+      <span className="mb-1.5 block text-sm font-semibold text-grey-800">{label}</span>
       <span className="relative block">
         <input ref={ref} id={fid} type={shown ? 'text' : 'password'} autoComplete={autoComplete} value={value} aria-invalid={Boolean(error)} aria-describedby={error ? `${fid}-err` : `${fid}-hint`} className={cx(inputClass(error), 'pr-12')} {...rest} />
         <button type="button" onClick={() => setShown((s) => !s)} className="absolute right-1 top-1/2 grid h-9 w-10 -translate-y-1/2 place-items-center rounded-lg text-grey-600 hover:bg-grey-50" aria-label={shown ? 'Hide password' : 'Show password'} aria-pressed={shown}>
@@ -46,7 +46,7 @@ export const PasswordField = forwardRef(function PasswordField({ label = 'Passwo
 export const CodeField = forwardRef(function CodeField({ label = '6-digit code', id = 'mfa-code', error, recovery = false, ...rest }, ref) {
   return (
     <label className="block" htmlFor={id}>
-      <span className="mb-1.5 block text-sm font-bold text-grey-800">{recovery ? 'Recovery code' : label}</span>
+      <span className="mb-1.5 block text-sm font-semibold text-grey-800">{recovery ? 'Recovery code' : label}</span>
       <input
         ref={ref}
         id={id}

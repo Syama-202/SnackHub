@@ -11,7 +11,7 @@ export default function Bestsellers() {
     <section className="page py-24">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <SectionTitle eyebrow="Bestsellers near you" title="The Snacks Everyone's Talking About." />
-        <Link to="/shop?sort=bestsellers" className="font-extrabold text-orange-text">See all</Link>
+        <Link to="/shop?sort=bestsellers" className="font-bold text-orange-text">See all</Link>
       </div>
       <div className="mt-8">
         <Carousel label="Bestsellers">

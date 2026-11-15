@@ -11,6 +11,8 @@ export function webhookRoutes(deps) {
   const c = webhooksController(deps);
   const router = Router();
   const perIp = limit(deps, 'webhooks.ip', { minutes: 1, max: 300 }, byIp);
-  router.post('/api/v1/webhooks/phonepe', perIp, express.raw({ type: '*/*', limit: '64kb' }), wrap(c.phonepe));
+  const raw = express.raw({ type: '*/*', limit: '64kb' });
+  router.post('/api/v1/webhooks/razorpay', perIp, raw, wrap(c.razorpay));
+  router.post('/api/v1/webhooks/phonepe', perIp, raw, wrap(c.phonepe));
   return router;
 }

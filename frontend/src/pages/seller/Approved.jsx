@@ -5,7 +5,7 @@ import { Card, Icon, Pill, Spinner } from '../../components/ui';
 import { loadOnboarding } from '../../store/slices/onboarding';
 
 /**
- * The gate for a real (not demo) seller: until the application is approved it sends them to
+ * The gate for a seller: until the application is approved it sends them to
  * onboarding. Once approved the console runs on the API, which checks the documents again on
  * every order it accepts and every snack it lists.
  */
@@ -31,7 +31,7 @@ export function Standing({ compact = false }) {
   return (
     <Card className="mb-5 p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-xl font-extrabold">{view.profile?.shopName}</h2>
+        <h2 className="text-xl font-bold">{view.profile?.shopName}</h2>
         {eligible ? <Pill tone="green"><Icon name="shield" className="h-3.5 w-3.5" /> Verified and live</Pill> : <Pill tone="red">Not taking orders</Pill>}
       </div>
       {!eligible && (
@@ -43,10 +43,10 @@ export function Standing({ compact = false }) {
       )}
       {expiring.length > 0 && (
         <p className="mt-3 rounded-xl bg-sun/25 p-3 text-sm">
-          {expiring.map((d) => `${d.label} ${d.expiry === 'expired' ? 'has expired' : `expires on ${d.expiresOn}`}`).join('; ')}. <Link to="/seller/onboarding" className="font-bold text-orange-text">Upload the renewal</Link>
+          {expiring.map((d) => `${d.label} ${d.expiry === 'expired' ? 'has expired' : `expires on ${d.expiresOn}`}`).join('; ')}. <Link to="/seller/onboarding" className="font-semibold text-orange-text">Upload the renewal</Link>
         </p>
       )}
-      <Link to="/seller/onboarding" className="mt-3 inline-block text-sm font-bold text-orange-text">Your documents and history</Link>
+      <Link to="/seller/onboarding" className="mt-3 inline-block text-sm font-semibold text-orange-text">Your documents and history</Link>
     </Card>
   );
 }

@@ -40,9 +40,9 @@ export default function VariantPicker() {
                   <input type="radio" name="box" value={x.id} checked={v === x.id} onChange={() => setV(x.id)} className="h-5 w-5 accent-orange-deep" />
                   <span className="h-10 w-10 shrink-0 rounded-xl" style={{ background: x.face }} aria-hidden="true" />
                   <span>
-                    <span className="block font-display text-xl font-bold">{x.label}</span>
+                    <span className="block font-display text-xl font-semibold">{x.label}</span>
                     <span className="block text-sm text-grey-600">{x.body}</span>
-                    <span className="mt-1 block text-xs font-bold text-orange-text">{x.body2}</span>
+                    <span className="mt-1 block text-xs font-semibold text-orange-text">{x.body2}</span>
                   </span>
                 </label>
               ))}

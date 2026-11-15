@@ -29,13 +29,13 @@ export default function DesignSystem() {
     <div className="page pt-6">
       <SectionTitle eyebrow="SnackHub design system" title="Tokens, glass, motion and components" sub="Doc sections 22.1 to 22.3. Every colour in the app comes from these tokens." />
 
-      <h2 className="mt-12 text-2xl font-extrabold">Colour tokens</h2>
+      <h2 className="mt-12 text-2xl font-bold">Colour tokens</h2>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {TOKENS.map(([n, hex, use]) => (
           <Card key={n} className="overflow-hidden">
             <div className="h-20" style={{ background: hex, borderBottom: '1px solid rgba(0,0,0,.05)' }} />
             <div className="p-3">
-              <p className="font-bold">{n}</p>
+              <p className="font-semibold">{n}</p>
               <p className="font-mono text-xs text-grey-600">{hex}</p>
               <p className="mt-1 text-xs text-grey-600">{use}</p>
             </div>
@@ -43,27 +43,27 @@ export default function DesignSystem() {
         ))}
       </div>
 
-      <h2 className="mt-12 text-2xl font-extrabold">Gradients and glass</h2>
+      <h2 className="mt-12 text-2xl font-bold">Gradients and glass</h2>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
-        <div className="bg-hero grid h-40 place-items-center rounded-[20px] font-display text-xl font-extrabold text-grey-800">Hero gradient</div>
-        <div className="bg-primary grid h-40 place-items-center rounded-[20px] font-display text-xl font-extrabold text-grey-800">Primary button</div>
-        <div className="bg-danger grid h-40 place-items-center rounded-[20px] font-display text-xl font-extrabold text-white">Danger / strong CTA</div>
+        <div className="bg-hero grid h-40 place-items-center rounded-[20px] font-display text-xl font-bold text-grey-800">Hero gradient</div>
+        <div className="bg-primary grid h-40 place-items-center rounded-[20px] font-display text-xl font-bold text-grey-800">Primary button</div>
+        <div className="bg-danger grid h-40 place-items-center rounded-[20px] font-display text-xl font-bold text-white">Danger / strong CTA</div>
       </div>
       <div className="bg-hero relative mt-4 overflow-hidden rounded-[28px] p-8">
         <div className="glass max-w-md p-6">
-          <p className="font-display text-2xl font-extrabold">Glass panel</p>
+          <p className="font-display text-2xl font-bold">Glass panel</p>
           <p className="text-grey-800">rgba(255,255,255,.58), blur 16px, saturate 150%. Needs colour behind it. At most three on screen.</p>
         </div>
       </div>
-      <p className="mt-4 font-display text-5xl font-extrabold"><span className="text-gradient">Gradient text, large headings only</span></p>
+      <p className="mt-4 font-display text-5xl font-bold"><span className="text-gradient">Gradient text, large headings only</span></p>
 
-      <h2 className="mt-12 text-2xl font-extrabold">Typography</h2>
+      <h2 className="mt-12 text-2xl font-bold">Typography</h2>
       <Card className="mt-4 space-y-2 p-6">
-        <p className="font-display text-5xl font-extrabold">Bricolage Grotesque for headings and the wordmark</p>
-        <p className="text-lg">Manrope for text, prices and forms. Clean and readable at small sizes on cheap phones.</p>
+        <p className="font-display text-4xl font-bold">Inter for headings and the wordmark</p>
+        <p className="text-lg">Inter for text, prices and forms too. Clean and readable at small sizes on cheap phones.</p>
       </Card>
 
-      <h2 className="mt-12 text-2xl font-extrabold">Buttons and pills</h2>
+      <h2 className="mt-12 text-2xl font-bold">Buttons and pills</h2>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <Button>Primary</Button>
         <Button variant="secondary">Secondary</Button>
@@ -85,7 +85,7 @@ export default function DesignSystem() {
         <TempBadge temp="HOT" /><SpiceMeter level={3} /><Price paise={18000} mrp={22000} />
       </div>
 
-      <h2 className="mt-12 text-2xl font-extrabold">Inputs, quantity and skeletons</h2>
+      <h2 className="mt-12 text-2xl font-bold">Inputs, quantity and skeletons</h2>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         <Input label="Delivery address" placeholder="House no., street" hint="Helper text" />
         <Input label="With error" defaultValue="12" error="Add the street and area" />
@@ -97,20 +97,20 @@ export default function DesignSystem() {
       <p className="mt-3 max-w-2xl text-sm text-grey-600">Every field is 44 px tall with a 12 px corner. A field written by hand in a page uses the <code>field</code> class to get the same look.</p>
       <div className="mt-4 grid grid-cols-3 gap-3"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div>
 
-      <h2 className="mt-12 text-2xl font-extrabold">Page title, empty, error and message states</h2>
+      <h2 className="mt-12 text-2xl font-bold">Page title, empty, error and message states</h2>
       <Card className="mt-4 p-5"><PageHeader eyebrow="Seller console" title="Page title" sub="One line that says what this page is for." actions={<Button variant="secondary" size="sm">Action</Button>} /></Card>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card><EmptyState icon="receipt" title="No orders yet" body="What is missing, and the next step." action={<Button>Explore snacks</Button>} /></Card>
         <Card><ErrorState title="We could not load your orders" onRetry={() => {}} /></Card>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <Note tone="info">Shops marked demo take no real orders.</Note>
+        <Note tone="info">A shop that is not taking orders says so when you add to the cart.</Note>
         <Note tone="success" title="Saved">Your address was updated.</Note>
         <Note tone="warning">Your food licence expires in 12 days.</Note>
         <Note tone="error">That delivery code is not right. 2 tries left.</Note>
       </div>
 
-      <h2 className="mt-12 text-2xl font-extrabold">Overlays and feedback</h2>
+      <h2 className="mt-12 text-2xl font-bold">Overlays and feedback</h2>
       <div className="mt-4 flex flex-wrap gap-3">
         <Button variant="ghost" onClick={() => setModal(true)}>Open modal</Button>
         <Button variant="ghost" onClick={() => setDrawer(true)}>Open drawer</Button>
@@ -118,24 +118,24 @@ export default function DesignSystem() {
         <Button variant="ghost" onClick={() => dispatch(addToast({ title: 'Something failed', message: 'An error toast', type: 'error' }))}>Error toast</Button>
       </div>
       <Modal open={modal} onClose={() => setModal(false)} title="Example modal">
-        <div className="relative p-6"><CloseButton onClick={() => setModal(false)} className="absolute right-3 top-3" /><h3 className="text-2xl font-extrabold">Modal</h3><p className="mt-2 text-grey-600">Focus is trapped; Escape closes; focus returns to the trigger.</p></div>
+        <div className="relative p-6"><CloseButton onClick={() => setModal(false)} className="absolute right-3 top-3" /><h3 className="text-2xl font-bold">Modal</h3><p className="mt-2 text-grey-600">Focus is trapped; Escape closes; focus returns to the trigger.</p></div>
       </Modal>
       <Drawer open={drawer} onClose={() => setDrawer(false)} title="Example drawer">
-        <div className="flex items-center justify-between p-5"><h3 className="text-2xl font-extrabold">Drawer</h3><CloseButton onClick={() => setDrawer(false)} /></div>
+        <div className="flex items-center justify-between p-5"><h3 className="text-2xl font-bold">Drawer</h3><CloseButton onClick={() => setDrawer(false)} /></div>
       </Drawer>
 
-      <h2 className="mt-12 text-2xl font-extrabold">Snack illustrations</h2>
+      <h2 className="mt-12 text-2xl font-bold">Snack illustrations</h2>
       <p className="text-grey-600">Placeholders for the AI cut-outs in doc 25.4, labelled as illustrations.</p>
       <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-7">
         {SHAPES.map((s) => (
-          <Card key={s} className="p-2 text-center"><SnackArt shape={s} colors={['#E8A23A', '#3F7D20']} className="w-full" /><p className="text-xs font-bold">{s}</p></Card>
+          <Card key={s} className="p-2 text-center"><SnackArt shape={s} colors={['#E8A23A', '#3F7D20']} className="w-full" /><p className="text-xs font-semibold">{s}</p></Card>
         ))}
       </div>
 
-      <h2 className="mt-12 text-2xl font-extrabold">Motion</h2>
+      <h2 className="mt-12 text-2xl font-bold">Motion</h2>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         <Card className="grid h-40 place-items-center"><div className="w-24 animate-pop-float" style={{ '--r': '-6deg' }}><SnackArt shape="ball" colors={['#F2A516', '#FFD36B']} plate={false} /></div><p className="text-sm text-grey-600">Snack pop-up</p></Card>
-        <Card className="lift grid h-40 place-items-center"><p className="font-bold">Hover lift</p></Card>
+        <Card className="lift grid h-40 place-items-center"><p className="font-semibold">Hover lift</p></Card>
         <Card className="grid h-40 place-items-center"><Button className="shine">Button shine on hover</Button></Card>
       </div>
       <p className="mt-2 text-sm text-grey-600">All of these stop under prefers-reduced-motion.</p>

@@ -2,7 +2,6 @@ import { Suspense, useEffect } from 'react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AnimatePresence, m } from 'motion/react';
-import DemoBanner from './DemoBanner';
 import Notice from './Notice';
 import Backdrop from '../ui/Backdrop';
 import Toast from '../ui/Toast';
@@ -17,7 +16,8 @@ import { fetchCart, resetCart } from '../../store/slices/cart';
 import { fetchAddresses, fetchFavourites, resetProfile } from '../../store/slices/profile';
 import { fetchOrders, resetOrders } from '../../store/slices/order';
 import { fetchNotifications, resetNotifications } from '../../store/slices/notification';
-import { setAddress } from '../../store/slices/ui';
+import { HERE, setAddress } from '../../store/slices/ui';
+import LocationStatus from '../address/LocationStatus';
 import { usePolling, useReducedMotion } from '../../hooks';
 
 /**
@@ -46,9 +46,10 @@ export default function CustomerLayout() {
     }
   }, [isCustomer, dispatch]);
 
-  // the remembered address may belong to another account (or the demo): use one of theirs
+  // the remembered address may belong to another account: use one of theirs (browsing from
+  // the current location stays as it is)
   useEffect(() => {
-    if (isCustomer && addressesLoaded && addresses.length && !addresses.some((a) => a.id === addressId)) dispatch(setAddress(addresses[0].id));
+    if (isCustomer && addressesLoaded && addresses.length && addressId !== HERE && !addresses.some((a) => a.id === addressId)) dispatch(setAddress(addresses[0].id));
   }, [isCustomer, addressesLoaded, addresses, addressId, dispatch]);
 
   // Order list drives the always-visible rider lane; notifications drive the bell
@@ -58,10 +59,10 @@ export default function CustomerLayout() {
   return (
     <>
       <Backdrop />
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[80] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:font-bold">Skip to content</a>
-      <DemoBanner />
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[80] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:font-semibold">Skip to content</a>
       <Notice />
       <Navbar />
+      <LocationStatus />
       <main id="main" className="min-h-[60vh]">
         <Suspense fallback={<PageFallback />}>
           {reduced ? (

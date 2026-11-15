@@ -1,6 +1,9 @@
 // Payments for orders (doc 10.9), the same for every provider. A provider has this shape
-// (utils/phonepe.js is the real one; tests pass a fake):
-//   { name, enabled, createPayment, orderStatus, refund, refundStatus, verifyWebhook }
+// (utils/razorpay.js and utils/phonepe.js are the real ones; tests pass fakes):
+//   { name, enabled, createPayment, orderStatus, refund, refundStatus, verifyWebhook,
+//     checkoutFor? }
+// orderStatus, refund and refundStatus also get the provider's own order id (and refund id)
+// as saved here; a provider that looks things up by our ids alone ignores them.
 // Rules:
 // - one payment per order (payments.uq_order), started only by the server, for the total the
 //   server computed; the merchant order id is derived from the order, so a retry reuses it
@@ -19,6 +22,14 @@ import { paymentModel } from '../models/payment/payment.js';
 import { refundModel } from '../models/payment/refund.js';
 import { ledgerEntryModel } from '../models/payment/ledgerEntry.js';
 import { attempt, isUniqueViolation } from '../db/errors.js';
+import { createRazorpay } from './razorpay.js';
+import { createPhonePe } from './phonepe.js';
+
+/**
+ * The provider the settings name: Razorpay (test mode) when its key is set, otherwise
+ * PhonePe's sandbox, which stays switched off without its own keys (pay on delivery only).
+ */
+export const createPaymentProvider = (env, options) => (env.RAZORPAY_KEY_ID ? createRazorpay(env, options) : createPhonePe(env, options));
 
 /** The provider in use, set once by createApp (like realtime): closeOrder reaches it from anywhere. */
 export const gateway = {
@@ -61,7 +72,8 @@ export async function collectCod(dbs, order, collectedPaise) {
 // ---------- online
 
 /**
- * Starts the online payment for an order waiting for it. Returns { redirectUrl, expiresAt }.
+ * Starts the online payment for an order waiting for it. Returns { redirectUrl, expiresAt }
+ * (redirectUrl is null for a provider that opens its own window on our page, like Razorpay).
  * If the provider cannot start it, the order is cancelled (stock back) and the error thrown.
  */
 export async function startOnlinePayment(dbs, env, order) {
@@ -77,7 +89,8 @@ export async function startOnlinePayment(dbs, env, order) {
     }
     p = await paymentModel.findByOrder(dbs.payment, order.id);
   }
-  if (p.redirect_url && p.status === 'CREATED') return { redirectUrl: p.redirect_url, expiresAt: p.expires_at?.getTime?.() ?? null };
+  // already started (a repeat): the same payment, never a second one at the provider
+  if ((p.redirect_url || p.provider_payment_id) && p.status === 'CREATED') return { redirectUrl: p.redirect_url, expiresAt: p.expires_at?.getTime?.() ?? null };
   try {
     const started = await provider.createPayment({ merchantOrderId, amountPaise: order.total_paise, redirectUrl: `${env.APP_URL}/orders/${order.id}?payment=return`, expireAfterSec: windowSec });
     const expiresAt = started.expiresAt ? new Date(started.expiresAt) : new Date(Date.now() + windowSec * 1000);
@@ -106,7 +119,7 @@ async function placePaid(dbs, order) {
 export async function settlePayment(dbs, payment) {
   const provider = gateway.provider;
   if (!provider || payment.method !== provider.name) return null;
-  const st = await provider.orderStatus(payment.provider_order_id);
+  const st = await provider.orderStatus(payment.provider_order_id, { providerOrderId: payment.provider_payment_id });
   await dbs.payment('payments').where({ id: payment.id }).update({ checked_at: new Date(), ...(st.mode && { pay_mode: String(st.mode).slice(0, 30) }) });
   const order = await orderModel.findById(dbs.ordering, payment.order_id);
 
@@ -188,7 +201,7 @@ export async function refundRemaining(dbs, orderId, reason) {
   return refundOrder(dbs, orderId, (await capturedPaise(dbs.payment, p)) - Number(used ?? 0), reason);
 }
 
-/** Refunds PhonePe refused that no admin has sent again yet, oldest first. */
+/** Refunds the provider refused that no admin has sent again yet, oldest first. */
 export async function failedRefunds(dbs, { limit = 100 } = {}) {
   const rows = await dbs.payment('refunds as r').join('payments as p', 'p.id', 'r.payment_id').where({ 'r.status': 'FAILED' }).whereNull('r.retried_by').orderBy('r.id').limit(limit)
     .select('r.id', 'r.amount_paise', 'r.reason', 'r.failure_code', 'r.created_at', 'r.updated_at', 'r.complaint_id', 'p.order_id', 'p.amount_paise as paid_paise', 'p.status as payment_status');
@@ -219,8 +232,11 @@ async function sendRefund(dbs, refundId) {
   const r = await dbs.payment('refunds').where({ id: refundId }).first();
   const p = await dbs.payment('payments').where({ id: r.payment_id }).first();
   if (r.status !== 'PENDING' || !provider) return;
+  const ids = { providerOrderId: p.provider_payment_id, providerRefundId: r.provider_refund_id };
   try {
-    const sent = r.provider_refund_id ? await provider.refundStatus(r.merchant_refund_id) : await provider.refund({ merchantRefundId: r.merchant_refund_id, merchantOrderId: p.provider_order_id, amountPaise: r.amount_paise });
+    const sent = r.provider_refund_id
+      ? await provider.refundStatus(r.merchant_refund_id, ids)
+      : await provider.refund({ merchantRefundId: r.merchant_refund_id, merchantOrderId: p.provider_order_id, amountPaise: r.amount_paise, providerOrderId: p.provider_payment_id });
     if (sent.providerRefundId && !r.provider_refund_id) await dbs.payment('refunds').where({ id: r.id }).update({ provider_refund_id: sent.providerRefundId, updated_at: new Date() });
     await finishRefund(dbs, r.id, sent.state, sent.errorCode);
   } catch (err) {
@@ -228,7 +244,7 @@ async function sendRefund(dbs, refundId) {
     // so ask about this refund id before anything else; otherwise it stays PENDING
     if (err.code !== 'PAYMENT_PROVIDER_REFUSED' || r.provider_refund_id) return;
     try {
-      const known = await provider.refundStatus(r.merchant_refund_id);
+      const known = await provider.refundStatus(r.merchant_refund_id, ids);
       if (known.providerRefundId) await dbs.payment('refunds').where({ id: r.id }).update({ provider_refund_id: known.providerRefundId, updated_at: new Date() });
       await finishRefund(dbs, r.id, known.state, known.errorCode);
     } catch {
@@ -263,8 +279,12 @@ async function finishRefund(dbs, refundId, state, errorCode = null) {
 }
 
 /** A refund the provider reported on (webhook or status): asks the status API and records it. */
-export async function settleRefund(dbs, merchantRefundId) {
-  const r = await dbs.payment('refunds').where({ merchant_refund_id: merchantRefundId }).first();
+export async function settleRefund(dbs, merchantRefundId, providerRefundId = null) {
+  const r = merchantRefundId
+    ? await dbs.payment('refunds').where({ merchant_refund_id: merchantRefundId }).first()
+    : providerRefundId
+      ? await dbs.payment('refunds').where({ provider_refund_id: providerRefundId }).first()
+      : null;
   if (r) await sendRefund(dbs, r.id);
 }
 
@@ -315,6 +335,19 @@ export async function reconcilePayments(dbs, { limit = 20 } = {}) {
       // next pass
     }
   }
+  // payments given up on in the last day, asked again every half hour: a provider whose
+  // orders never expire by themselves (Razorpay) could still take a late payment, which is
+  // then refunded in full. Usually the webhook says so first.
+  const lapsed = await dbs.payment('payments').where({ status: 'EXPIRED', method: gateway.provider.name }).andWhere('updated_at', '>', new Date(Date.now() - 86_400_000))
+    .andWhere((q) => q.whereNull('checked_at').orWhere('checked_at', '<', new Date(Date.now() - 30 * 60_000))).orderBy('id').limit(limit);
+  for (const p of lapsed) {
+    try {
+      await settlePayment(dbs, p);
+      out.checked += 1;
+    } catch {
+      // next pass
+    }
+  }
   for (const r of await dbs.payment('refunds').where({ status: 'PENDING' }).andWhere('created_at', '<', new Date(Date.now() - 30_000)).orderBy('id').limit(limit)) {
     await sendRefund(dbs, r.id);
     out.refunds += 1;
@@ -356,6 +389,8 @@ export async function paymentViews(dbs, orderIds) {
           refundedPaise: mine.filter((r) => r.status === 'PROCESSED').reduce((s, r) => s + r.amount_paise, 0),
           refundPendingPaise: mine.filter((r) => r.status === 'PENDING').reduce((s, r) => s + r.amount_paise, 0),
           redirectUrl: p.status === 'CREATED' ? p.redirect_url : null,
+          // a provider that opens its window on our page (Razorpay): what the browser needs
+          checkout: gateway.provider?.checkoutFor?.(p) ?? null,
           expiresAt: p.expires_at ? new Date(p.expires_at).getTime() : null,
         },
       ];

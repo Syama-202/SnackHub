@@ -18,8 +18,9 @@ import { createMailer } from './utils/mailer.js';
 import { createSms } from './utils/sms.js';
 import { memoryCounter, redisCounter } from './utils/rateLimit.js';
 import { createGeocoder } from './utils/geocoder.js';
-import { createPhonePe } from './utils/phonepe.js';
-import { gateway } from './utils/payments.js';
+import { createPaymentProvider, gateway } from './utils/payments.js';
+import { createElastic } from './utils/elastic.js';
+import { createSearch } from './utils/search.js';
 import { createPush } from './utils/push.js';
 import { webhookRoutes } from './routes/webhooks.js';
 import { limit, byIp } from './middleware/rateLimit.js';
@@ -40,8 +41,10 @@ export function createApp({
   redis = null,
   rateStore = redis ? redisCounter(redis, { logger }) : memoryCounter(),
   geocoder = createGeocoder(env, { logger }),
-  // online payments (sandbox only); tests pass a fake with the same shape
-  paymentProvider = createPhonePe(env, { logger }),
+  // online payments (Razorpay test mode, or PhonePe's sandbox); tests pass a fake with the same shape
+  paymentProvider = createPaymentProvider(env, { logger }),
+  // snack search: Elasticsearch when ELASTICSEARCH_URL is set, PostgreSQL otherwise (tests pass null)
+  elastic = createElastic(env, { logger }),
 }) {
   gateway.use(paymentProvider);
   const app = express();
@@ -60,8 +63,9 @@ export function createApp({
   app.use(cors({ origin: env.CORS_ORIGINS, credentials: true, exposedHeaders: ['X-Request-Id', 'Retry-After', 'RateLimit-Remaining'] }));
   // which Netlify site a request came through, and the visitor's own address (doc 15.0)
   app.use(netlifyProxy(env));
+  const search = createSearch({ dbs, elastic, logger });
+  const deps = { env, dbs, logger, verifyGoogle, storage, scanner, mailer, sms, push, rateStore, geocoder, elastic, search };
   // every API request from one address, before the body is even read (health checks are outside /api)
-  const deps = { env, dbs, logger, verifyGoogle, storage, scanner, mailer, sms, push, rateStore, geocoder };
   app.use('/api/v1', limit(deps, 'api.ip', { minutes: 1, max: env.RATE_LIMIT_IP_PER_MIN }, byIp, 'Too many requests from your network. Wait a minute and try again.'));
   // webhooks read their raw body, so they come before the JSON parser
   const webhooks = webhookRoutes(deps);

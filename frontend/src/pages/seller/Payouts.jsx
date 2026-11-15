@@ -26,14 +26,14 @@ const SellerPayouts = () => {
 
       <Card className="mt-6 p-5" role="region" aria-labelledby="due-h">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="due-h" className="text-lg font-extrabold">Payable now</h2>
-          <p className="font-display text-4xl font-extrabold">{rupees(Math.max(0, d.netPaise))}</p>
+          <h2 id="due-h" className="text-lg font-bold">Payable now</h2>
+          <p className="font-display text-3xl font-bold">{rupees(Math.max(0, d.netPaise))}</p>
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
-          <div><dt className="text-grey-600">Food value</dt><dd className="font-bold">{rupees(d.grossPaise)}</dd></div>
-          <div><dt className="text-grey-600">Commission</dt><dd className="font-bold">−{rupees(d.commissionPaise)}</dd></div>
-          <div><dt className="text-grey-600">Fines</dt><dd className="font-bold">−{rupees(d.finesPaise)}</dd></div>
-          <div><dt className="text-grey-600">Fines returned</dt><dd className="font-bold">+{rupees(d.returnedPaise)}</dd></div>
+          <div><dt className="text-grey-600">Food value</dt><dd className="font-semibold">{rupees(d.grossPaise)}</dd></div>
+          <div><dt className="text-grey-600">Commission</dt><dd className="font-semibold">−{rupees(d.commissionPaise)}</dd></div>
+          <div><dt className="text-grey-600">Fines</dt><dd className="font-semibold">−{rupees(d.finesPaise)}</dd></div>
+          <div><dt className="text-grey-600">Fines returned</dt><dd className="font-semibold">+{rupees(d.returnedPaise)}</dd></div>
         </dl>
         <p className="mt-3 text-sm text-grey-600">
           {d.ordersCount} order{d.ordersCount === 1 ? '' : 's'} ready.
@@ -44,20 +44,20 @@ const SellerPayouts = () => {
         </p>
       </Card>
 
-      <h2 className="mt-8 text-xl font-extrabold">Statements</h2>
+      <h2 className="mt-8 text-xl font-bold">Statements</h2>
       <div className="mt-3 space-y-3">
         {p.payouts.length === 0 && <Card className="p-6 text-center text-grey-600">No statements yet. The first one comes once orders are payable.</Card>}
         {p.payouts.map((x) => (
           <Card key={x.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
-              <p className="font-bold">Statement #{x.id} · {x.ordersCount} order{x.ordersCount === 1 ? '' : 's'}</p>
+              <p className="font-semibold">Statement #{x.id} · {x.ordersCount} order{x.ordersCount === 1 ? '' : 's'}</p>
               <p className="text-sm text-grey-600">
                 {rupees(x.grossPaise)} food − {rupees(x.commissionPaise)} commission{x.finesPaise ? ` − ${rupees(x.finesPaise)} fines` : ''}{x.returnedPaise ? ` + ${rupees(x.returnedPaise)} returned` : ''}
               </p>
               {x.reference && <p className="text-xs text-grey-600">Bank reference <span className="font-mono">{x.reference}</span>, {when(x.closedAt)}</p>}
             </div>
             <div className="text-right">
-              <p className="font-display text-2xl font-extrabold">{rupees(x.netPaise)}</p>
+              <p className="font-display text-2xl font-bold">{rupees(x.netPaise)}</p>
               <Pill tone={x.status === 'PAID' ? 'green' : 'sun'}>{x.status === 'PAID' ? 'Paid' : 'Being prepared'}</Pill>
             </div>
           </Card>

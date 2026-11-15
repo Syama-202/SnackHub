@@ -15,6 +15,7 @@ import Home from './pages/customer/Home';
 
 // Route-level code splitting (doc 5.1): 3D and GSAP load only where used
 const ProductList = lazy(() => import('./pages/customer/ProductList'));
+const Search = lazy(() => import('./pages/customer/Search'));
 const ShopDetail = lazy(() => import('./pages/customer/ShopDetail'));
 const Checkout = lazy(() => import('./pages/customer/Checkout'));
 const OrderHistory = lazy(() => import('./pages/customer/OrderHistory'));
@@ -73,6 +74,7 @@ function AppRoutes() {
           <Route element={<CustomerLayout />}>
             <Route index element={<Home />} />
             <Route path="shop" element={<ProductList />} />
+            <Route path="search" element={<Search />} />
             <Route path="shop/:sellerId" element={<ShopDetail />} />
             <Route path="checkout" element={<RequireRole role="customer"><Checkout /></RequireRole>} />
             <Route path="orders" element={<RequireRole role="customer"><OrderHistory /></RequireRole>} />

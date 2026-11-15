@@ -1,3 +1,4 @@
+import { createElastic } from './utils/elastic.js';
 import { loadEnv } from './config/env.js';
 import { createLogger } from './utils/logger.js';
 import { moduleDbs, closeAll } from './db/connection.js';
@@ -37,7 +38,7 @@ const sockets = createSocketServer(server, { env, dbs, logger, redis, rateStore 
 // the order clocks (shop accept timeout, rider offers) every five, document expiry every six
 // hours with the clear-out of old sessions, notifications and GPS fixes (all safe to run
 // twice; `npm run jobs` runs them once from cron)
-const relay = createOutboxRelay({ env, dbs, mailer, sms, push, logger });
+const relay = createOutboxRelay({ env, dbs, mailer, sms, push, logger, elastic: createElastic(env, { logger }) });
 const orderTimers = createOrderTimers({ dbs, logger });
 let expiryTimer;
 if (env.RUN_JOBS) {

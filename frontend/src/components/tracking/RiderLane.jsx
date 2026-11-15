@@ -52,10 +52,9 @@ export default function RiderLane() {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sun opacity-75" />
           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-sun" />
         </span>
-        <p className="min-w-0 flex-1 truncate text-sm font-bold" aria-live="polite">{laneStatus(track)}</p>
-        {track.order.otpRevealed && track.stage !== 'DELIVERED' && <span className="hidden items-center gap-1 rounded-full bg-sun px-2 py-0.5 text-xs font-extrabold text-grey-800 sm:inline-flex"><Icon name="unlock" className="h-3.5 w-3.5" /> Code ready</span>}
-        {track.simulated && <span className="hidden rounded-full bg-white/10 px-2 py-0.5 text-[0.6875rem] font-bold sm:inline">Simulated feed</span>}
-        <Link to={`/orders/${id}`} className={cx('inline-flex h-9 items-center gap-1 rounded-full bg-primary px-3 text-sm font-extrabold text-grey-800')}>
+        <p className="min-w-0 flex-1 truncate text-sm font-semibold" aria-live="polite">{laneStatus(track)}</p>
+        {track.order.otpRevealed && track.stage !== 'DELIVERED' && <span className="hidden items-center gap-1 rounded-full bg-sun px-2 py-0.5 text-xs font-bold text-grey-800 sm:inline-flex"><Icon name="unlock" className="h-3.5 w-3.5" /> Code ready</span>}
+        <Link to={`/orders/${id}`} className={cx('inline-flex h-9 items-center gap-1 rounded-full bg-primary px-3 text-sm font-bold text-grey-800')}>
           Track <Icon name="arrowRight" className="h-4 w-4" />
         </Link>
       </div>

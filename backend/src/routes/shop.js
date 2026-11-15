@@ -21,6 +21,21 @@ const week = z
     const problem = scheduleProblem(w);
     if (problem) ctx.addIssue({ code: 'custom', message: problem });
   });
+// a snack's own serving times: up to three windows a day (breakfast, evening, late night)
+export const SNACK_WINDOWS = 3;
+// a day left out has no window (the snack is not served that day)
+const snackWeek = z
+  .object(Object.fromEntries(DAYS.map((d) => [d, z.array(z.tuple([hhmm, hhmm])).max(SNACK_WINDOWS).optional()])))
+  .strict()
+  .superRefine((w, ctx) => {
+    const problem = scheduleProblem(w, { maxWindows: SNACK_WINDOWS });
+    if (problem) ctx.addIssue({ code: 'custom', message: problem });
+  });
+// switched off until a moment from now to 30 days ahead (ms since 1970), or until switched back on
+const offUntil = z
+  .number()
+  .int()
+  .refine((t) => t > Date.now() && t <= Date.now() + 30 * 24 * 3600_000, 'Pick a time from now to 30 days ahead');
 // holidays from today to a year ahead, in India time
 const holiday = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').refine((d) => {
   const today = istDate(Date.now()).date;
@@ -51,6 +66,8 @@ const menuFields = {
   vegetarian: z.boolean(),
   allergens: z.array(z.string().trim().min(2).max(20)).max(8),
   shape: z.enum(SHAPES),
+  // null: served all of the shop's hours
+  availableHours: snackWeek.nullable(),
 };
 const optional = (fields) => Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v.optional()]));
 const { title, category, servingTemp, prepMinutes, pricePaise, ...rest } = menuFields;
@@ -59,12 +76,12 @@ const newProduct = z
   .strict()
   .refine((b) => b.mrpPaise == null || b.mrpPaise >= b.pricePaise, { message: 'The MRP cannot be below the price', path: ['mrpPaise'] });
 const productChanges = z
-  .object({ ...optional(menuFields), active: z.boolean().optional() })
+  .object({ ...optional(menuFields), active: z.boolean().optional(), unavailable: z.boolean().optional(), unavailableUntil: offUntil.nullable().optional() })
   .strict()
   .refine(atLeastOne, 'Nothing to change');
 // a catalogue snack at the shop's own price; the name and details come from the entry
 const fromCatalogue = z
-  .object({ catalogItemId: id, pricePaise: price, mrpPaise: price.nullable().optional(), prepMinutes: menuFields.prepMinutes, description: menuFields.description.optional() })
+  .object({ catalogItemId: id, pricePaise: price, mrpPaise: price.nullable().optional(), prepMinutes: menuFields.prepMinutes, description: menuFields.description.optional(), availableHours: menuFields.availableHours.optional() })
   .strict()
   .refine((b) => b.mrpPaise == null || b.mrpPaise >= b.pricePaise, { message: 'The MRP cannot be below the price', path: ['mrpPaise'] });
 const catalogueQuery = z.object({ q: z.string().trim().max(60).optional() }).strict();

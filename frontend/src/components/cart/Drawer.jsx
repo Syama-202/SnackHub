@@ -6,10 +6,12 @@ import SnackImage from '../ui/SnackImage';
 import { closeCart } from '../../store/slices/ui';
 import { updateQuantity } from '../../store/slices/cart';
 import { rupees } from '@shared/domain/money';
+import { STATUS_TONE } from '../../constants/availability';
 
 export default function CartDrawer() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const blocked = useSelector((state) => state.cart.blocked ?? []);
   const open = useSelector((state) => state.ui.cartOpen);
   const user = useSelector((state) => state.auth.user);
   const cart = useSelector((state) => state.cart);
@@ -26,7 +28,7 @@ export default function CartDrawer() {
     <Drawer open={open} onClose={close} title="Your cart">
       <div className="flex items-center justify-between border-b border-grey-800/10 px-5 py-3">
         <div>
-          <h2 className="text-2xl font-extrabold">Your cart</h2>
+          <h2 className="text-2xl font-bold">Your cart</h2>
           {cart.seller && <p className="text-sm text-grey-600">From {cart.seller.shopName}</p>}
         </div>
         <CloseButton onClick={close} />
@@ -57,16 +59,20 @@ export default function CartDrawer() {
                       <SnackImage slug={i.slug} art={i.art} plate={false} sizes="64px" className="h-14 w-16 rounded-lg" title={i.title} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-bold">{i.title}</p>
+                      <p className="truncate font-semibold">{i.title}</p>
                       <p className="text-xs text-grey-600">{i.weight} · {rupees(i.pricePaise)}</p>
                       <div className="mt-1 flex gap-1">
                         <TempBadge temp={i.servingTemp} />
-                        {i.stock < i.qty && <Pill tone="red">Only {i.stock} left</Pill>}
+                        {i.availability && i.availability.status !== 'AVAILABLE' ? (
+                          <Pill tone={STATUS_TONE[i.availability.status]}>{i.availability.label}</Pill>
+                        ) : (
+                          i.stock < i.qty && <Pill tone="red">Only {i.stock} left</Pill>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
                       <QtyControl size="sm" qty={i.qty} onChange={(q) => dispatch(updateQuantity({ id: i.productId, sellerId: cart.sellerId, ...i }, q))} max={i.stock} label={i.title} />
-                      <span className="text-sm font-extrabold">{rupees(i.pricePaise * i.qty)}</span>
+                      <span className="text-sm font-bold">{rupees(i.pricePaise * i.qty)}</span>
                     </div>
                   </m.li>
                 ))}
@@ -75,16 +81,22 @@ export default function CartDrawer() {
           </div>
           <div className="safe-bottom border-t border-grey-800/10 bg-white px-5 pt-4">
             <dl className="space-y-1 text-sm">
-              <div className="flex justify-between"><dt className="text-grey-600">Subtotal</dt><dd className="font-bold">{rupees(cart.subtotalPaise)}</dd></div>
-              <div className="flex justify-between"><dt className="text-grey-600">Delivery fee (sample)</dt><dd className="font-bold">{rupees(cart.deliveryFeePaise)}</dd></div>
-              <div className="flex justify-between pt-1 text-base"><dt className="font-extrabold">Total</dt><dd className="font-extrabold">{rupees(total)}</dd></div>
+              <div className="flex justify-between"><dt className="text-grey-600">Subtotal</dt><dd className="font-semibold">{rupees(cart.subtotalPaise)}</dd></div>
+              <div className="flex justify-between"><dt className="text-grey-600">Delivery fee</dt><dd className="font-semibold">{rupees(cart.deliveryFeePaise)}</dd></div>
+              <div className="flex justify-between pt-1 text-base"><dt className="font-bold">Total</dt><dd className="font-bold">{rupees(total)}</dd></div>
             </dl>
-            <p className="mt-1 text-xs text-grey-600">Prices and stock are checked again at checkout.</p>
+            {blocked.length > 0 ? (
+              <p className="mt-2 rounded-xl bg-sun/20 p-2.5 text-xs text-grey-800" role="status">
+                {blocked.length === 1 ? `${blocked[0].title} can't be ordered right now (${blocked[0].label.toLowerCase()}).` : `${blocked.length} snacks can't be ordered right now.`} Remove {blocked.length === 1 ? 'it' : 'them'} to check out, or come back then.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-grey-600">Prices and stock are checked again at checkout.</p>
+            )}
             <div className="mt-3 grid grid-cols-[auto_1fr] gap-2">
               <Button variant="ghost" onClick={close}>Continue shopping</Button>
-              <Button onClick={() => go('/checkout')}>Checkout · {rupees(total)}</Button>
+              <Button onClick={() => go('/checkout')} disabled={blocked.length > 0}>Checkout · {rupees(total)}</Button>
             </div>
-            <Link to={`/shop/${cart.sellerId}`} onClick={close} className="mt-2 block py-2 text-center text-sm font-bold text-orange-text">Add more from this shop</Link>
+            <Link to={`/shop/${cart.sellerId}`} onClick={close} className="mt-2 block py-2 text-center text-sm font-semibold text-orange-text">Add more from this shop</Link>
           </div>
         </>
       )}

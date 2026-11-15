@@ -17,14 +17,14 @@ import { runPurge } from '../src/jobs/purge.js';
 import { Emitter } from '@socket.io/redis-emitter';
 import { createRedis, closeRedis, safePublisher } from '../src/utils/redis.js';
 import { realtime } from '../src/utils/realtime.js';
-import { createPhonePe } from '../src/utils/phonepe.js';
-import { gateway } from '../src/utils/payments.js';
+import { createPaymentProvider, gateway } from '../src/utils/payments.js';
+import { createElastic } from '../src/utils/elastic.js';
 
 const env = loadEnv();
 const logger = createLogger(env);
 const dbs = moduleDbs(env);
 // the payment checks ask the provider directly
-gateway.use(createPhonePe(env, { logger }));
+gateway.use(createPaymentProvider(env, { logger }));
 // live hints from this worker reach the apps through the API's Socket.IO servers (Redis)
 const redis = createRedis(env, logger, { name: 'jobs', queue: true });
 if (redis) {
@@ -35,7 +35,7 @@ try {
   const expiry = await runDocumentExpiry({ env, dbs, logger });
   const timers = await runOrderTimers({ dbs, logger });
   const mailer = createMailer(env);
-  const relay = createOutboxRelay({ env, dbs, mailer, sms: createSms(env, mailer), push: createPush(env, { logger }), logger });
+  const relay = createOutboxRelay({ env, dbs, mailer, sms: createSms(env, mailer), push: createPush(env, { logger }), logger, elastic: createElastic(env, { logger }) });
   let sent = 0;
   for (let n = await relay.runOnce(); n > 0; n = await relay.runOnce()) sent += n;
   const purged = await runPurge({ dbs });

@@ -42,7 +42,7 @@ const blank = (v) => (v.trim() === '' ? null : v.trim());
  * location, or by dragging it on the map; the street line can be filled from the pin. Every
  * field the rider needs at the door (flat, floor, landmark, instructions) is here.
  */
-export default function AddressForm({ address = null, onSaved, onCancel, demo = false }) {
+export default function AddressForm({ address = null, onSaved, onCancel }) {
   const dispatch = useDispatch();
   const here = useSelector(selectDeliveryPoint);
   const editing = Boolean(address);
@@ -131,7 +131,7 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
     const body = {
       kind: v.kind,
       ...(v.label ? { label: v.label.trim() } : {}),
-      line: demo && !v.line.includes('(demo)') ? `${v.line.trim()} (demo)` : v.line.trim(),
+      line: v.line.trim(),
       pincode: blank(v.pincode),
       house: blank(v.house),
       floor: blank(v.floor),
@@ -160,10 +160,10 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid gap-4">
       <fieldset>
-        <legend className="mb-1.5 text-sm font-bold">What kind of place?</legend>
+        <legend className="mb-1.5 text-sm font-semibold">What kind of place?</legend>
         <div className="flex flex-wrap gap-2">
           {ADDRESS_KINDS.map((k) => (
-            <label key={k} className={cx('inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full border-2 px-3 text-sm font-bold transition has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-orange/25', kind === k ? 'border-orange bg-sun/15' : 'border-grey-800/10 hover:border-grey-800/25')}>
+            <label key={k} className={cx('inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full border-2 px-3 text-sm font-semibold transition has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-orange/25', kind === k ? 'border-orange bg-sun/15' : 'border-grey-800/10 hover:border-grey-800/25')}>
               <input type="radio" value={k} {...register('kind')} className="sr-only" />
               <Icon name={KIND_ICON[k]} className="h-4 w-4" /> {KIND_LABEL[k]}
             </label>
@@ -178,7 +178,7 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
       />
 
       <div className="grid gap-2 rounded-2xl bg-grey-50 p-3">
-        <p className="text-sm font-bold">Where is it?</p>
+        <p className="text-sm font-semibold">Where is it?</p>
         <div className="grid gap-2 sm:flex">
           <label htmlFor="place-q" className="sr-only">Search for a place</label>
           <input
@@ -201,7 +201,7 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
               <li key={`${r.lat},${r.lng},${i}`}>
                 <button type="button" onClick={() => (placePin({ lat: r.lat, lng: r.lng }, r.line, r.postcode), setResults(null))} className="flex w-full items-start gap-2 rounded-xl bg-white px-3 py-2 text-left text-sm hover:bg-sun/15">
                   <Icon name="pin" className="mt-0.5 h-4 w-4 shrink-0 text-orange-text" />
-                  <span><span className="block font-bold">{r.name}</span><span className="block text-grey-600">{r.line}</span></span>
+                  <span><span className="block font-semibold">{r.name}</span><span className="block text-grey-600">{r.line}</span></span>
                 </button>
               </li>
             ))}
@@ -226,7 +226,7 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
         <Input label="Floor (optional)" placeholder="2" {...register('floor')} error={errors.floor?.message} />
         <Input label="Landmark (optional)" placeholder="Opposite the temple" {...register('landmark')} error={errors.landmark?.message} />
         <label className="block">
-          <span className="mb-1.5 block text-sm font-bold">City</span>
+          <span className="mb-1.5 block text-sm font-semibold">City</span>
           <select
             {...register('city', { onChange: () => (cityPicked.current = true) })}
             className="field h-11"
@@ -247,7 +247,7 @@ export default function AddressForm({ address = null, onSaved, onCancel, demo = 
       </div>
 
       {!address?.isDefault && (
-        <label className="flex items-center gap-3 text-sm font-bold">
+        <label className="flex items-center gap-3 text-sm font-semibold">
           <input type="checkbox" {...register('isDefault')} className="h-5 w-5 accent-orange-deep" />
           Make this my default address
         </label>

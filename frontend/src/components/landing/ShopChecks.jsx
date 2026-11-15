@@ -19,7 +19,7 @@ const SPOTS = [
 const Box = () => (
   <div className="absolute inset-[12%] rounded-[36px] bg-hero shadow-[0_30px_80px_rgba(226,55,68,0.35)]" style={{ transform: 'perspective(900px) rotateX(14deg) rotateY(-18deg)' }}>
     <div className="absolute inset-x-[10%] top-[42%] h-[16%] rounded-xl bg-sun/90" />
-    <p className="absolute inset-x-0 top-[44%] text-center font-display text-[clamp(1.2rem,3vw,2rem)] font-extrabold tracking-wider text-grey-800">SNACKHUB</p>
+    <p className="absolute inset-x-0 top-[44%] text-center font-display text-[clamp(1.2rem,3vw,2rem)] font-bold tracking-wider text-grey-800">SNACKHUB</p>
     <div className="absolute inset-x-[8%] top-[8%] h-[20%] rounded-2xl bg-white/25" />
   </div>
 );
@@ -47,7 +47,7 @@ export default function ShopChecks() {
               onClick={() => setActive(s.id)}
               aria-pressed={active === s.id}
               aria-label={`${i + 1}. ${s.title}`}
-              className={cx('absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full font-extrabold shadow-lg transition', active === s.id ? 'scale-110 bg-grey-800 text-white' : 'bg-white text-grey-800 hover:scale-105')}
+              className={cx('absolute grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full font-bold shadow-lg transition', active === s.id ? 'scale-110 bg-grey-800 text-white' : 'bg-white text-grey-800 hover:scale-105')}
               style={{ left: `${s.x}%`, top: `${s.y}%` }}
             >
               <span className={cx('absolute inset-0 rounded-full', active !== s.id && 'animate-ping bg-white/60')} aria-hidden="true" />
@@ -57,11 +57,11 @@ export default function ShopChecks() {
         </div>
         <div className="glass p-6 sm:p-8" aria-live="polite">
           <Icon name="shield" className="h-8 w-8 text-emerald-600" />
-          <h3 className="mt-3 text-2xl font-extrabold">{spot.title}</h3>
+          <h3 className="mt-3 text-2xl font-bold">{spot.title}</h3>
           <p className="mt-2 text-grey-600">{spot.body}</p>
           <div className="mt-6 flex flex-wrap gap-2">
             {SPOTS.map((s, i) => (
-              <button key={s.id} onClick={() => setActive(s.id)} className={cx('h-10 rounded-full px-4 text-sm font-bold transition', active === s.id ? 'bg-grey-800 text-white' : 'bg-white text-grey-800 ring-1 ring-grey-800/10')}>
+              <button key={s.id} onClick={() => setActive(s.id)} className={cx('h-10 rounded-full px-4 text-sm font-semibold transition', active === s.id ? 'bg-grey-800 text-white' : 'bg-white text-grey-800 ring-1 ring-grey-800/10')}>
                 {i + 1}. {s.short}
               </button>
             ))}

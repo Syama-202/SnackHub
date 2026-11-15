@@ -24,10 +24,10 @@
   --color-peach: #FFE2C7;
   --color-blush: #FFE0E2;
 
-  /* Fonts: Bricolage Grotesque (bold, characterful grotesk) for headings and the wordmark,
-     Manrope for text, prices and forms */
-  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  /* Fonts: Inter for everything (headings, the wordmark, text, prices and forms): one calm,
+     very readable family, bold for headings and semibold for labels */
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 
   /* Type scale: Tailwind's standard sizes (16 px body text), the size most professional sites
      use; the larger scale made every page look oversized on laptops and monitors */
@@ -196,21 +196,21 @@
 /* ===== Type roles: one size per job, so every page reads the same ===== */
 /* The h1 of an inner page (orders, profile, the consoles) */
 @utility page-title {
-  font-size: clamp(1.75rem, 1.4rem + 1.3vw, 2.25rem);
-  font-weight: 800;
+  font-size: clamp(1.625rem, 1.35rem + 1vw, 2rem);
+  font-weight: 700;
   line-height: 1.1;
 }
 /* The heading of a block inside a page */
 @utility section-heading {
-  font-size: clamp(1.25rem, 1.15rem + 0.4vw, 1.5rem);
-  font-weight: 800;
+  font-size: clamp(1.125rem, 1.05rem + 0.3vw, 1.25rem);
+  font-weight: 600;
   line-height: 1.2;
 }
 /* The small label above a heading */
 @utility eyebrow {
   font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-orange-text);
 }
@@ -558,12 +558,10 @@
   body {
     @apply bg-page min-h-dvh font-sans text-grey-800 antialiased;
     padding-bottom: var(--lane-h);
-    font-feature-settings: "ss01", "cv11";
   }
   h1, h2, h3, h4 {
-    @apply font-display tracking-[-0.03em];
+    @apply font-display tracking-[-0.02em];
     text-wrap: balance;
-    font-variation-settings: "opsz" 72;
   }
   :focus-visible {
     @apply rounded-lg outline-3 outline-offset-2 outline-orange-deep;

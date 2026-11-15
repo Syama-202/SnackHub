@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTracking } from '../../hooks/useTracking';
@@ -11,12 +11,14 @@ import { cancelOrder, checkPayment, fetchOrders, fetchOtp, reorder, reviewOrder 
 import { fetchCart } from '../../store/slices/cart';
 import { useNow, usePageTitle, usePolling } from '../../hooks';
 import { Button, Card, Icon, Pill, EmptyState, Spinner, cx } from '../../components/ui';
+import { PAY_MODE, providerName } from '../../constants/payments';
+import { isRazorpayCheckout, openRazorpay } from '../../utils/razorpay';
 
 const OrderTracking = () => {
   const { id } = useParams();
   const { track: t, isLoading, error } = useTracking(id);
   const dispatch = useDispatch();
-  // waiting for payment: the server asks PhonePe; the return from the pay page proves nothing
+  // waiting for payment: the server asks the provider; what the pay page or window says proves nothing
   usePolling(() => dispatch(checkPayment(id)), 4000, t?.order.status === 'PENDING_PAYMENT', 'order');
   usePageTitle(t ? `Order #${t.order.id}: ${STATE_LABEL[t.order.status]}` : null);
   if (isLoading) return <div className="grid min-h-[50vh] place-items-center"><Spinner className="h-8 w-8 text-orange-text" /></div>;
@@ -25,16 +27,16 @@ const OrderTracking = () => {
   const terminal = ['DELIVERED', 'CANCELLED', 'REJECTED'].includes(o.status);
   return (
     <div className="page page-narrow pt-6">
-      <Link to="/orders" className="inline-flex h-11 items-center gap-1 text-sm font-bold text-grey-600 hover:text-grey-800"><Icon name="arrowLeft" className="h-4 w-4" /> Your orders</Link>
+      <Link to="/orders" className="inline-flex h-11 items-center gap-1 text-sm font-semibold text-grey-600 hover:text-grey-800"><Icon name="arrowLeft" className="h-4 w-4" /> Your orders</Link>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm font-bold text-grey-600">Order #{o.id} · {o.seller?.shopName}</p>
-          <h1 className="text-[clamp(2rem,5vw,3rem)] font-extrabold leading-tight">{STATE_LABEL[o.status]}</h1>
+          <p className="text-sm font-semibold text-grey-600">Order #{o.id} · {o.seller?.shopName}</p>
+          <h1 className="text-[clamp(1.75rem,1.3rem+1.8vw,2.5rem)] font-bold leading-tight">{STATE_LABEL[o.status]}</h1>
         </div>
         {!terminal && o.promiseWindow && (
           <div className="glass glass-strong px-4 py-2 text-right">
-            <p className="text-xs font-bold text-grey-600">Promised by</p>
-            <p className="font-display text-2xl font-extrabold">{new Date(o.promisedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
+            <p className="text-xs font-semibold text-grey-600">Promised by</p>
+            <p className="font-display text-2xl font-bold">{new Date(o.promisedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
           </div>
         )}
       </div>
@@ -44,8 +46,7 @@ const OrderTracking = () => {
 
       <div className="mt-6 overflow-hidden rounded-[28px] bg-grey-900 shadow-2xl">
         <div className="flex items-center justify-between px-5 pt-4 text-white">
-          <p className="font-bold" aria-live="polite">{laneStatus(t)}</p>
-          {t.simulated && <span className="rounded-full bg-sun px-2 py-0.5 text-[0.6875rem] font-extrabold uppercase text-grey-800">Simulated feed</span>}
+          <p className="font-semibold" aria-live="polite">{laneStatus(t)}</p>
         </div>
         {!['CANCELLED', 'REJECTED', 'PENDING_PAYMENT'].includes(o.status) && (
           <div className="p-3 pt-3">
@@ -59,22 +60,22 @@ const OrderTracking = () => {
           {!terminal && o.status !== 'PENDING_PAYMENT' && <DeliveryCode order={o} distanceM={t.distanceM} />}
           {o.status === 'DELIVERED' && <DeliveredPanel order={o} />}
           <Card className="p-5">
-            <h2 className="text-xl font-extrabold">Timeline</h2>
+            <h2 className="text-xl font-bold">Timeline</h2>
             <Timeline order={o} />
           </Card>
         </div>
         <div className="space-y-6">
           <Card className="p-5">
-            <h2 className="text-xl font-extrabold">Order details</h2>
+            <h2 className="text-xl font-bold">Order details</h2>
             <ul className="mt-3 space-y-1 text-sm">
               {o.items.map((i) => (
-                <li key={i.productId} className="flex justify-between"><span>{i.title} × {i.qty}</span><span className="font-bold">{rupees(i.unitPricePaise * i.qty)}</span></li>
+                <li key={i.productId} className="flex justify-between"><span>{i.title} × {i.qty}</span><span className="font-semibold">{rupees(i.unitPricePaise * i.qty)}</span></li>
               ))}
             </ul>
             <dl className="mt-3 space-y-1 border-t border-grey-800/10 pt-3 text-sm">
               <div className="flex justify-between"><dt className="text-grey-600">Delivery fee</dt><dd>{rupees(o.deliveryFeePaise)}</dd></div>
               {o.creditPaise > 0 && <div className="flex justify-between text-emerald-700"><dt>App credit</dt><dd>−{rupees(o.creditPaise)}</dd></div>}
-              <div className="flex justify-between text-base font-extrabold"><dt>Total</dt><dd>{rupees(o.totalPaise)}</dd></div>
+              <div className="flex justify-between text-base font-bold"><dt>Total</dt><dd>{rupees(o.totalPaise)}</dd></div>
             </dl>
             <div className="mt-3 flex flex-wrap gap-2">
               <Pill tone={o.paymentStatus === 'CAPTURED' || o.paymentStatus === 'COD_COLLECTED' ? 'green' : 'grey'}>{paymentLabel(o)}</Pill>
@@ -92,8 +93,6 @@ const OrderTracking = () => {
     </div>
   );
 };
-
-const PAY_MODE = { UPI_INTENT: 'UPI app', UPI_COLLECT: 'UPI', UPI_QR: 'UPI QR', CARD: 'card', NET_BANKING: 'net banking' };
 
 function paymentLabel(o) {
   const via = PAY_MODE[o.payment?.payMode];
@@ -119,25 +118,69 @@ const isPhonePePage = (url) => {
   }
 };
 
-/** An online order waiting for PhonePe: confirming after a return, or a way back to the pay page. */
+/**
+ * An online order waiting for its payment: confirming after the customer paid, or a way to
+ * pay (Razorpay's window on this page, or back to PhonePe's page). ?pay=now, from checkout,
+ * opens Razorpay's window once.
+ */
 function PaymentPending({ order }) {
-  const [params] = useSearchParams();
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
+  const [params, setParams] = useSearchParams();
   const now = useNow(1000);
+  const [opening, setOpening] = useState(false);
+  const autoOpened = useRef(false);
   const returning = params.get('payment') === 'return';
   const p = order.payment;
-  const open = p?.redirectUrl && isPhonePePage(p.redirectUrl) && (!p.expiresAt || p.expiresAt > now);
+  const name = providerName(p?.method);
+  const inTime = !p?.expiresAt || p.expiresAt > now + 30_000;
+  const razorpay = isRazorpayCheckout(p?.checkout) && inTime;
+  const phonepe = !razorpay && p?.redirectUrl && isPhonePePage(p.redirectUrl) && (!p.expiresAt || p.expiresAt > now);
   const minutes = p?.expiresAt ? Math.max(0, Math.ceil((p.expiresAt - now) / 60000)) : null;
+
+  const pay = useCallback(async () => {
+    setOpening(true);
+    try {
+      await openRazorpay(p.checkout, {
+        orderId: order.id,
+        expiresAt: p.expiresAt,
+        user,
+        onDone: () => {
+          setParams({ payment: 'return' }, { replace: true });
+          dispatch(checkPayment(order.id));
+        },
+      });
+    } catch (e) {
+      dispatch(addToast({ type: 'error', title: 'The payment window did not open', message: `${e.message}. Check your connection and try again.` }));
+    } finally {
+      setOpening(false);
+    }
+  }, [p?.checkout, p?.expiresAt, order.id, user, setParams, dispatch]);
+
+  // straight from checkout: open the window once, and not again on a reload
+  useEffect(() => {
+    if (params.get('pay') !== 'now' || autoOpened.current) return;
+    autoOpened.current = true;
+    setParams({}, { replace: true });
+    if (razorpay) pay();
+  }, [params, razorpay, pay, setParams]);
+
   return (
     <div className="mt-4 rounded-2xl bg-sun/25 p-4" role="status" aria-live="polite">
-      <p className="flex items-center gap-2 font-extrabold"><Spinner className="h-4 w-4" /> {returning ? 'Confirming your payment with PhonePe' : 'Waiting for your payment'}</p>
+      <p className="flex items-center gap-2 font-bold"><Spinner className="h-4 w-4" /> {returning ? `Confirming your payment with ${name}` : 'Waiting for your payment'}</p>
       <p className="mt-1 text-sm text-grey-800">
         {returning
-          ? 'This page updates by itself as soon as PhonePe confirms it to us, usually within a few seconds. If the payment did not go through, nothing is charged.'
-          : `The shop gets your order once the payment is confirmed.${minutes != null ? ` The payment page stays open for about ${minutes} more minute${minutes === 1 ? '' : 's'}.` : ''}`}
+          ? `This page updates by itself as soon as ${name} confirms it to us, usually within a few seconds. If the payment did not go through, nothing is charged.`
+          : `The shop gets your order once the payment is confirmed.${minutes != null ? ` You can pay for about ${minutes} more minute${minutes === 1 ? '' : 's'}.` : ''}`}
       </p>
-      {open && (
-        <a href={p.redirectUrl} className="mt-3 inline-flex h-10 items-center gap-1 rounded-full bg-grey-900 px-4 text-sm font-bold text-white">
-          {returning ? 'Back to the payment page' : 'Continue to PhonePe'} <Icon name="arrowRight" className="h-4 w-4" />
+      {razorpay && (
+        <Button className="mt-3" size="sm" loading={opening} onClick={pay}>
+          {returning ? 'Pay again' : `Pay with ${name}`} <Icon name="arrowRight" className="h-4 w-4" />
+        </Button>
+      )}
+      {phonepe && (
+        <a href={p.redirectUrl} className="mt-3 inline-flex h-10 items-center gap-1 rounded-full bg-grey-900 px-4 text-sm font-semibold text-white">
+          {returning ? 'Back to the payment page' : `Continue to ${name}`} <Icon name="arrowRight" className="h-4 w-4" />
         </a>
       )}
     </div>
@@ -150,7 +193,7 @@ function PaymentNote({ order }) {
   if (!p || order.paymentMode !== 'ONLINE') return null;
   let text = null;
   if (['FAILED', 'EXPIRED'].includes(p.status)) text = 'The payment did not go through, so nothing was charged and the order was cancelled.';
-  else if (p.refundPendingPaise > 0) text = `A refund of ${rupees(p.refundPendingPaise)} is on its way back to how you paid. PhonePe is processing it.`;
+  else if (p.refundPendingPaise > 0) text = `A refund of ${rupees(p.refundPendingPaise)} is on its way back to how you paid. ${providerName(p.method)} is processing it.`;
   else if (p.refundedPaise > 0) text = `${rupees(p.refundedPaise)} was refunded to how you paid.`;
   if (!text) return null;
   return <p className="mt-4 rounded-2xl bg-white/80 p-4 text-sm font-semibold shadow-sm">{text}</p>;
@@ -174,11 +217,11 @@ function DeliveryCode({ order, distanceM }) {
           <Icon name={unlocked ? 'unlock' : 'lock'} className="h-6 w-6" />
         </span>
         <div className="flex-1">
-          <h2 className="text-xl font-extrabold">Delivery code</h2>
+          <h2 className="text-xl font-bold">Delivery code</h2>
           {unlocked ? (
             <>
               <p className="mt-1 text-grey-600">Share this with your rider at the door. It works only there.</p>
-              <p className="mt-3 font-display text-5xl font-extrabold tracking-[0.3em] text-grey-800" aria-label={`Delivery code ${code.split('').join(' ')}`}>{code}</p>
+              <p className="mt-3 font-display text-5xl font-bold tracking-[0.3em] text-grey-800" aria-label={`Delivery code ${code.split('').join(' ')}`}>{code}</p>
             </>
           ) : (
             <p className="mt-1 text-grey-600">
@@ -206,7 +249,7 @@ function Timeline({ order }) {
               {done && <Icon name="check" className="h-3.5 w-3.5" />}
             </span>
             <span className="flex-1">
-              <span className={cx('block font-bold', !done && 'text-grey-600')}>{STATE_LABEL[s]}</span>
+              <span className={cx('block font-semibold', !done && 'text-grey-600')}>{STATE_LABEL[s]}</span>
               {at[s] && <span className="text-xs text-grey-600">{new Date(at[s]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}</span>}
             </span>
           </li>
@@ -257,7 +300,7 @@ function DeliveredPanel({ order }) {
   };
   return (
     <Card className="p-5">
-      <h2 className="text-xl font-extrabold">How was the food?</h2>
+      <h2 className="text-xl font-bold">How was the food?</h2>
       <div className="mt-3 flex gap-1" role="radiogroup" aria-label="Rate the food">
         {[1, 2, 3, 4, 5].map((r) => (
           <button key={r} role="radio" aria-checked={rating === r} aria-label={`${r} star${r > 1 ? 's' : ''}`} onClick={() => send(r)} disabled={sent} className="grid h-11 w-11 place-items-center rounded-full hover:bg-sun/20 disabled:hover:bg-transparent">
@@ -266,7 +309,7 @@ function DeliveredPanel({ order }) {
         ))}
       </div>
       {sent && <p className="mt-2 text-sm font-semibold text-emerald-700">Thanks. Ratings feed the shop’s quality score.</p>}
-      <Link to={`/orders/${order.id}/report`} className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-red-text"><Icon name="flag" className="h-4 w-4" /> Report a problem</Link>
+      <Link to={`/orders/${order.id}/report`} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-red-text"><Icon name="flag" className="h-4 w-4" /> Report a problem</Link>
     </Card>
   );
 }
@@ -291,7 +334,7 @@ function OrderAgain({ order }) {
   };
   return (
     <Card className="p-5">
-      <h2 className="text-xl font-extrabold">Order again</h2>
+      <h2 className="text-xl font-bold">Order again</h2>
       <p className="mt-1 text-sm text-grey-600">Puts these snacks in your cart at today’s prices. Anything sold out or off the menu is left out, and we tell you.</p>
       <Button className="mt-3 w-full" variant="outline" onClick={go} loading={busy}>Order again</Button>
     </Card>

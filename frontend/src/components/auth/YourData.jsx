@@ -66,18 +66,18 @@ export default function YourData() {
 
   return (
     <section className="mt-8 pb-10" aria-labelledby="your-data-h">
-      <h2 id="your-data-h" className="text-2xl font-extrabold">Your data</h2>
+      <h2 id="your-data-h" className="text-2xl font-bold">Your data</h2>
       <p className="text-sm text-grey-600">Download a copy of what SnackHub holds about you, or delete your account.</p>
       <Card className="mt-3 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-bold">Download my data</p>
+          <p className="font-semibold">Download my data</p>
           <p className="text-sm text-grey-600">Your profile, addresses, orders, favourites and notifications, as a JSON file.</p>
         </div>
         <Button variant="ghost" onClick={download} loading={busy && !open}>Download</Button>
       </Card>
       <Card className="mt-3 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-bold">Delete my account</p>
+          <p className="font-semibold">Delete my account</p>
           <p className="text-sm text-grey-600">This cannot be undone. Records of past orders and payments are kept as the law requires.</p>
         </div>
         <Button variant="danger" onClick={start}>Delete account</Button>
@@ -85,7 +85,7 @@ export default function YourData() {
 
       <Modal open={open} onClose={() => !busy && setOpen(false)} title="Delete account">
         <form className="p-6" onSubmit={confirm}>
-          <h2 className="text-2xl font-extrabold">Delete your account?</h2>
+          <h2 className="text-2xl font-bold">Delete your account?</h2>
           <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-grey-600">
             <li>Your name, email, mobile, saved addresses, cart and favourites are erased.</li>
             <li>You are signed out everywhere and cannot sign in to this account again.</li>
@@ -95,7 +95,7 @@ export default function YourData() {
             <Input label={`Type ${DELETE_CONFIRM} to confirm`} value={word} onChange={(e) => setWord(e.target.value)} autoComplete="off" autoCapitalize="characters" />
             {hasPassword && <Input label="Your password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />}
           </div>
-          {error && <p role="alert" className="mt-3 text-sm font-bold text-red-text">{error}</p>}
+          {error && <p role="alert" className="mt-3 text-sm font-semibold text-red-text">{error}</p>}
           <div className="mt-5 flex gap-2">
             <Button type="submit" variant="danger" loading={busy} disabled={word !== DELETE_CONFIRM || (hasPassword && !password)}>Delete for good</Button>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Keep my account</Button>

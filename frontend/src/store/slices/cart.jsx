@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { apiThunk } from '../apiThunk';
 import { bumpCart, setCartConflict, setSignInPrompt } from './ui';
 import { addToast } from './toast';
+import { REFUSAL_TITLE } from '../../constants/availability';
 
 /**
  * Server cart (Redis hash cart:{userId}, one shop only, doc 11.1). Fixes the
@@ -82,7 +83,8 @@ export const updateQuantity = (product, qty, { replace = false } = {}) => async 
   } else if (result.payload?.code === 'CART_OTHER_SELLER') {
     dispatch(setCartConflict({ product, qty, message: result.payload.message }));
   } else {
-    dispatch(addToast({ type: 'error', title: 'Could not update cart', message: result.payload?.message }));
+    // the server says why (its serving time, sold out, the shop closed) and when it is back
+    dispatch(addToast({ type: REFUSAL_TITLE[result.payload?.code] ? 'info' : 'error', title: REFUSAL_TITLE[result.payload?.code] ?? 'Could not update cart', message: result.payload?.message }));
   }
 };
 export const selectCartCount = (state) => state.cart.items.reduce((s, i) => s + i.qty, 0);

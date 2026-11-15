@@ -76,23 +76,23 @@ const Catalogue = () => {
           <span className="sr-only">Search the catalogue</span>
           <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name" className={field} />
         </label>
-        <label className="flex items-center gap-2 text-sm font-bold">
+        <label className="flex items-center gap-2 text-sm font-semibold">
           <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} className="h-4 w-4 accent-orange-deep" /> Show retired
         </label>
       </div>
 
       {form && (
         <Card className="mt-4 p-5" role="region" aria-label={form.id ? `Edit ${form.title}` : 'New entry'}>
-          <h2 className="text-lg font-extrabold">{form.id ? `Edit #${form.id}` : 'New entry'}</h2>
+          <h2 className="text-lg font-bold">{form.id ? `Edit #${form.id}` : 'New entry'}</h2>
           {form.id && form.shops > 0 && <p className="text-sm text-grey-600">{form.shops} shop{form.shops === 1 ? ' lists' : 's list'} it. Saving changes their copies too; prices stay theirs.</p>}
           <form onSubmit={save} className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <label className="sm:col-span-2 lg:col-span-3"><span className="mb-1 block text-sm font-bold">Name</span><input required minLength={3} maxLength={160} value={form.title} onChange={set('title')} className={field} /></label>
-            <label><span className="mb-1 block text-sm font-bold">Kind</span><select value={form.category} onChange={set('category')} className={field}>{CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}</select></label>
-            <label><span className="mb-1 block text-sm font-bold">Served</span><select value={form.servingTemp} onChange={set('servingTemp')} className={field}><option value="AMBIENT">Room temperature</option><option value="HOT">Hot</option></select></label>
-            <label><span className="mb-1 block text-sm font-bold">Pack size</span><input maxLength={20} value={form.weight} onChange={set('weight')} placeholder="200 g or 4 pcs" className={field} /></label>
-            <label><span className="mb-1 block text-sm font-bold">Spice</span><select value={form.spice} onChange={set('spice')} className={field}>{['None', 'Mild', 'Medium', 'Hot'].map((l, i) => <option key={l} value={i}>{l}</option>)}</select></label>
-            <label><span className="mb-1 block text-sm font-bold">Drawing</span><select value={form.shape} onChange={set('shape')} className={field}>{SHAPES.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
-            <label className="sm:col-span-2 lg:col-span-3"><span className="mb-1 block text-sm font-bold">Description</span><input maxLength={500} value={form.description} onChange={set('description')} className={field} /></label>
+            <label className="sm:col-span-2 lg:col-span-3"><span className="mb-1 block text-sm font-semibold">Name</span><input required minLength={3} maxLength={160} value={form.title} onChange={set('title')} className={field} /></label>
+            <label><span className="mb-1 block text-sm font-semibold">Kind</span><select value={form.category} onChange={set('category')} className={field}>{CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}</select></label>
+            <label><span className="mb-1 block text-sm font-semibold">Served</span><select value={form.servingTemp} onChange={set('servingTemp')} className={field}><option value="AMBIENT">Room temperature</option><option value="HOT">Hot</option></select></label>
+            <label><span className="mb-1 block text-sm font-semibold">Pack size</span><input maxLength={20} value={form.weight} onChange={set('weight')} placeholder="200 g or 4 pcs" className={field} /></label>
+            <label><span className="mb-1 block text-sm font-semibold">Spice</span><select value={form.spice} onChange={set('spice')} className={field}>{['None', 'Mild', 'Medium', 'Hot'].map((l, i) => <option key={l} value={i}>{l}</option>)}</select></label>
+            <label><span className="mb-1 block text-sm font-semibold">Drawing</span><select value={form.shape} onChange={set('shape')} className={field}>{SHAPES.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
+            <label className="sm:col-span-2 lg:col-span-3"><span className="mb-1 block text-sm font-semibold">Description</span><input maxLength={500} value={form.description} onChange={set('description')} className={field} /></label>
             <div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-3">
               <Button type="submit" disabled={form.title.trim().length < 3}>{form.id ? 'Save' : 'Add entry'}</Button>
               {form.id && <Button type="button" variant="ghost" onClick={() => setActive(!form.active)}>{form.active ? 'Retire' : 'Restore'}</Button>}
@@ -101,7 +101,7 @@ const Catalogue = () => {
           </form>
           {form.id && (
             <div className="mt-5 border-t border-grey-800/10 pt-4">
-              <label className="block max-w-sm"><span className="mb-1 block text-sm font-bold">Link a shop’s own recipe (product id)</span><input inputMode="numeric" value={productId} onChange={(e) => setProductId(e.target.value.replace(/\D/g, ''))} className={field} /></label>
+              <label className="block max-w-sm"><span className="mb-1 block text-sm font-semibold">Link a shop’s own recipe (product id)</span><input inputMode="numeric" value={productId} onChange={(e) => setProductId(e.target.value.replace(/\D/g, ''))} className={field} /></label>
               <Button className="mt-2" variant="ghost" size="sm" disabled={!productId} onClick={link}>Link to this entry</Button>
               <p className="mt-1 text-xs text-grey-600">The product takes this entry’s name and details and keeps its shop’s price and stock.</p>
             </div>
@@ -116,7 +116,7 @@ const Catalogue = () => {
             {items?.length === 0 && <tr><td colSpan="6" className="p-6 text-center text-grey-600">No entries match.</td></tr>}
             {(items ?? []).map((i) => (
               <tr key={i.id} className="border-b border-grey-800/5 last:border-0">
-                <td className="p-3"><span className="font-bold">{i.title}</span> <TempBadge temp={i.servingTemp} />{i.weight && <span className="block text-xs text-grey-600">{i.weight}</span>}</td>
+                <td className="p-3"><span className="font-semibold">{i.title}</span> <TempBadge temp={i.servingTemp} />{i.weight && <span className="block text-xs text-grey-600">{i.weight}</span>}</td>
                 <td className="p-3">{CATEGORY_LABELS[i.category]}</td>
                 <td className="p-3">{i.prices?.shops ?? 0}</td>
                 <td className="p-3">{spread(i.prices)}</td>

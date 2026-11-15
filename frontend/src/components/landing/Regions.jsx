@@ -28,10 +28,10 @@ export default function Regions() {
                 <span className="absolute left-4 top-4 h-1.5 w-12 rounded-full" style={{ background: r.accent }} />
               </div>
               <div className="flex flex-1 flex-col p-5">
-                <h3 className="font-display text-2xl font-bold">{r.id}</h3>
+                <h3 className="font-display text-2xl font-semibold">{r.id}</h3>
                 <p className="mt-1 text-grey-600">{r.blurb}</p>
                 <p className="mt-2 text-sm font-semibold text-grey-800">{r.snacks}</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-sm font-extrabold text-orange-text">Explore collection <Icon name="arrowRight" className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-orange-text">Explore collection <Icon name="arrowRight" className="h-4 w-4 transition group-hover:translate-x-1" /></span>
               </div>
             </Link>
           ))}

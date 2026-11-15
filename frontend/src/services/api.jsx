@@ -13,12 +13,6 @@ export const setAccessToken = (token) => {
 // answers 404 for admin routes (doc 15.0: Host-based gating).
 let apiHost = null;
 
-// In Phase 1 the mock service worker must be running before the first request.
-// Requests wait for it; the page itself renders straight away.
-let apiReady = Promise.resolve();
-export const setApiReady = (promise) => {
-  apiReady = promise.catch(() => {});
-};
 export const getApiHost = () => apiHost;
 export const setApiHost = (host) => {
   apiHost = host;
@@ -91,7 +85,6 @@ let refreshPromise = null;
 
 /** One refresh at a time, however many requests hit 401 together. */
 export async function refreshAccessToken() {
-  await apiReady;
   if (!refreshPromise) {
     // the admin console has its own session cookie and refresh route (doc 16.3)
     const path = apiHost === 'admin' ? '/admin/auth/refresh' : '/auth/refresh';
@@ -134,7 +127,6 @@ export async function refreshAccessToken() {
  * wakes up.
  */
 export async function apiFetch(path, { method = 'GET', body, idempotencyKey, retry = true } = {}) {
-  await apiReady;
   const send = (token) =>
     fetch(`${API_URL}${path}`, {
       method,
@@ -178,7 +170,6 @@ export async function apiFetch(path, { method = 'GET', body, idempotencyKey, ret
  * sends the access token and retries once after a silent refresh.
  */
 export async function apiUpload(path, formData, { onProgress } = {}) {
-  await apiReady;
   const send = (token) =>
     new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();

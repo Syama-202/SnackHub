@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { disputeEarning, fetchCash, fetchEarnings } from '../../store/slices/rider';
 import { usePolling } from '../../hooks';
-import { isDemoSession } from '../../store/slices/auth';
 import { addToast } from '../../store/slices/toast';
 import { rupees, rupeesExact } from '@shared/domain/money';
 import { Button, Card, Pill, Skeleton } from '../../components/ui';
@@ -22,7 +21,7 @@ const RiderEarnings = () => {
   const [reason, setReason] = useState('');
   const dispute = async (e) => {
     try {
-      await dispatch(disputeEarning({ id: e.id, reason: isDemoSession() ? 'Traffic diversion near the drop (demo)' : reason.trim() })).unwrap();
+      await dispatch(disputeEarning({ id: e.id, reason: reason.trim() })).unwrap();
       setReason('');
       dispatch(addToast({ type: 'success', title: 'Dispute sent', message: 'An admin will review the order timeline.' }));
     } catch (err) {
@@ -35,8 +34,8 @@ const RiderEarnings = () => {
     <div className="mx-auto max-w-3xl">
       <h1 className="page-title">Earnings</h1>
       <Card className="mt-4 bg-hero p-5 text-grey-800">
-        <p className="text-sm font-bold">Net this week</p>
-        <p className="font-display text-4xl font-extrabold">{rupeesExact(total)}</p>
+        <p className="text-sm font-semibold">Net this week</p>
+        <p className="font-display text-3xl font-bold">{rupeesExact(total)}</p>
         <p className="text-sm">Pay = base + distance + on-time bonus − lateness cut. Only rider-caused delay counts; shop delay and a 2 minute grace are subtracted, the cut is capped, and net pay never goes below zero.</p>
       </Card>
       <CashCard />
@@ -49,11 +48,11 @@ const RiderEarnings = () => {
             <Card key={e.id} className="p-4">
               <button className="flex w-full items-center justify-between text-left" onClick={() => setOpen(open === e.id ? null : e.id)} aria-expanded={open === e.id}>
                 <span>
-                  <span className="block font-bold">Order #{e.orderId} {e.caseLabel && <span className="text-xs font-semibold text-grey-600">· worked case {e.caseLabel}</span>}</span>
+                  <span className="block font-semibold">Order #{e.orderId} {e.caseLabel && <span className="text-xs font-semibold text-grey-600">· worked case {e.caseLabel}</span>}</span>
                   <span className="text-xs text-grey-600">{new Date(e.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
                 </span>
                 <span className="text-right">
-                  <span className="block font-extrabold">{rupeesExact(e.netPaise)}</span>
+                  <span className="block font-bold">{rupeesExact(e.netPaise)}</span>
                   {e.penaltyPaise > 0 ? <Pill tone="red">−{rupeesExact(e.penaltyPaise)} late</Pill> : e.bonusPaise > 0 ? <Pill tone="green">On-time bonus</Pill> : null}
                   {e.status !== 'OK' && <Pill tone="sun" className="ml-1">{e.status.toLowerCase()}</Pill>}
                 </span>
@@ -65,7 +64,7 @@ const RiderEarnings = () => {
                     <dt className="text-grey-600">Distance fee</dt><dd className="text-right">{rupeesExact(e.distancePaise)}</dd>
                     <dt className="text-grey-600">On-time bonus</dt><dd className="text-right">{rupeesExact(e.bonusPaise)}</dd>
                     <dt className="text-grey-600">Lateness cut</dt><dd className="text-right text-red-text">−{rupeesExact(e.penaltyPaise)}</dd>
-                    <dt className="font-bold">Net</dt><dd className="text-right font-bold">{rupeesExact(e.netPaise)}</dd>
+                    <dt className="font-semibold">Net</dt><dd className="text-right font-semibold">{rupeesExact(e.netPaise)}</dd>
                   </dl>
                   <p className="mt-3 rounded-xl bg-grey-50 p-3 text-xs leading-relaxed text-grey-600">
                     {i ? (
@@ -76,12 +75,12 @@ const RiderEarnings = () => {
                   </p>
                   {e.status === 'DISPUTED' && <p className="mt-2 text-xs text-grey-600">Disputed: {e.disputeReason ?? 'waiting for an admin'}.</p>}
                   {e.status === 'ADJUSTED' && <p className="mt-2 text-xs text-emerald-700">Given back {rupeesExact(e.adjustmentPaise ?? e.penaltyPaise)}{e.resolutionReason ? `: ${e.resolutionReason}` : ''}.</p>}
-                  {canDispute && !isDemoSession() && (
-                    <label className="mt-3 block text-xs font-bold">What happened?
+                  {canDispute && (
+                    <label className="mt-3 block text-xs font-semibold">What happened?
                       <input value={reason} onChange={(ev) => setReason(ev.target.value)} maxLength={300} placeholder="Road closed near the drop" className="field mt-1 h-11 font-normal" />
                     </label>
                   )}
-                  {canDispute && <Button size="sm" variant="outline" className="mt-3" disabled={!isDemoSession() && reason.trim().length < 5} onClick={() => dispute(e)}>Dispute this cut</Button>}
+                  {canDispute && <Button size="sm" variant="outline" className="mt-3" disabled={reason.trim().length < 5} onClick={() => dispute(e)}>Dispute this cut</Button>}
                   {e.penaltyPaise > 0 && !canDispute && e.status === 'OK' && <p className="mt-2 text-xs text-grey-600">Disputes close 48 hours after delivery.</p>}
                 </div>
               )}
@@ -105,18 +104,18 @@ function CashCard() {
   return (
     <Card className="mt-4 p-5" role="region" aria-labelledby="cash-h">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="cash-h" className="text-lg font-extrabold">Cash in hand</h2>
-        <p className="font-display text-3xl font-extrabold">{rupees(cash.heldPaise)}</p>
+        <h2 id="cash-h" className="text-lg font-bold">Cash in hand</h2>
+        <p className="font-display text-3xl font-bold">{rupees(cash.heldPaise)}</p>
       </div>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-grey-50" role="progressbar" aria-label="Cash held against the limit" aria-valuemin={0} aria-valuemax={cash.limitPaise / 100} aria-valuenow={cash.heldPaise / 100}>
         <div className={`h-full ${cash.overLimit ? 'bg-red-strong' : 'bg-primary'}`} style={{ width: `${share * 100}%` }} />
       </div>
       <p className="mt-2 text-sm text-grey-600">Limit {rupees(cash.limitPaise)}. Hand cash in at the hub; the staff member records it and you get a message.</p>
-      {cash.overLimit && <p role="alert" className="mt-2 rounded-xl bg-red/10 p-3 text-sm font-bold text-red-text">You hold the limit, so no new pay-on-delivery orders reach you until you hand cash in. Prepaid orders still do.</p>}
+      {cash.overLimit && <p role="alert" className="mt-2 rounded-xl bg-red/10 p-3 text-sm font-semibold text-red-text">You hold the limit, so no new pay-on-delivery orders reach you until you hand cash in. Prepaid orders still do.</p>}
       {recent.length > 0 && (
         <ul className="mt-3 divide-y divide-grey-800/5 text-sm">
           {recent.map((r) => (
-            <li key={r.key} className="flex justify-between py-1.5"><span>{r.text}</span><span className={r.paise < 0 ? 'text-emerald-700' : 'font-bold'}>{r.paise < 0 ? `−${rupees(-r.paise)}` : `+${rupees(r.paise)}`}</span></li>
+            <li key={r.key} className="flex justify-between py-1.5"><span>{r.text}</span><span className={r.paise < 0 ? 'text-emerald-700' : 'font-semibold'}>{r.paise < 0 ? `−${rupees(-r.paise)}` : `+${rupees(r.paise)}`}</span></li>
           ))}
         </ul>
       )}

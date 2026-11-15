@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Card, Pill, Spinner } from '../../components/ui';
 import { loadExpiring, loadItem } from '../../store/slices/verification';
-import { isDemoSession } from '../../store/slices/auth';
 
 /**
  * Documents of approved sellers and riders that expire within 30 days, or have expired. The
@@ -14,18 +13,15 @@ export default function Expiring() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const list = useSelector((s) => s.verification.expiring);
-  const demo = isDemoSession();
   useEffect(() => {
-    if (!demo) dispatch(loadExpiring());
-  }, [dispatch, demo]);
+    dispatch(loadExpiring());
+  }, [dispatch]);
   return (
     <div>
       <h1 className="page-title">Expiring documents</h1>
       <p className="mt-1 text-sm text-grey-600">Approved sellers and riders whose licences, insurance or permits expire within 30 days. Reminders go out automatically.</p>
       <Card className="mt-6 overflow-x-auto">
-        {demo ? (
-          <p className="p-4 text-sm text-grey-600">Sign in with your staff account to see real documents.</p>
-        ) : !list ? (
+        {!list ? (
           <Spinner className="m-6 h-6 w-6 text-orange-text" />
         ) : (
           <table className="w-full min-w-[640px] text-sm">

@@ -5,10 +5,9 @@ import { Button, Icon, SplitWords } from '../ui';
 import SnackArt from '../ui/SnackArt';
 import { AssetImage } from '../ui/SnackImage';
 import { useReducedMotion } from '../../hooks';
-import { setAddress, setGuestPoint } from '../../store/slices/ui';
+import { setAddress, pickCurrentPoint } from '../../store/slices/ui';
 import { addToast } from '../../store/slices/toast';
 import { cityPoint } from '../../store/slices/profile';
-import { CITIES } from '@shared/domain/cities';
 import { PROMISE_WORDING } from '@shared/domain/promise';
 
 /**
@@ -114,7 +113,7 @@ export default function Hero() {
           <div className="glass glass-strong absolute bottom-[4%] left-1/2 flex -translate-x-1/2 animate-pop items-center gap-3 px-4 py-2.5 [animation-delay:1s]">
             <span className="relative grid h-9 w-9 place-items-center rounded-full bg-primary"><Icon name="scooter" className="h-5 w-5 text-grey-800" /></span>
             <span className="leading-tight">
-              <span className="block whitespace-nowrap font-display text-lg font-extrabold text-grey-800 sm:text-xl">25 to 30 min</span>
+              <span className="block whitespace-nowrap font-display text-lg font-bold text-grey-800 sm:text-xl">25 to 30 min</span>
               <span className="block text-[0.6875rem] font-semibold text-grey-600">estimated delivery*</span>
             </span>
           </div>
@@ -130,25 +129,27 @@ function HeroCopy() {
   const dispatch = useDispatch();
   const user = useSelector((s) => s.auth.user);
   const addresses = useSelector((state) => state.profile.addresses);
+  const cities = useSelector((state) => state.location.cities);
   const [place, setPlace] = useState('');
   const go = (e) => {
     e.preventDefault();
     const q = place.trim().toLowerCase();
     const hit = q && addresses.find((a) => a.line.toLowerCase().includes(q) || a.cityId?.includes(q));
-    const city = q && CITIES.find((c) => c.name.toLowerCase().startsWith(q) || c.id.startsWith(q));
+    const city = q && cities.find((c) => c.name.toLowerCase().startsWith(q) || c.id.startsWith(q));
     if (hit) dispatch(setAddress(hit.id));
-    else if (city) dispatch(setGuestPoint(cityPoint(city)));
-    else if (q) return dispatch(addToast({ type: 'info', title: 'City not found', message: 'Try a city name like Hyderabad or Vijayawada, or pick one from “Deliver to” at the top.' }));
+    else if (city) dispatch(pickCurrentPoint(cityPoint(city)));
+    // a city SnackHub does not serve: say so, and show no shops from somewhere else
+    else if (q) return dispatch(addToast({ type: 'info', title: `Looks like we're not available in ${place.trim()} yet`, message: 'Stay tuned: SnackHub is coming your way! Meanwhile, pick a city we serve from “Deliver to” at the top.' }));
     navigate('/shop');
     return undefined;
   };
   return (
     <div className="max-w-xl">
-      <p className="inline-flex animate-pop items-center gap-2 rounded-full bg-grey-800 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-white">
+      <p className="inline-flex animate-pop items-center gap-2 rounded-full bg-grey-800 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">
         <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sun opacity-75" /><span className="relative h-2 w-2 rounded-full bg-sun" /></span>
         Fresh from verified shops near you
       </p>
-      <h1 className="mt-5 text-[clamp(2.8rem,8.6vw,4.6rem)] lg:text-[clamp(3.6rem,6.4vw,5.2rem)] font-extrabold leading-[0.95] text-grey-800">
+      <h1 className="mt-5 text-[clamp(2.25rem,6.4vw,3.25rem)] lg:text-[clamp(3rem,4.6vw,4rem)] font-bold leading-[1.05] text-grey-800">
         <SplitWords text="Your Hometown Cravings." className="block" />
         <SplitWords text="Delivered." className="block text-shine pb-1" delay={280} />
       </h1>
@@ -161,7 +162,7 @@ function HeroCopy() {
         </div>
         <Button size="lg" type="submit">Show snacks near me</Button>
       </form>
-      <p className="mt-2 pl-2 text-xs text-grey-600">Type a city, such as Hyderabad, Vijayawada or Visakhapatnam{user ? ', or one of your saved addresses' : ''}. Demo shops in {CITIES.length} cities.</p>
+      <p className="mt-2 pl-2 text-xs text-grey-600">Type a city, such as Hyderabad, Vijayawada or Visakhapatnam{user ? ', or one of your saved addresses' : ''}. Shops in {cities.length} cities.</p>
       <div className="mt-6 flex flex-wrap gap-3">
         <Button variant="dark" onClick={() => navigate('/shop')}>Explore snacks <Icon name="arrowRight" className="h-4 w-4" /></Button>
         <Button variant="ghost" onClick={() => document.getElementById('regions')?.scrollIntoView({ behavior: 'smooth' })}>Discover regional flavours</Button>

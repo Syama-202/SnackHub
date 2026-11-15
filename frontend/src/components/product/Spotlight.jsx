@@ -39,13 +39,13 @@ export default function Spotlight({ eyebrow, title, shops, snacks, fastest, chil
 
       <div className="relative grid items-center gap-6 sm:gap-8 lg:grid-cols-[1.15fr_1fr]">
         <div>
-          <p className="inline-flex items-center gap-2 rounded-full bg-white/35 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.16em] text-grey-900 backdrop-blur">
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/35 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-grey-900 backdrop-blur">
             <span className="h-2 w-2 rounded-full bg-grey-900" /> {eyebrow}
           </p>
-          <h1 id="spotlight-title" className="mt-4 text-[clamp(2.4rem,5.6vw,4.4rem)] font-extrabold leading-[0.95] text-grey-900">
+          <h1 id="spotlight-title" className="mt-4 text-[clamp(2rem,1.4rem+2.6vw,3rem)] font-bold leading-[0.95] text-grey-900">
             {title}
             <span className="mt-3 block">
-              <span className="inline-block -rotate-1 rounded-2xl bg-red-strong px-3 py-1.5 text-[0.5em] font-bold tracking-[-0.015em] text-white shadow-[0_10px_30px_-10px_rgba(196,34,47,0.8)] sm:px-4">
+              <span className="inline-block -rotate-1 rounded-2xl bg-red-strong px-3 py-1.5 text-[0.5em] font-semibold tracking-[-0.015em] text-white shadow-[0_10px_30px_-10px_rgba(196,34,47,0.8)] sm:px-4">
                 <RotatingWords words={PHRASES} />
               </span>
             </span>
@@ -59,8 +59,8 @@ export default function Spotlight({ eyebrow, title, shops, snacks, fastest, chil
               .filter(Boolean)
               .map(([n, label]) => (
                 <span key={label} className="rounded-2xl border border-white/60 bg-white/45 px-2.5 py-2 backdrop-blur-md xs:px-3 sm:px-4 sm:py-2.5">
-                  <span className="block whitespace-nowrap font-display text-lg font-extrabold leading-none text-grey-900 xs:text-xl sm:text-2xl">{n ?? '–'}</span>
-                  <span className="mt-1 block text-[0.75rem] font-bold leading-tight text-grey-800 sm:text-xs">{label}</span>
+                  <span className="block whitespace-nowrap font-display text-lg font-bold leading-none text-grey-900 xs:text-xl sm:text-2xl">{n ?? '–'}</span>
+                  <span className="mt-1 block text-[0.75rem] font-semibold leading-tight text-grey-800 sm:text-xs">{label}</span>
                 </span>
               ))}
           </div>
@@ -98,7 +98,7 @@ export default function Spotlight({ eyebrow, title, shops, snacks, fastest, chil
                 </m.div>
               </AnimatePresence>
             </div>
-            <span className="absolute bottom-[6%] left-1/2 -translate-x-1/2 rounded-full bg-grey-900/80 px-3 py-1 text-xs font-bold text-white backdrop-blur">{nameOf(ids[i])}</span>
+            <span className="absolute bottom-[6%] left-1/2 -translate-x-1/2 rounded-full bg-grey-900/80 px-3 py-1 text-xs font-semibold text-white backdrop-blur">{nameOf(ids[i])}</span>
           </div>
         )}
       </div>

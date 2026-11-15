@@ -19,7 +19,7 @@ const closedId = () => {
  */
 export default function Notice() {
   const [notice, setNotice] = useState(null);
-  // asked again once the session is back after a reload: the demo's announcement lives with its session
+  // asked again once the session is back after a reload
   const signedIn = useSelector((state) => Boolean(state.auth.accessToken));
   useEffect(() => {
     let gone = false;

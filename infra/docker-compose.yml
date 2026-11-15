@@ -40,15 +40,17 @@ services:
       retries: 20
 
   elastic:
-    # not used by the code yet (doc 9.0, Future): starts only with --profile later
-    profiles: ['later']
+    # snack search (doc 12.3): starts with --profile search (npm run search:up); without it the
+    # API searches PostgreSQL instead
+    profiles: ['search']
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
     environment:
       discovery.type: single-node
       ES_JAVA_OPTS: -Xms512m -Xmx512m
       # Security off only on this laptop stack; never on a reachable host (doc 12.2)
       xpack.security.enabled: 'false'
-    ports: ['127.0.0.1:9200:9200']
+    # 9201 on this laptop, so it never meets another project's Elasticsearch on 9200
+    ports: ['127.0.0.1:9201:9200']
     volumes: ['elastic:/usr/share/elasticsearch/data']
 
   minio:

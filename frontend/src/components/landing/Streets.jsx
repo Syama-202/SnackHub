@@ -10,8 +10,7 @@ const SHOWN = 4;
 
 /**
  * Street carts and home kitchens near the delivery point: the bandi that fries mirchi bajji
- * and punugulu all evening, and the home cook whose ariselu sell out before Sankranti. All
- * shops are fictional demo data; every one is verified like any other shop.
+ * and punugulu all evening, and the home cook whose ariselu sell out before Sankranti.
  */
 export default function Streets() {
   const ref = useReveal();
@@ -36,12 +35,12 @@ export default function Streets() {
           {photo ? (
             <AssetImage id={photo} alt="" sizes="80px" className="absolute inset-0" imgClassName="block h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
           ) : (
-            <span className="grid h-full w-full place-items-center font-display text-3xl font-extrabold text-grey-900">{s.shopName[0]}</span>
+            <span className="grid h-full w-full place-items-center font-display text-3xl font-bold text-grey-900">{s.shopName[0]}</span>
           )}
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
-            <span className="line-clamp-2 font-display text-lg font-bold leading-tight text-grey-900">{s.shopName}</span>
+            <span className="line-clamp-2 font-display text-lg font-semibold leading-tight text-grey-900">{s.shopName}</span>
           </span>
           <span className="mt-1 flex flex-wrap gap-1">
             {menu.slice(0, 3).map((p) => (
@@ -67,8 +66,8 @@ export default function Streets() {
           <div className="bg-hero relative min-w-0 overflow-hidden rounded-[30px] p-5 shadow-glass sm:p-6">
             <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/25 blur-3xl" aria-hidden="true" />
             <div className="relative flex items-center justify-between gap-3">
-              <h3 className="font-display text-2xl font-extrabold text-grey-900">Street stalls</h3>
-              <Link to="/shop?kind=stall" className="rounded-full bg-white/70 px-4 py-2 text-sm font-extrabold text-grey-900 backdrop-blur transition hover:bg-white">See all</Link>
+              <h3 className="font-display text-2xl font-bold text-grey-900">Street stalls</h3>
+              <Link to="/shop?kind=stall" className="rounded-full bg-white/70 px-4 py-2 text-sm font-bold text-grey-900 backdrop-blur transition hover:bg-white">See all</Link>
             </div>
             <p className="relative mt-1 text-sm font-semibold text-grey-900/80">Fried to order at the cart, sent out hot.</p>
             <div className="relative mt-5 grid gap-3">{stalls.map((s) => card(s, 'red'))}</div>
@@ -78,8 +77,8 @@ export default function Streets() {
           <div className="relative min-w-0 overflow-hidden rounded-[30px] border border-white/80 bg-white/55 p-5 shadow-glass backdrop-blur-md sm:p-6">
             <div className="pointer-events-none absolute -left-16 -bottom-16 h-56 w-56 rounded-full bg-sun/40 blur-3xl" aria-hidden="true" />
             <div className="relative flex items-center justify-between gap-3">
-              <h3 className="font-display text-2xl font-extrabold text-grey-900">Home kitchens</h3>
-              <Link to="/shop?kind=home" className="chip-on rounded-full px-4 py-2 text-sm font-extrabold">See all</Link>
+              <h3 className="font-display text-2xl font-bold text-grey-900">Home kitchens</h3>
+              <Link to="/shop?kind=home" className="chip-on rounded-full px-4 py-2 text-sm font-bold">See all</Link>
             </div>
             <p className="relative mt-1 text-sm font-semibold text-grey-600">Made at home in small batches, the way grandmothers make them.</p>
             <div className="relative mt-5 grid gap-3">{homes.map((s) => card(s, 'green'))}</div>

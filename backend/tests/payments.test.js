@@ -2,12 +2,13 @@
 // (utils/phonepe.js): success, failure, an abandoned payment, a late success, a wrong amount,
 // the provider being down, repeated and forged webhooks, refunds full and partial, and cash
 // on delivery recorded the same way. Nothing here trusts the browser or a webhook body.
-import { createHash } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openHarness, beginTest, request } from './helpers/app.js';
 import { admin, staffToken } from './helpers/onboarding.js';
 import { AppError } from '../src/utils/AppError.js';
 import { createPhonePe } from '../src/utils/phonepe.js';
+import { createRazorpay } from '../src/utils/razorpay.js';
 import { reconcilePayments, refundOrder } from '../src/utils/payments.js';
 import * as H from './helpers/orders.js';
 
@@ -291,6 +292,152 @@ describe.skipIf(h.skip)('online payment', () => {
     expect((await admin(t, boss.token).get('/refunds/failed').expect(200)).body.refunds).toEqual([]);
     await admin(t, boss.token).post(`/refunds/${queue.refunds[0].id}/retry`).expect(409);
     expect(await t.trx.identity('audit_log').where({ action: 'refund.retry', actor_id: boss.user.id }).first()).toBeTruthy();
+  });
+});
+
+const RZP = { RAZORPAY_KEY_ID: 'rzp_test_AbC123xyz', RAZORPAY_KEY_SECRET: 'not-a-real-secret', RAZORPAY_WEBHOOK_SECRET: 'rzp-hook-secret-for-tests' };
+
+/** A Razorpay stand-in with the real webhook check and browser data: orders the test pays by hand. */
+function fakeRazorpay() {
+  const real = createRazorpay(RZP);
+  const orders = new Map();
+  const calls = [];
+  return {
+    name: 'RAZORPAY',
+    enabled: true,
+    calls,
+    orders,
+    async createPayment({ merchantOrderId, amountPaise }) {
+      calls.push(['create', merchantOrderId, amountPaise]);
+      const id = `order_T${calls.length}`;
+      orders.set(id, { receipt: merchantOrderId, amount: amountPaise, state: 'PENDING' });
+      return { providerOrderId: id, redirectUrl: null, expiresAt: null };
+    },
+    async orderStatus(merchantOrderId, { providerOrderId } = {}) {
+      calls.push(['status', merchantOrderId, providerOrderId]);
+      const o = orders.get(providerOrderId);
+      return o?.state === 'PAID' ? { state: 'PAID', amountPaise: o.amount, mode: 'upi' } : { state: 'PENDING', amountPaise: null, mode: null };
+    },
+    async refund({ merchantRefundId, amountPaise, providerOrderId }) {
+      calls.push(['refund', merchantRefundId, amountPaise, providerOrderId]);
+      return { providerRefundId: `rfnd_${calls.length}`, state: 'PENDING' };
+    },
+    async refundStatus(merchantRefundId, ids) {
+      calls.push(['refundStatus', merchantRefundId, ids]);
+      return { providerRefundId: ids.providerRefundId, state: 'DONE' };
+    },
+    verifyWebhook: real.verifyWebhook,
+    checkoutFor: real.checkoutFor,
+    count: (kind) => calls.filter((c) => c[0] === kind).length,
+  };
+}
+
+describe.skipIf(h.skip)('Razorpay checkout', () => {
+  let t;
+  let rp;
+  let staff;
+  beforeEach(async () => {
+    rp = fakeRazorpay();
+    t = await beginTest(h, { paymentProvider: rp });
+    staff = await staffToken(t, 'reviewer');
+  });
+  afterEach(() => t.end());
+
+  const paymentOf = (orderId) => t.trx.payment('payments').where({ order_id: orderId }).first();
+  const orderStatus = async (id) => (await t.trx.ordering('orders').where({ id }).first()).status;
+  const signed = (body, { eventId, secret = RZP.RAZORPAY_WEBHOOK_SECRET } = {}) => {
+    const raw = JSON.stringify(body);
+    const req = request(t.app).post('/api/v1/webhooks/razorpay').set('Content-Type', 'application/json').set('X-Razorpay-Signature', createHmac('sha256', secret).update(raw).digest('hex'));
+    return (eventId ? req.set('X-Razorpay-Event-Id', eventId) : req).send(raw);
+  };
+  const until = async (fn, ms = 3000) => {
+    for (const end = Date.now() + ms; Date.now() < end; await new Promise((r) => setTimeout(r, 50))) if (await fn()) return true;
+    return false;
+  };
+
+  async function onlineOrder() {
+    const s = await H.openShop(t, staff);
+    const c = await H.customerAt(t);
+    await c.api.put('/cart', { productId: s.product.id, qty: 2 }).expect(200);
+    const key = H.key();
+    const { order } = (await c.api.post('/orders', { addressId: c.address.id, paymentMode: 'ONLINE' }, { 'Idempotency-Key': key }).expect(201)).body;
+    return { s, c, order, key };
+  }
+
+  it("opens Razorpay's window for the server's total, with the public key only, once per order", async () => {
+    const s = await H.openShop(t, staff);
+    const c = await H.customerAt(t);
+    await c.api.put('/cart', { productId: s.product.id, qty: 2 }).expect(200);
+    expect((await c.api.post('/orders/quote', { addressId: c.address.id }).expect(200)).body).toMatchObject({ paymentModes: ['ONLINE', 'COD'], onlineProvider: 'RAZORPAY' });
+    const key = H.key();
+    const { order } = (await c.api.post('/orders', { addressId: c.address.id, paymentMode: 'ONLINE' }, { 'Idempotency-Key': key }).expect(201)).body;
+    expect(order).toMatchObject({
+      status: 'PENDING_PAYMENT',
+      payment: { status: 'CREATED', method: 'RAZORPAY', redirectUrl: null, checkout: { provider: 'RAZORPAY', key: RZP.RAZORPAY_KEY_ID, orderId: 'order_T1', amountPaise: order.totalPaise, currency: 'INR' } },
+    });
+    expect(JSON.stringify(order)).not.toContain(RZP.RAZORPAY_KEY_SECRET);
+    expect(rp.calls[0]).toEqual(['create', expect.stringMatching(/^SH-\d+-[0-9a-f]{10}$/), order.totalPaise]);
+    // a double tap: the same order and the same Razorpay order
+    const again = (await c.api.post('/orders', { addressId: c.address.id, paymentMode: 'ONLINE' }, { 'Idempotency-Key': key }).expect(200)).body;
+    expect(again.order.payment.checkout.orderId).toBe('order_T1');
+    expect(rp.count('create')).toBe(1);
+
+    // the window says "paid", but only Razorpay's own answer counts, asked with its order id
+    expect((await c.api.post(`/orders/${order.id}/payment/check`).expect(200)).body.status).toBe('PENDING_PAYMENT');
+    expect(rp.calls.at(-1)).toEqual(['status', (await paymentOf(order.id)).provider_order_id, 'order_T1']);
+    rp.orders.get('order_T1').state = 'PAID';
+    await t.trx.payment('payments').where({ order_id: order.id }).update({ checked_at: new Date(Date.now() - 5000) });
+    const paid = (await c.api.post(`/orders/${order.id}/payment/check`).expect(200)).body;
+    expect(paid).toMatchObject({ status: 'PLACED', paymentStatus: 'CAPTURED', payment: { payMode: 'upi', checkout: null } });
+  });
+
+  it('acts on a signed webhook only through the API, once per event, and refuses forged ones', async () => {
+    const { order } = await onlineOrder();
+    const p = await paymentOf(order.id);
+    const body = { event: 'order.paid', payload: { payment: { entity: { id: 'pay_1', order_id: 'order_T1', status: 'captured' } }, order: { entity: { id: 'order_T1', receipt: p.provider_order_id, status: 'paid' } } } };
+
+    await signed(body, { secret: 'not-the-secret' }).expect(401);
+    await request(t.app).post('/api/v1/webhooks/razorpay').set('Content-Type', 'application/json').send(JSON.stringify(body)).expect(401);
+    // PhonePe's address is refused while Razorpay is in use
+    await request(t.app).post('/api/v1/webhooks/phonepe').set('Authorization', hookAuth).send(JSON.stringify(body)).expect(401);
+    // genuine, but Razorpay's API still says pending: nothing moves
+    await signed(body, { eventId: 'evt_A' }).expect(200);
+    await until(async () => (await t.trx.payment('webhook_events').whereNotNull('processed_at').count({ n: '*' }))[0].n > 0);
+    expect(await orderStatus(order.id)).toBe('PENDING_PAYMENT');
+
+    rp.orders.get('order_T1').state = 'PAID';
+    await signed(body, { eventId: 'evt_B' }).expect(200);
+    await signed(body, { eventId: 'evt_B' }).expect(200); // the same event delivered twice
+    expect(await until(async () => (await orderStatus(order.id)) === 'PLACED')).toBe(true);
+    expect(await t.trx.payment('webhook_events').pluck('event_id')).toEqual(expect.arrayContaining(['razorpay:evt_A', 'razorpay:evt_B']));
+    expect(await t.trx.payment('webhook_events').count({ n: '*' }).then(([r]) => Number(r.n))).toBe(2);
+  });
+
+  it('a payment made after the window closed is found within the day and refunded in full', async () => {
+    const { s, order } = await onlineOrder();
+    await t.trx.payment('payments').where({ order_id: order.id }).update({ expires_at: new Date(Date.now() - 11 * 60_000), created_at: new Date(Date.now() - 30 * 60_000) });
+    await t.trx.ordering('orders').where({ id: order.id }).update({ placed_at: new Date(Date.now() - 30 * 60_000) });
+    await reconcilePayments(t.trx);
+    expect(await orderStatus(order.id)).toBe('CANCELLED');
+    expect((await paymentOf(order.id)).status).toBe('EXPIRED');
+    expect((await t.trx.catalog('stock').where({ product_id: s.product.id }).first()).qty).toBe(5);
+
+    // Razorpay's window was still open on the customer's phone, and no webhook is set up
+    rp.orders.get('order_T1').state = 'PAID';
+    await reconcilePayments(t.trx);
+    expect((await paymentOf(order.id)).status).toBe('EXPIRED'); // asked at most every half hour
+    await t.trx.payment('payments').where({ order_id: order.id }).update({ checked_at: new Date(Date.now() - 31 * 60_000) });
+    await reconcilePayments(t.trx);
+    expect((await paymentOf(order.id)).status).toBe('REFUND_PENDING');
+    // the refund names Razorpay's order, so the client can find the payment to refund
+    expect(rp.calls.filter((x) => x[0] === 'refund')).toEqual([['refund', expect.any(String), order.totalPaise, 'order_T1']]);
+
+    // Razorpay finishes it and says so; the refund is read back with both ids
+    const [, merchantRefundId] = rp.calls.find((x) => x[0] === 'refund');
+    await signed({ event: 'refund.processed', payload: { refund: { entity: { id: 'rfnd_x', receipt: merchantRefundId, status: 'processed' } } } }, { eventId: 'evt_R' }).expect(200);
+    expect(await until(async () => (await paymentOf(order.id)).status === 'REFUNDED')).toBe(true);
+    expect(rp.calls.find((x) => x[0] === 'refundStatus')[2]).toEqual({ providerOrderId: 'order_T1', providerRefundId: expect.stringMatching(/^rfnd_/) });
+    expect(await orderStatus(order.id)).toBe('CANCELLED');
   });
 });
 

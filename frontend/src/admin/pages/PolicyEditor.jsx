@@ -70,14 +70,14 @@ export default function PolicyEditor() {
           <div className="grid gap-4 sm:grid-cols-2">
             {[['hot', 'Hot snacks'], ['ambient', 'Sweets and dry']].map(([cls, label]) => (
               <fieldset key={cls} className="rounded-2xl bg-grey-50 p-3">
-                <legend className="px-1 font-bold">{label}</legend>
+                <legend className="px-1 font-semibold">{label}</legend>
                 <Num label="Max distance" unit="km" v={draft[cls].maxKm} on={(v) => setRule(cls, 'maxKm', v)} />
                 <Num label="Max ride" unit="min" v={draft[cls].maxRideMin} on={(v) => setRule(cls, 'maxRideMin', v)} />
                 <Num label="Orders per rider" unit="" v={draft[cls].riderCap} on={(v) => setRule(cls, 'riderCap', v)} />
               </fieldset>
             ))}
             {FIELDS.map(([k, l, u]) => <Num key={k} label={l} unit={u} v={draft[k]} on={(v) => set(k, v)} step={k === 'roadFactor' ? 0.1 : 1} />)}
-            <label className="flex items-center gap-3 rounded-2xl bg-grey-50 p-3 font-bold">
+            <label className="flex items-center gap-3 rounded-2xl bg-grey-50 p-3 font-semibold">
               <input type="checkbox" checked={draft.codEnabled} onChange={(e) => set('codEnabled', e.target.checked)} className="h-5 w-5 accent-orange-deep" /> Pay on delivery enabled
             </label>
           </div>
@@ -89,26 +89,26 @@ export default function PolicyEditor() {
         </Card>
         <div className="space-y-6">
           <Card className="p-5">
-            <h2 className="font-extrabold">Preview: worked penalty cases</h2>
+            <h2 className="font-bold">Preview: worked penalty cases</h2>
             <p className="text-xs text-grey-600">Delivered 14 min after the promise. The policy screen, order timeline and earnings ledger must show the same figure.</p>
             <table className="mt-3 w-full text-sm">
               <thead className="text-left text-grey-600"><tr><th className="py-1">Case</th><th>Rider late</th><th>Cut</th><th className="text-right">Net</th></tr></thead>
               <tbody>
                 {cases.map(([l, e]) => (
-                  <tr key={l} className="border-t border-grey-800/5"><td className="py-1.5 font-bold">{l}</td><td>{e.inputs.riderLateMin} min</td><td className="text-red-text">−{rupeesExact(e.penaltyPaise)}</td><td className="text-right font-bold">{rupeesExact(e.netPaise)}</td></tr>
+                  <tr key={l} className="border-t border-grey-800/5"><td className="py-1.5 font-semibold">{l}</td><td>{e.inputs.riderLateMin} min</td><td className="text-red-text">−{rupeesExact(e.penaltyPaise)}</td><td className="text-right font-semibold">{rupeesExact(e.netPaise)}</td></tr>
                 ))}
               </tbody>
             </table>
           </Card>
           <Card className="p-5">
-            <h2 className="font-extrabold">Preview: delivery promise</h2>
-            <p className="mt-2 text-sm">Hot, 2.5 km: {hot.serviceable ? <b>{hot.window[0]} to {hot.window[1]} min</b> : <span className="font-bold text-red-text">{hot.reasons[0]}</span>} <span className="text-grey-600">(ride {hot.rideMin.toFixed(1)} min)</span></p>
-            <p className="mt-1 text-sm">Sweet, 4.2 km: {amb.serviceable ? <b>{amb.window[0]} to {amb.window[1]} min</b> : <span className="font-bold text-red-text">{amb.reasons[0]}</span>} <span className="text-grey-600">(ride {amb.rideMin.toFixed(1)} min)</span></p>
+            <h2 className="font-bold">Preview: delivery promise</h2>
+            <p className="mt-2 text-sm">Hot, 2.5 km: {hot.serviceable ? <b>{hot.window[0]} to {hot.window[1]} min</b> : <span className="font-semibold text-red-text">{hot.reasons[0]}</span>} <span className="text-grey-600">(ride {hot.rideMin.toFixed(1)} min)</span></p>
+            <p className="mt-1 text-sm">Sweet, 4.2 km: {amb.serviceable ? <b>{amb.window[0]} to {amb.window[1]} min</b> : <span className="font-semibold text-red-text">{amb.reasons[0]}</span>} <span className="text-grey-600">(ride {amb.rideMin.toFixed(1)} min)</span></p>
           </Card>
           <Card className="p-5">
-            <h2 className="font-extrabold">History</h2>
+            <h2 className="font-bold">History</h2>
             <ul className="mt-2 space-y-1 text-sm">
-              {data.history.map((h) => <li key={h.version + h.effectiveFrom} className="flex justify-between"><span className="font-bold">v{h.version}</span><span className="text-grey-600">{new Date(h.effectiveFrom).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })} · {h.changedBy}</span></li>)}
+              {data.history.map((h) => <li key={h.version + h.effectiveFrom} className="flex justify-between"><span className="font-semibold">v{h.version}</span><span className="text-grey-600">{new Date(h.effectiveFrom).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })} · {h.changedBy}</span></li>)}
             </ul>
           </Card>
         </div>
@@ -120,7 +120,7 @@ export default function PolicyEditor() {
 
 function Num({ label, unit, v, on, step = 1 }) {
   return (
-    <label className="mt-2 block text-sm font-bold">
+    <label className="mt-2 block text-sm font-semibold">
       {label}
       <span className="mt-1 flex items-center gap-2">
         <input type="number" step={step} min="0" value={v} onChange={(e) => on(Number(e.target.value))} className="field h-11" />

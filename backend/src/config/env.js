@@ -1,6 +1,7 @@
 // Every setting the backend reads, checked once at boot. A missing or malformed value stops
 // the process with the key name only, never the value (doc 0.3).
 import { z } from 'zod';
+import { TEST_KEY } from '../utils/razorpay.js';
 
 const csv = z.string().transform((s) => s.split(',').map((x) => x.trim()).filter(Boolean));
 // 'true' or 'false' from the environment; an already-read true or false passes as it is, so
@@ -127,17 +128,34 @@ const server = database.extend({
   GEOCODER_URL: z.string().url().or(z.literal('')).optional(),
   GEOCODER_CONTACT: z.string().max(120).default(''),
 
-  // Online payment through PhonePe Standard Checkout (utils/phonepe.js), sandbox only: the
-  // code knows no production address, so live payments cannot happen from this app. Leave
-  // the client id empty to offer pay on delivery only. The webhook username and password are
-  // the ones set on the PhonePe dashboard; the webhook is refused when they are not set.
+  // Online payment through Razorpay Standard Checkout (utils/razorpay.js), TEST MODE ONLY:
+  // Razorpay tells test from live by the key, so a key that is not rzp_test_… is refused at
+  // start. From the Razorpay Dashboard in Test Mode > Account & Settings > API Keys. The
+  // webhook secret is the one typed when adding the webhook; without it the webhook is refused
+  // (the reconciler still finds every payment). Leave the key id empty to use PhonePe below.
+  RAZORPAY_KEY_ID: z.string().max(60).default(''),
+  RAZORPAY_KEY_SECRET: z.string().max(100).default(''),
+  RAZORPAY_WEBHOOK_SECRET: z.string().max(200).default(''),
+
+  // Or PhonePe Standard Checkout (utils/phonepe.js), sandbox only: the code knows no
+  // production address, so live payments cannot happen from this app. With neither key set,
+  // only pay on delivery is offered. The webhook username and password are the ones set on
+  // the PhonePe dashboard; the webhook is refused when they are not set.
   PHONEPE_CLIENT_ID: z.string().max(100).default(''),
   PHONEPE_CLIENT_SECRET: z.string().max(200).default(''),
   PHONEPE_CLIENT_VERSION: z.coerce.number().int().positive().default(1),
   PHONEPE_WEBHOOK_USERNAME: z.string().max(100).default(''),
   PHONEPE_WEBHOOK_PASSWORD: z.string().max(200).default(''),
-  // how long the customer has to finish paying (PhonePe allows 5 to 60 minutes)
+  // how long the customer has to finish paying (PhonePe allows 5 to 60 minutes; Razorpay's
+  // window closes itself when it ends)
   PAYMENT_WINDOW_MIN: z.coerce.number().int().min(5).max(60).default(15),
+
+  // Snack search on Elasticsearch (utils/elastic.js): finds and ranks snacks; PostgreSQL always
+  // decides what can be ordered. Empty: search runs on PostgreSQL alone (the live site).
+  // Development uses the local container from npm run search:up (port 9201) unless set.
+  ELASTICSEARCH_URL: z.string().url().or(z.literal('')).optional(),
+  ELASTICSEARCH_INDEX: z.string().regex(/^[a-z0-9][a-z0-9_-]{2,60}$/).default('snackhub-products'),
+  ELASTICSEARCH_API_KEY: z.string().max(200).default(''),
 
   // Push notifications (utils/push.js): a VAPID key pair from `npx web-push generate-vapid-keys`.
   // Leave both empty to keep push off; the in-app inbox works either way. The subject is how a
@@ -165,12 +183,14 @@ const REDIS_DEFAULT = { development: 'redis://127.0.0.1:6380', test: '' };
 export function loadEnv(source = process.env) {
   const parsed = parse(server, source);
   if (!parsed.REDIS_URL && parsed.NODE_ENV === 'production') throw new Error('Invalid or missing settings: REDIS_URL. See backend/.env.example.');
-  const env = { ...parsed, REDIS_URL: parsed.REDIS_URL ?? REDIS_DEFAULT[parsed.NODE_ENV] };
+  const env = { ...parsed, REDIS_URL: parsed.REDIS_URL ?? REDIS_DEFAULT[parsed.NODE_ENV], ELASTICSEARCH_URL: parsed.ELASTICSEARCH_URL ?? (parsed.NODE_ENV === 'development' ? 'http://127.0.0.1:9201' : '') };
   if (env.SMS_PROVIDER === 'dev-mail' && env.NODE_ENV === 'production') throw new Error('Invalid settings: SMS_PROVIDER=dev-mail is for development only.');
   // saved emails hold sign-in links, so production never writes them to disk
   if (env.MAIL_TRANSPORT === 'file' && env.NODE_ENV === 'production') throw new Error('Invalid settings: MAIL_TRANSPORT=file is for development only.');
   if (env.MAIL_TRANSPORT === 'smtp' && !env.SMTP_HOST) throw new Error('Invalid or missing settings: SMTP_HOST. See backend/.env.example.');
   if (env.MAIL_TRANSPORT === 'brevo' && !env.BREVO_API_KEY) throw new Error('Invalid or missing settings: BREVO_API_KEY. See backend/.env.example.');
+  if (env.RAZORPAY_KEY_ID && !TEST_KEY.test(env.RAZORPAY_KEY_ID)) throw new Error('Invalid settings: RAZORPAY_KEY_ID must be a Razorpay test key (rzp_test_…). Live keys are not allowed.');
+  if (env.RAZORPAY_KEY_ID && !env.RAZORPAY_KEY_SECRET) throw new Error('Invalid or missing settings: RAZORPAY_KEY_SECRET. See backend/.env.example.');
   if (env.PHONEPE_CLIENT_ID && !env.PHONEPE_CLIENT_SECRET) throw new Error('Invalid or missing settings: PHONEPE_CLIENT_SECRET. See backend/.env.example.');
   if (env.STORAGE_DRIVER === 's3' && !(env.S3_ENDPOINT && env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY)) {
     throw new Error('Invalid or missing settings: S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY. See backend/.env.example.');

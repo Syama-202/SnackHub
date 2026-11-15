@@ -33,7 +33,7 @@ describe.skipIf(h.skip)('favourites and order again', () => {
     // the shop closes for the week: still saved, marked as not orderable now
     await s.api.patch('/seller/shop', { weeklyHours: Object.fromEntries(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((d) => [d, []])) }).expect(200);
     list = (await c.api.get('/me/favourites').expect(200)).body;
-    expect(list[0].unavailable).toMatch(/closed now/);
+    expect(list[0].unavailable).toMatch(/taking a little break\. Not open this week/);
 
     expect((await c.api.del(`/me/favourites/${s.product.id}`).expect(200)).body.ids).toEqual([]);
     // sellers and riders have no favourites

@@ -21,8 +21,9 @@ const env = migrator
   : null;
 const app = migrator ? createApp({ env, logger: pino({ level: 'silent' }), dbs, verifyGoogle: async () => { throw new Error('unused'); } }) : null;
 
-// the demo shops keep real hours (most 8 am to 10 pm, India time): read them at Monday noon
-beforeAll(() => vi.useFakeTimers({ toFake: ['Date'], now: Date.UTC(2026, 10, 2, 6, 30) }));
+// the seeded shops keep real hours (chaat carts from 3:30 pm, tiffin centres morning and
+// night, home kitchens lunch and evening): read them on Monday at 6:30 pm, India time
+beforeAll(() => vi.useFakeTimers({ toFake: ['Date'], now: Date.UTC(2026, 10, 2, 13, 0) }));
 afterAll(() => vi.useRealTimers());
 
 const BRODIPET = 'lat=16.3152&lng=80.4301'; // demo home address in Guntur

@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import reducer, { resetCart, selectCartCount, setCartQty } from '../src/store/slices/cart.jsx';
 
-const product = { id: 7, sellerId: 3, slug: 'murukku', title: 'Murukku (demo)', pricePaise: 6000, servingTemp: 'AMBIENT' };
+const product = { id: 7, sellerId: 3, slug: 'murukku', title: 'Murukku', pricePaise: 6000, servingTemp: 'AMBIENT' };
 const pending = (arg) => setCartQty.pending('req-1', arg);
 const start = () => reducer(undefined, resetCart());
 

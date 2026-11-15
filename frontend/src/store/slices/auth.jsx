@@ -1,9 +1,8 @@
 import { createSlice, isAnyOf } from '@reduxjs/toolkit';
 import { unsubscribeDevice } from '../../utils/push';
 import { apiThunk } from '../apiThunk';
-import { getAccessToken, getApiHost, refreshAccessToken, setAccessToken } from '../../services/api';
+import { getApiHost, refreshAccessToken, setAccessToken } from '../../services/api';
 import { deviceId } from '../../utils/device';
-import { enterDemo, leaveDemo } from '../../utils/demo';
 
 // Sign-in for every portal (customer, seller, rider): a password (or Google for customers),
 // then, when the account has an authenticator or the portal requires one, the code step on a
@@ -34,13 +33,6 @@ export const signInWithPassword = apiThunk('auth/password', async ({ portal, ide
 export const signInWithGoogle = apiThunk('auth/google', async ({ credential }, { apiFetch }) =>
   opened(await apiFetch('/auth/google', { method: 'POST', body: { credential, deviceId: deviceId() }, retry: false })),
 );
-
-// Demo accounts served by the in-browser mock: the seeded seller and rider, the admin
-// console, and a demo customer while Google is not set up.
-export const signInWithDemo = apiThunk('auth/demo', async ({ demoRole = 'customer' }, { apiFetch }) => {
-  await enterDemo();
-  return opened(await apiFetch('/auth/demo', { method: 'POST', body: { demoRole }, retry: false }));
-});
 
 // The code step: a TOTP code or a recovery code on the challenge from the first step
 export const verifyMfa = apiThunk('auth/verifyMfa', async ({ code }, { apiFetch, getState }) => {
@@ -104,9 +96,6 @@ export const restoreSession = apiThunk('auth/restoreSession', async () => {
   } catch (e) {
     hint.set(false);
     throw e;
-  } finally {
-    // no demo session came back: the next visits skip the demo's mock
-    if (!isDemoSession()) leaveDemo();
   }
 });
 
@@ -124,18 +113,13 @@ export const logoutUser = apiThunk('auth/logout', async (_, { apiFetch }) => {
     const endpoint = await unsubscribeDevice().catch(() => null);
     if (endpoint) await apiFetch('/auth/push/unsubscribe', { method: 'POST', body: { endpoint }, retry: false }).catch(() => {});
   }
-  const demo = isDemoSession();
   await apiFetch(getApiHost() === 'admin' ? '/admin/auth/logout-all' : '/auth/logout', { method: 'POST', retry: false }).catch(() => {});
   setAccessToken(null);
   hint.set(false);
-  if (demo) await leaveDemo();
   return null;
 });
 
-/** Demo sessions live in the in-browser mock; everything else is the real backend. */
-export const isDemoSession = () => Boolean(getAccessToken()?.startsWith('demo.'));
-
-const pendingFrom = (payload, demo = false) => ({ challenge: payload.challenge ?? payload.halfToken, purpose: payload.mfa ?? 'verify', methods: payload.methods ?? ['totp', 'recovery'], portal: payload.portal ?? payload.user?.role, user: payload.user ?? null, demo });
+const pendingFrom = (payload) => ({ challenge: payload.challenge ?? payload.halfToken, purpose: payload.mfa ?? 'verify', methods: payload.methods ?? ['totp', 'recovery'], portal: payload.portal ?? payload.user?.role, user: payload.user ?? null });
 
 const authSlice = createSlice({
   name: 'auth',
@@ -165,11 +149,6 @@ const authSlice = createSlice({
     recoveryCodesSeen: (state) => {
       state.recoveryCodes = null;
     },
-    // Demo helper for the admin step-up screen: pretend the factor was checked long ago
-    tokenReplaced: (state, action) => {
-      state.accessToken = action.payload;
-      setAccessToken(action.payload);
-    },
     // the security page turned the authenticator on: the new token carries the factor
     sessionUpgraded: (state, action) => {
       state.accessToken = action.payload.accessToken;
@@ -186,11 +165,6 @@ const authSlice = createSlice({
       state.accessToken = payload.accessToken;
     };
     builder
-      .addCase(signInWithDemo.fulfilled, (state, action) => {
-        state.isLoading = false;
-        if (action.payload.mfaPending) state.mfaPending = pendingFrom(action.payload, true);
-        else session(state, action.payload);
-      })
       .addCase(signInAdminWithGoogle.fulfilled, (state, action) => {
         state.isLoading = false;
         state.mfaPending = pendingFrom(action.payload);
@@ -234,11 +208,11 @@ const authSlice = createSlice({
         }
       })
       .addMatcher(isAnyOf(verifyMfa.fulfilled, verifyAdminMfa.fulfilled), (state, action) => session(state, action.payload))
-      .addMatcher(isAnyOf(signInWithPassword.pending, signInWithGoogle.pending, signInWithDemo.pending, signInAdminWithGoogle.pending, verifyMfa.pending, verifyAdminMfa.pending, startEnrolment.pending, confirmEnrolment.pending), (state) => {
+      .addMatcher(isAnyOf(signInWithPassword.pending, signInWithGoogle.pending, signInAdminWithGoogle.pending, verifyMfa.pending, verifyAdminMfa.pending, startEnrolment.pending, confirmEnrolment.pending), (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addMatcher(isAnyOf(signInWithPassword.rejected, signInWithGoogle.rejected, signInWithDemo.rejected, signInAdminWithGoogle.rejected, verifyMfa.rejected, verifyAdminMfa.rejected, startEnrolment.rejected, confirmEnrolment.rejected), (state, action) => {
+      .addMatcher(isAnyOf(signInWithPassword.rejected, signInWithGoogle.rejected, signInAdminWithGoogle.rejected, verifyMfa.rejected, verifyAdminMfa.rejected, startEnrolment.rejected, confirmEnrolment.rejected), (state, action) => {
         state.isLoading = false;
         state.error = action.payload?.message;
         // a dead challenge sends the person back to the first step
@@ -250,5 +224,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, tokenReplaced, mfaCancelled, recoveryCodesSeen, sessionUpgraded } = authSlice.actions;
+export const { clearError, mfaCancelled, recoveryCodesSeen, sessionUpgraded } = authSlice.actions;
 export default authSlice.reducer;

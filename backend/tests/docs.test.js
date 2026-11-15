@@ -23,7 +23,8 @@ const NO_BODY = [
   'POST /api/v1/admin/documents/{ref}/number',
   'POST /api/v1/seller/onboarding/documents/{id}/link',
   'POST /api/v1/rider/onboarding/documents/{id}/link',
-  'POST /api/v1/webhooks/phonepe', // the raw body, checked against the provider's signature
+  'POST /api/v1/webhooks/razorpay', // the raw body, checked against the provider's signature
+  'POST /api/v1/webhooks/phonepe',
 ];
 
 describe.skipIf(h.skip)('API docs', () => {
@@ -63,7 +64,7 @@ describe.skipIf(h.skip)('API docs', () => {
 
   it('holds no secrets, and serves Swagger UI from this API', async () => {
     const text = JSON.stringify(spec);
-    for (const key of ['JWT_SECRET', 'MFA_KEY', 'DB_PASSWORD', 'VAPID_PRIVATE_KEY', 'PHONEPE_CLIENT_SECRET']) {
+    for (const key of ['JWT_SECRET', 'MFA_KEY', 'DB_PASSWORD', 'VAPID_PRIVATE_KEY', 'PHONEPE_CLIENT_SECRET', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET']) {
       const value = h.env[key];
       if (typeof value === 'string' && value.length >= 8) expect(text).not.toContain(value);
     }

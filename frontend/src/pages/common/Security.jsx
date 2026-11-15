@@ -4,7 +4,6 @@ import { Button, Card, Icon, Input, Pill, Spinner } from '../../components/ui';
 import { CodeField, PasswordField, Select } from '../../components/auth/Fields';
 import RecoveryCodes from '../../components/auth/RecoveryCodes';
 import { changePassword, codesSeen, confirmMfaSetup, disableMfa, endSession, loadSecurity, logoutEverywhere, regenerateRecoveryCodes, setupCancelled, startMfaSetup, startMobile, verifyMobile } from '../../store/slices/security';
-import { isDemoSession } from '../../store/slices/auth';
 import { addToast } from '../../store/slices/toast';
 import { COUNTRY_CODES } from '../../constants/auth';
 import { passwordProblems } from '@shared/domain/passwords';
@@ -23,43 +22,32 @@ function deviceName(ua) {
 export default function Security() {
   const dispatch = useDispatch();
   const { data, loading, error, recoveryCodes } = useSelector((s) => s.security);
-  const demo = isDemoSession();
   useEffect(() => {
-    if (!demo) dispatch(loadSecurity());
-  }, [dispatch, demo]);
+    dispatch(loadSecurity());
+  }, [dispatch]);
 
-  if (demo) {
-    return (
-      <div className="page py-10">
-        <Card className="max-w-xl p-6">
-          <h1 className="text-2xl font-extrabold">Security and sign-in</h1>
-          <p className="mt-2 text-grey-600">The demo account has no password, authenticator or sessions to manage. Create a real account to try these settings.</p>
-        </Card>
-      </div>
-    );
-  }
   if (loading || !data) return <div className="grid min-h-[40vh] place-items-center text-orange-text" role="status">{error ? <p className="text-red-text">{error.message}</p> : <Spinner className="h-8 w-8" />}</div>;
 
   return (
     <div className="page page-narrow py-8">
-      <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-orange-text">Your account</p>
+      <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-text">Your account</p>
       <h1 className="mt-1 page-title">Security and sign-in</h1>
       {recoveryCodes && (
         <Card className="mt-6 p-6">
-          <h2 className="text-xl font-extrabold">Your new recovery codes</h2>
+          <h2 className="text-xl font-bold">Your new recovery codes</h2>
           <div className="mt-4"><RecoveryCodes codes={recoveryCodes} onDone={() => dispatch(codesSeen())} /></div>
         </Card>
       )}
       <div className="mt-6 grid gap-5 lg:grid-cols-2">
         <Card className="p-6">
-          <h2 className="text-xl font-extrabold">Account</h2>
+          <h2 className="text-xl font-bold">Account</h2>
           <dl className="mt-4 grid gap-3 text-sm">
             <div>
-              <dt className="font-bold text-grey-600">Email</dt>
+              <dt className="font-semibold text-grey-600">Email</dt>
               <dd className="mt-0.5 flex flex-wrap items-center gap-2">{data.email} {data.emailVerified ? <Pill tone="green">Verified</Pill> : <Pill tone="red">Not verified</Pill>}</dd>
             </div>
             <div>
-              <dt className="font-bold text-grey-600">Roles on this account</dt>
+              <dt className="font-semibold text-grey-600">Roles on this account</dt>
               <dd className="mt-1 flex flex-wrap gap-2">
                 {data.roles.map((r) => (
                   <Pill key={r.role} tone={r.status === 'active' ? 'orange' : 'grey'}>{ROLE_LABEL[r.role]}{r.status !== 'active' ? ' (suspended)' : ''}</Pill>
@@ -86,7 +74,7 @@ function MobileSection({ data }) {
   const [error, setError] = useState(null);
   return (
     <div className="mt-5 border-t border-grey-800/10 pt-4">
-      <h3 className="font-bold">Mobile number</h3>
+      <h3 className="font-semibold">Mobile number</h3>
       <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
         {data.mobile ?? 'None yet'} {data.mobile && (data.mobileVerified ? <Pill tone="green">Verified</Pill> : <Pill>Not verified</Pill>)}
       </p>
@@ -152,7 +140,7 @@ function TwoStep({ data }) {
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-extrabold">Two-step sign-in</h2>
+        <h2 className="text-xl font-bold">Two-step sign-in</h2>
         {data.mfa.enrolled ? <Pill tone="green"><Icon name="shield" className="h-3.5 w-3.5" /> On</Pill> : <Pill tone="red">Off</Pill>}
       </div>
       <p className="mt-2 text-sm text-grey-600">
@@ -214,14 +202,14 @@ function PasswordSection({ hasPassword, email }) {
   if (!hasPassword) {
     return (
       <Card className="p-6">
-        <h2 className="text-xl font-extrabold">Password</h2>
+        <h2 className="text-xl font-bold">Password</h2>
         <p className="mt-2 text-sm text-grey-600">You sign in with Google. To add a password as well, use “Forgot password” on any sign-in page with {email}.</p>
       </Card>
     );
   }
   return (
     <Card className="p-6">
-      <h2 className="text-xl font-extrabold">Change password</h2>
+      <h2 className="text-xl font-bold">Change password</h2>
       <p className="mt-1 text-sm text-grey-600">Every other device will be signed out.</p>
       <form
         className="mt-4 grid gap-3"
@@ -256,12 +244,12 @@ function Sessions({ data }) {
   const [confirmAll, setConfirmAll] = useState(false);
   return (
     <Card className="p-6">
-      <h2 className="text-xl font-extrabold">Where you are signed in</h2>
+      <h2 className="text-xl font-bold">Where you are signed in</h2>
       <ul className="mt-4 grid gap-2">
         {data.sessions.map((s) => (
           <li key={s.id} className="flex items-center justify-between gap-3 rounded-2xl bg-white/70 p-3 text-sm ring-1 ring-grey-800/10">
             <span>
-              <span className="flex flex-wrap items-center gap-2 font-bold">
+              <span className="flex flex-wrap items-center gap-2 font-semibold">
                 {deviceName(s.device)} {s.current && <Pill tone="green">This device</Pill>}
                 <Pill>{s.app === 'admin' ? 'Admin console' : `${ROLE_LABEL[s.portal]} portal`}</Pill>
               </span>

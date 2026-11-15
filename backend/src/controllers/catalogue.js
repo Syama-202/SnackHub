@@ -13,6 +13,7 @@ import { auditLogModel } from '../models/identity/auditLog.js';
 import { priceSpread } from '../../../shared/domain/catalogue.js';
 import { artFor, slugFor } from '../../../shared/domain/menu.js';
 import { isUniqueViolation } from '../db/errors.js';
+import { queueSearchSync } from '../utils/searchSync.js';
 
 export function itemView(row, extra = {}) {
   const a = row.attrs || {};
@@ -109,6 +110,7 @@ export function catalogueController({ dbs }) {
           await trx('products').where({ id: p.id }).update({ ...c, attrs: JSON.stringify(c.attrs) });
         }
       }
+      if (linked.length) await queueSearchSync(trx, { productIds: linked.map((p) => p.id), reason: 'catalogue.update' });
       return linked.length;
     });
     await audit(req, b.active === false ? 'catalogue.retire' : 'catalogue.update', `catalogue:${before.id}`, { title: before.title, active: Boolean(before.active) }, { ...b, copies });
@@ -124,9 +126,14 @@ export function catalogueController({ dbs }) {
     if (await productModel.findForSellerItem(dbs.catalog, p.seller_id, item.id)) throw new AppError(409, 'ALREADY_ON_MENU', 'That shop already sells this entry');
     const c = copyOfItem(item, p.attrs ?? {});
     // the unique (shop, entry) key settles two links racing for the same shop
-    await dbs.catalog('products').where({ id: p.id, catalog_item_id: null }).update({ ...c, attrs: JSON.stringify(c.attrs), catalog_item_id: item.id }).catch((e) => {
-      throw isUniqueViolation(e) ? new AppError(409, 'ALREADY_ON_MENU', 'That shop already sells this entry') : e;
-    });
+    await dbs.catalog
+      .transaction(async (trx) => {
+        await trx('products').where({ id: p.id, catalog_item_id: null }).update({ ...c, attrs: JSON.stringify(c.attrs), catalog_item_id: item.id });
+        await queueSearchSync(trx, { productIds: [p.id], reason: 'catalogue.link' });
+      })
+      .catch((e) => {
+        throw isUniqueViolation(e) ? new AppError(409, 'ALREADY_ON_MENU', 'That shop already sells this entry') : e;
+      });
     const shop = await sellerModel.findById(dbs.catalog, p.seller_id);
     await audit(req, 'catalogue.link', `product:${p.id}`, { title: p.title }, { catalogueId: item.id, shop: shop?.shop_name });
     res.json(await view(item));

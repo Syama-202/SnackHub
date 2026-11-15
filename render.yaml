@@ -53,9 +53,10 @@ services:
       - { key: SMTP_USER, sync: false }
       - { key: SMTP_PASS, sync: false }
       - { key: MAIL_FROM, sync: false }
-      # optional: Google sign-in, PhonePe sandbox, push alerts
+      # optional: Google sign-in, Razorpay test mode (rzp_test_ keys only), push alerts
       - { key: GOOGLE_CLIENT_ID, sync: false }
-      - { key: PHONEPE_CLIENT_ID, sync: false }
-      - { key: PHONEPE_CLIENT_SECRET, sync: false }
+      - { key: RAZORPAY_KEY_ID, sync: false }
+      - { key: RAZORPAY_KEY_SECRET, sync: false }
+      - { key: RAZORPAY_WEBHOOK_SECRET, sync: false }
       - { key: VAPID_PUBLIC_KEY, sync: false }
       - { key: VAPID_PRIVATE_KEY, sync: false }

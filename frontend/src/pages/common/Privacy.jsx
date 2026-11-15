@@ -34,7 +34,7 @@ const SECTIONS = [
     body: (
       <ul>
         <li>The shop and the delivery partner for your order see what they need to prepare and deliver it, such as your name and delivery address.</li>
-        <li>PhonePe processes online payments. We never see your UPI PIN or card details.</li>
+        <li>Razorpay, our payment partner, processes online payments. We never see your UPI PIN or card details.</li>
         <li>Service providers who run parts of SnackHub for us: hosting and databases, file storage, email, and map tiles. They may use the data only to provide their service to us.</li>
         <li>Authorities, when the law requires it.</li>
       </ul>

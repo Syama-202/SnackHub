@@ -63,8 +63,8 @@ describe('apiFetch', () => {
     fetchMock
       .mockResolvedValueOnce(json(401, { error: { code: 'UNAUTHENTICATED' } }))
       .mockResolvedValueOnce(json(200, { accessToken: 'new' }))
-      .mockResolvedValueOnce(json(200, { name: 'Demo' }));
-    await expect(apiFetch('/me')).resolves.toEqual({ name: 'Demo' });
+      .mockResolvedValueOnce(json(200, { name: 'Asha' }));
+    await expect(apiFetch('/me')).resolves.toEqual({ name: 'Asha' });
     expect(fetchMock.mock.calls[1][0]).toMatch(/\/auth\/refresh$/);
     expect(fetchMock.mock.calls[2][1].headers.Authorization).toBe('Bearer new');
   });

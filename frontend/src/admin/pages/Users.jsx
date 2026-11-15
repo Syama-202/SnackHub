@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button, Card, Pill, Spinner, cx } from '../../components/ui';
 import { loadUsers, userAction } from '../../store/slices/verification';
-import { isDemoSession } from '../../store/slices/auth';
 import { addToast } from '../../store/slices/toast';
 import { useAdmin } from '../App';
 
@@ -22,13 +21,11 @@ export default function Users() {
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [ask, setAsk] = useState(null);
-  const demo = isDemoSession();
   const load = () => dispatch(loadUsers({ q: q.trim().length >= 2 ? q.trim() : undefined, role: role || undefined, status: status || undefined, page, pageSize: 25 }));
   useEffect(() => {
-    if (!demo) load();
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, status, page, demo]);
-  if (demo) return <p className="text-sm text-grey-600">Sign in with your staff account to manage accounts.</p>;
+  }, [role, status, page]);
 
   const confirm = (title, args) => setAsk({ title, args });
   return (
@@ -77,7 +74,7 @@ export default function Users() {
                             key={r.role}
                             disabled={staff}
                             onClick={() => confirm(`${r.status === 'active' ? 'Suspend' : 'Reactivate'} the ${ROLE_LABEL[r.role].toLowerCase()} role of ${u.name}`, { id: u.id, role: r.role, action: r.status === 'active' ? 'suspend' : 'reactivate' })}
-                            className={cx('rounded-full px-2.5 py-0.5 text-xs font-bold', r.status === 'active' ? 'bg-orange/15 text-orange-text' : 'bg-grey-50 text-grey-600 line-through')}
+                            className={cx('rounded-full px-2.5 py-0.5 text-xs font-semibold', r.status === 'active' ? 'bg-orange/15 text-orange-text' : 'bg-grey-50 text-grey-600 line-through')}
                             title={staff ? 'Staff accounts are managed by the server owner' : 'Suspend or reactivate this role only'}
                           >
                             {ROLE_LABEL[r.role]}
@@ -133,7 +130,7 @@ function Reason({ title, onCancel, onConfirm }) {
   const [reason, setReason] = useState('');
   return (
     <Card className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-lg p-5 shadow-2xl" role="dialog" aria-label={title}>
-      <p className="font-bold">{title}</p>
+      <p className="font-semibold">{title}</p>
       <label htmlFor="user-reason" className="mt-2 block text-sm">Reason (kept in the audit log; suspensions are emailed to the person)</label>
       <textarea id="user-reason" rows={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} className="field mt-1 py-2.5" />
       <div className="mt-3 flex gap-2">

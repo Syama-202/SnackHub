@@ -6,8 +6,8 @@ import { PasswordField } from '../../components/auth/Fields';
 import { MfaEnrol, MfaVerify } from '../../components/auth/Mfa';
 import RecoveryCodes from '../../components/auth/RecoveryCodes';
 import GoogleButton from '../../components/ui/GoogleButton';
-import { Button, Icon, Input } from '../../components/ui';
-import { recoveryCodesSeen, resendVerification, signInWithDemo, signInWithGoogle, signInWithPassword } from '../../store/slices/auth';
+import { Button, Input } from '../../components/ui';
+import { recoveryCodesSeen, resendVerification, signInWithGoogle, signInWithPassword } from '../../store/slices/auth';
 import { ADMIN_CONSOLE_URL, GOOGLE_CLIENT_ID, PORTALS, signInPath, signUpPath } from '../../constants/auth';
 
 const safeNext = (next) => (next && next.startsWith('/') && !next.startsWith('//') ? next : null);
@@ -45,7 +45,7 @@ export default function SignIn({ portal }) {
   };
 
   // the code step belongs to the portal it started in
-  const pending = mfaPending && !mfaPending.demo && mfaPending.portal === portal ? mfaPending : null;
+  const pending = mfaPending && mfaPending.portal === portal ? mfaPending : null;
 
   if (recoveryCodes) {
     return (
@@ -71,13 +71,13 @@ export default function SignIn({ portal }) {
       footer={
         <div className="grid gap-2">
           <p>
-            New to SnackHub? <Link to={signUpPath(portal)} className="font-bold text-orange-text">Create a {p.label.toLowerCase()} account</Link>
+            New to SnackHub? <Link to={signUpPath(portal)} className="font-semibold text-orange-text">Create a {p.label.toLowerCase()} account</Link>
           </p>
           <p>
             Not a {p.label.toLowerCase()}? {otherPortals.map(([id, o], i) => (
               <span key={id}>
                 {i > 0 && ' or '}
-                <Link to={signInPath(id)} className="font-bold text-grey-800 underline decoration-orange/40 underline-offset-4">{o.label.toLowerCase()} sign-in</Link>
+                <Link to={signInPath(id)} className="font-semibold text-grey-800 underline decoration-orange/40 underline-offset-4">{o.label.toLowerCase()} sign-in</Link>
               </span>
             ))}
           </p>
@@ -98,7 +98,7 @@ export default function SignIn({ portal }) {
         <Input label="Email, or verified mobile with country code" type="text" inputMode="email" autoComplete="username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="you@example.com or +919876543210" />
         <PasswordField value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
         <div className="-mt-2 text-right text-sm">
-          <Link to="/forgot-password" className="font-bold text-orange-text">Forgot password?</Link>
+          <Link to="/forgot-password" className="font-semibold text-orange-text">Forgot password?</Link>
         </div>
         <Problem problem={problem} portal={portal} onJoin={() => submit(true)} onResend={async () => (await dispatch(resendVerification({ email: identifier.trim() })), setNotice('If that account still needs confirming, we have sent the link again.'))} />
         {notice && <p className="rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{notice}</p>}
@@ -108,23 +108,13 @@ export default function SignIn({ portal }) {
       </form>
       {portal === 'customer' && GOOGLE_CLIENT_ID && (
         <div className="mt-4">
-          <div className="my-3 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-grey-400"><span className="h-px flex-1 bg-grey-800/10" />or<span className="h-px flex-1 bg-grey-800/10" /></div>
+          <div className="my-3 flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-grey-400"><span className="h-px flex-1 bg-grey-800/10" />or<span className="h-px flex-1 bg-grey-800/10" /></div>
           <GoogleButton disabled={isLoading} onCredential={async (credential) => {
             const res = await dispatch(signInWithGoogle({ credential }));
             if (signInWithGoogle.rejected.match(res)) setProblem(res.payload);
           }} />
         </div>
       )}
-      <button
-        type="button"
-        onClick={async () => {
-          const res = await dispatch(signInWithDemo({ demoRole: portal }));
-          if (signInWithDemo.rejected.match(res)) setProblem(res.payload);
-        }}
-        className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-full text-sm font-bold text-grey-600 hover:bg-grey-800/5"
-      >
-        <Icon name="sparkle" className="h-4 w-4" /> Explore with the demo {p.label.toLowerCase()} instead
-      </button>
     </AuthShell>
   );
 }
@@ -138,7 +128,7 @@ function Problem({ problem, portal, onJoin, onResend }) {
     return (
       <div className={`${box} bg-sun/25`} role="alert">
         <b>Confirm your email first.</b> Open the link we sent when you signed up.{' '}
-        <button type="button" onClick={onResend} className="font-bold text-orange-text">Send it again</button>
+        <button type="button" onClick={onResend} className="font-semibold text-orange-text">Send it again</button>
       </div>
     );
   }
@@ -153,7 +143,7 @@ function Problem({ problem, portal, onJoin, onResend }) {
   if (problem.code === 'STAFF_ACCOUNT') {
     return (
       <div className={`${box} bg-grey-800 text-white`} role="alert">
-        Staff accounts sign in on the admin console. <a href={ADMIN_CONSOLE_URL} className="font-bold text-sun">Open the admin console</a>
+        Staff accounts sign in on the admin console. <a href={ADMIN_CONSOLE_URL} className="font-semibold text-sun">Open the admin console</a>
       </div>
     );
   }

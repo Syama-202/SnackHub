@@ -22,7 +22,7 @@ export default function Footer() {
         </div>
         {COLS.map((c) => (
           <div key={c.title}>
-            <h3 className="font-display text-lg font-bold text-sun">{c.title}</h3>
+            <h3 className="font-display text-lg font-semibold text-sun">{c.title}</h3>
             <ul className="mt-3 space-y-2">
               {c.links.map(([label, to]) => (
                 <li key={label}>
@@ -35,7 +35,7 @@ export default function Footer() {
       </div>
       <div className="border-t border-white/10">
         <div className="page flex flex-col items-center justify-between gap-3 py-6 text-sm text-[#FFF3E0]/60 md:flex-row">
-          <p className="font-display text-xl font-bold text-[#FFF3E0]">Made for cravings. Inspired by India.</p>
+          <p className="font-display text-xl font-semibold text-[#FFF3E0]">Made for cravings. Inspired by India.</p>
           <nav aria-label="Policies" className="flex flex-wrap justify-center gap-x-4 gap-y-1">
             <a href={`mailto:${BUSINESS.email}`} className="hover:text-white">{BUSINESS.email}</a>
             {POLICY_LINKS.filter(([, to]) => to !== '/contact').map(([label, to]) => (

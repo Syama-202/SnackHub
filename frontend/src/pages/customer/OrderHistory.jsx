@@ -39,13 +39,13 @@ const OrderHistory = () => {
             </span>
             {/* the shop name keeps to one line on a phone; the order number sits with the date */}
             <div className="min-w-0 flex-1">
-              <p className="truncate font-bold">{o.seller?.shopName}</p>
+              <p className="truncate font-semibold">{o.seller?.shopName}</p>
               <p className="truncate text-sm text-grey-600">{o.items.map((i) => `${i.title} × ${i.qty}`).join(', ')}</p>
               <p className="nums truncate text-xs text-grey-600">#{o.id} · {new Date(o.placedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</p>
             </div>
             <div className="shrink-0 text-right">
               <Pill tone={isActive(o.status) ? 'sun' : o.status === 'DELIVERED' ? 'green' : o.status === 'CANCELLED' || o.status === 'REJECTED' ? 'red' : 'grey'}>{STATE_LABEL[o.status]}</Pill>
-              <p className="nums mt-1 font-extrabold">{rupees(o.totalPaise)}</p>
+              <p className="nums mt-1 font-bold">{rupees(o.totalPaise)}</p>
             </div>
             <Icon name="chevronRight" className="hidden h-4 w-4 shrink-0 text-grey-400 sm:block" />
           </Card>

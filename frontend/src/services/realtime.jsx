@@ -1,6 +1,6 @@
 // Live updates over Socket.IO (/api/v1/socket). The server sends hints only, { id, topic,
 // orderId? }, and pages fetch the change over REST as always, so the socket never carries
-// order data or the delivery code. Real accounts only: demo sessions live in the mock.
+// order data or the delivery code.
 //
 // The socket reconnects by itself after a network drop. When the server closes it (the access
 // token expired, or the account was suspended), the token is refreshed first and it tries
@@ -58,12 +58,12 @@ function retryLater({ refresh }) {
 }
 
 /**
- * Connects for the signed-in real account; does nothing for a demo session or when connected.
+ * Connects for the signed-in account; does nothing when already connected.
  * The client library loads only now, so visitors who never sign in do not download it.
  */
 export async function startRealtime() {
   const token = getAccessToken();
-  if (socket || !token || token.startsWith('demo.')) return;
+  if (socket || !token) return;
   const mine = ++generation;
   setStatus('connecting');
   const { io } = await import('socket.io-client');

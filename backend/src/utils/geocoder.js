@@ -73,7 +73,15 @@ export function createGeocoder(env, { fetchImpl = globalThis.fetch, logger } = {
     async reverse({ lat, lng }) {
       const r = await call('/reverse', { lat: String(lat), lon: String(lng), format: 'jsonv2', addressdetails: '1', zoom: '18' });
       if (!r || r.error) return null;
-      return { line: shortLine(r.address, r.display_name), postcode: r.address?.postcode ?? null };
+      const a = r.address ?? {};
+      return {
+        line: shortLine(a, r.display_name),
+        postcode: /^[1-9][0-9]{5}$/.test(a.postcode ?? '') ? a.postcode : null,
+        // the neighbourhood and the city it is in, for "Deliver to Brodipet, Guntur"
+        locality: String(a.suburb || a.neighbourhood || a.quarter || a.city_district || a.residential || '').slice(0, 80) || null,
+        city: String(a.city || a.town || a.village || a.county || a.state_district || '').slice(0, 80) || null,
+        state: String(a.state || '').slice(0, 60) || null,
+      };
     },
   };
 }

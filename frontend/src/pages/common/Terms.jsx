@@ -43,7 +43,7 @@ const SECTIONS = [
     body: (
       <ul>
         <li>Pay on delivery: you pay the delivery partner at your door, in cash or by UPI.</li>
-        <li>Pay online: you pay on PhonePe’s secure page. Your UPI PIN and card details go to PhonePe only, never to SnackHub. The shop gets your order only after PhonePe confirms the payment to us.</li>
+        <li>Pay online: you pay in the secure window of Razorpay, our payment partner. Your UPI PIN and card details go to Razorpay only, never to SnackHub. The shop gets your order only after Razorpay confirms the payment to us.</li>
         <li>For a delivery, you share a delivery code with the partner. Share it only when the order is in your hands.</li>
       </ul>
     ),

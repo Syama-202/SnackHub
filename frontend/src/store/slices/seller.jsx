@@ -18,8 +18,6 @@ export const updateProduct = apiThunk('seller/updateProduct', async ({ id, ...ch
 export const fetchCatalogue = apiThunk('seller/fetchCatalogue', async (q, { apiFetch }) => apiFetch(`/seller/catalogue${q ? `?q=${encodeURIComponent(q)}` : ''}`));
 export const addFromCatalogue = apiThunk('seller/addFromCatalogue', async (fields, { apiFetch }) => apiFetch('/seller/products/from-catalogue', { method: 'POST', body: fields }));
 export const createProduct = apiThunk('seller/createProduct', async (fields, { apiFetch }) => apiFetch('/seller/products', { method: 'POST', body: fields }));
-// Demo only: an order arrives at this shop, to be run by hand
-export const simulateIncomingOrder = apiThunk('seller/simulateOrder', async (_, { apiFetch }) => apiFetch('/dev/incoming-order', { method: 'POST' }));
 
 const replaceProduct = (state, p) => {
   state.products = state.products.map((x) => (x.id === p.id ? p : x));

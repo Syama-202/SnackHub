@@ -66,7 +66,7 @@ export default function CataloguePicker({ onAdded, onOwnRecipe }) {
         <div className="flex items-center gap-3 sm:col-span-2">
           <SnackImage slug={pick.slug} art={pick.art} title={pick.title} plate={false} sizes="56px" className="h-14 w-14 rounded-xl" />
           <div>
-            <p className="font-bold">{pick.title}</p>
+            <p className="font-semibold">{pick.title}</p>
             <p className="text-sm text-grey-600">{[CATEGORY_LABELS[pick.category], pick.weight].filter(Boolean).join(' · ')}</p>
           </div>
         </div>
@@ -96,7 +96,7 @@ export default function CataloguePicker({ onAdded, onOwnRecipe }) {
             <button type="button" disabled={Boolean(i.onMenu)} onClick={() => choose(i)} className="flex w-full items-center gap-3 rounded-xl border border-grey-800/10 p-2 text-left hover:border-orange/60 hover:bg-sun/10 disabled:cursor-default disabled:opacity-60 disabled:hover:border-grey-800/10 disabled:hover:bg-transparent">
               <SnackImage slug={i.slug} art={i.art} title={i.title} plate={false} sizes="48px" className="h-12 w-12 shrink-0 rounded-lg" />
               <span className="min-w-0 flex-1">
-                <span className="flex flex-wrap items-center gap-1.5 font-bold">{i.title} <TempBadge temp={i.servingTemp} />{i.onMenu && <Pill tone="green">On your menu</Pill>}</span>
+                <span className="flex flex-wrap items-center gap-1.5 font-semibold">{i.title} <TempBadge temp={i.servingTemp} />{i.onMenu && <Pill tone="green">On your menu</Pill>}</span>
                 <span className="block text-xs text-grey-600">{spreadText(i.pricesInCity)}</span>
               </span>
             </button>
@@ -104,7 +104,7 @@ export default function CataloguePicker({ onAdded, onOwnRecipe }) {
         ))}
       </ul>
       <p className="mt-3 text-sm text-grey-600">
-        Not in the catalogue? <button type="button" onClick={onOwnRecipe} className="font-bold text-orange-text underline underline-offset-2">Add your own recipe</button>
+        Not in the catalogue? <button type="button" onClick={onOwnRecipe} className="font-semibold text-orange-text underline underline-offset-2">Add your own recipe</button>
       </p>
     </div>
   );

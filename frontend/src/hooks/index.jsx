@@ -194,18 +194,18 @@ export function useRealtimeStatus() {
 }
 
 /**
- * Keeps the live-update socket open for the signed-in real account (once, at the app root);
- * closes it on sign-out or when another account signs in. Demo sessions have none.
+ * Keeps the live-update socket open for the signed-in account (once, at the app root);
+ * closes it on sign-out or when another account signs in.
  */
 export function useRealtime() {
   const token = useSelector((state) => state.auth.accessToken);
   const who = useSelector((state) => (state.auth.user ? `${state.auth.user.id}:${state.auth.user.role}` : ''));
-  const real = Boolean(token) && !String(token).startsWith('demo.');
+  const signedIn = Boolean(token);
   useEffect(() => {
-    if (!real || !who) return undefined;
+    if (!signedIn || !who) return undefined;
     startRealtime();
     return stopRealtime;
-  }, [real, who]);
+  }, [signedIn, who]);
 }
 
 export function useDocumentVisible() {

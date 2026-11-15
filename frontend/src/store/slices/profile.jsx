@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { HERE } from './ui';
 import { apiThunk } from '../apiThunk';
 import { CITIES } from '@shared/domain/cities';
-import { distanceM } from '@shared/domain/geo';
 import { DELETE_CONFIRM } from '@shared/domain/accounts';
 
 export const fetchAddresses = apiThunk('profile/fetchAddresses', async (_, { apiFetch }) => apiFetch('/me/addresses'));
@@ -85,19 +85,14 @@ export const { resetProfile } = profileSlice.actions;
 /** A guest browsing point at a city's centre. */
 export const cityPoint = (c) => ({ id: 1, label: c.name, line: `${c.name}, ${c.state} (city centre)`, lat: c.lat, lng: c.lng, cityId: c.id });
 
-/** A guest browsing point at the phone's position, named after the nearest city. */
-export const herePoint = ({ lat, lng }) => {
-  const near = CITIES.reduce((best, c) => (distanceM(c, { lat, lng }) < distanceM(best, { lat, lng }) ? c : best));
-  return { id: 1, label: 'Current location', line: `Your current location, near ${near.name}`, lat, lng, cityId: near.id };
-};
-
-// until a guest picks a city or shares their location, browsing starts at the first demo city
+// until a guest picks a city or shares their location, browsing starts at the first city
 export const GUEST_POINT = cityPoint(CITIES[0]);
 
-/** The chosen saved address, else the customer's default one. */
-export const selectSavedAddress = (state) => state.profile.addresses.find((a) => a.id === state.ui.addressId) || state.profile.addresses.find((a) => a.isDefault) || null;
+/** The chosen saved address, else the customer's default one; none while browsing from where they are. */
+export const selectSavedAddress = (state) =>
+  state.ui.addressId === HERE ? null : state.profile.addresses.find((a) => a.id === state.ui.addressId) || state.profile.addresses.find((a) => a.isDefault) || null;
 
-/** The selected delivery point: a saved address, else the guest's city or location. */
+/** The selected delivery point: a saved address, else the chosen city or current location. */
 export const selectDeliveryPoint = (state) => selectSavedAddress(state) || state.ui.guestPoint || GUEST_POINT;
 
 export default profileSlice.reducer;

@@ -23,6 +23,8 @@
     "create-admin:hosted": "node --env-file=.env.production scripts/create-admin.js",
     "backup": "node --env-file=.env scripts/backup.js",
     "backup:hosted": "node --env-file=.env.production scripts/backup.js",
+    "search:up": "node scripts/search-up.js",
+    "search:reindex": "node --env-file=.env scripts/search-reindex.js",
     "copy-from-mysql": "node --env-file=.env.production --env-file=.env.mysql scripts/copy-from-mysql.js",
     "jobs": "node --env-file=.env scripts/jobs.js"
   },

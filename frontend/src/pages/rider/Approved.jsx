@@ -5,7 +5,7 @@ import { Card, Spinner } from '../../components/ui';
 import { loadOnboarding } from '../../store/slices/onboarding';
 
 /**
- * The gate for a real (not demo) rider: until the application is approved it sends them to
+ * The gate for a rider: until the application is approved it sends them to
  * onboarding. Being online is separate from being verified: going online and accepting an
  * offer need an approved application with valid documents, checked by the API each time.
  */
@@ -22,11 +22,11 @@ export default function RiderApproved({ children }) {
     <>
       {expiring.length > 0 && (
         <Card className="mx-auto mb-4 max-w-2xl p-4 text-sm">
-          <b>Documents to renew:</b> {expiring.map((d) => `${d.label} (${d.expiry === 'expired' ? 'expired' : `expires ${d.expiresOn}`})`).join(', ')}. <Link to="/rider/onboarding" className="font-bold text-orange-text">Upload the renewal</Link>
+          <b>Documents to renew:</b> {expiring.map((d) => `${d.label} (${d.expiry === 'expired' ? 'expired' : `expires ${d.expiresOn}`})`).join(', ')}. <Link to="/rider/onboarding" className="font-semibold text-orange-text">Upload the renewal</Link>
         </Card>
       )}
       {children}
-      <p className="mx-auto mt-6 max-w-2xl text-sm"><Link to="/rider/onboarding" className="font-bold text-orange-text">Your documents and history</Link></p>
+      <p className="mx-auto mt-6 max-w-2xl text-sm"><Link to="/rider/onboarding" className="font-semibold text-orange-text">Your documents and history</Link></p>
     </>
   );
 }

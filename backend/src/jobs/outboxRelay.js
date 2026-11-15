@@ -11,15 +11,17 @@ import { realtime } from '../utils/realtime.js';
 import { pushToDevices } from '../utils/push.js';
 import { describeError, recordError } from '../utils/errors.js';
 import { shouldRunPass } from '../utils/activity.js';
+import { syncSearch } from '../utils/searchSync.js';
 
 // a message is tried this many times, 1, 2, 4 ... 64 minutes apart (about two hours in all)
 export const MAX_ATTEMPTS = 8;
 
 const MODULES = ['identity', 'catalog', 'dispatch', 'ordering'];
 
-export function createOutboxRelay({ env, dbs, mailer, sms, push, logger }) {
-  // inbox messages need no provider, so they always go out
-  const types = () => ['notify.inbox', ...(mailer.enabled ? ['email.send', 'admin.alert'] : []), ...(sms.enabled ? ['sms.send'] : [])];
+export function createOutboxRelay({ env, dbs, mailer, sms, push, logger, elastic = null }) {
+  // inbox messages and search-index updates need no provider, so they always go out (a search
+  // update with no Elasticsearch is simply done)
+  const types = () => ['notify.inbox', 'search.sync', ...(mailer.enabled ? ['email.send', 'admin.alert'] : []), ...(sms.enabled ? ['sms.send'] : [])];
 
   async function adminEmails() {
     return dbs.identity('users').join('user_roles', 'user_roles.user_id', 'users.id').where({ 'user_roles.role': 'admin', 'user_roles.status': 'active', 'users.status': 'active' }).pluck('users.email');
@@ -38,6 +40,10 @@ export function createOutboxRelay({ env, dbs, mailer, sms, push, logger }) {
         realtime.publish([{ userId: p.userId, role: portalOfType(p.type) }], 'notification', { orderId: p.orderId });
         await pushToDevices(dbs, push, { userId: p.userId, portal: portalOfType(p.type), message: p });
       }
+      return;
+    }
+    if (row.type === 'search.sync') {
+      await syncSearch({ dbs, elastic }, p);
       return;
     }
     if (row.type === 'admin.alert') {

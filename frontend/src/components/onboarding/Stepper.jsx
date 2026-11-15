@@ -5,7 +5,7 @@ export default function Stepper({ steps, current, onPick }) {
   const done = steps.filter((s) => s.complete).length;
   return (
     <nav aria-label="Application steps">
-      <div className="flex items-center justify-between text-sm font-bold text-grey-600">
+      <div className="flex items-center justify-between text-sm font-semibold text-grey-600">
         <span>Step {current + 1} of {steps.length}</span>
         <span>{done} of {steps.length} complete</span>
       </div>
@@ -19,7 +19,7 @@ export default function Stepper({ steps, current, onPick }) {
               type="button"
               onClick={() => onPick(i)}
               aria-current={i === current ? 'step' : undefined}
-              className={cx('flex h-10 items-center gap-2 rounded-full px-3.5 text-sm font-bold transition', i === current ? 'chip-on' : 'chip-off')}
+              className={cx('flex h-10 items-center gap-2 rounded-full px-3.5 text-sm font-semibold transition', i === current ? 'chip-on' : 'chip-off')}
             >
               <span className={cx('grid h-6 w-6 place-items-center rounded-full text-xs', s.complete ? 'bg-emerald-600 text-white' : 'bg-white/70 text-grey-800')}>
                 {s.complete ? <Icon name="check" className="h-3.5 w-3.5" /> : i + 1}

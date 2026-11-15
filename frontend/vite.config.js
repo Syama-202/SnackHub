@@ -32,13 +32,12 @@ export default defineConfig({
     port: 5180,
     strictPort: true,
     fs: { allow: ['..'] },
-    // Requests the mock passes on go to the real backend on the same origin, so the httpOnly
-    // refresh cookies work without CORS: every real account (sign-in, cart, orders, the seller
-    // and rider consoles, a real admin), and the catalog reads. Demo sessions stay in the mock.
-    // Live updates (Socket.IO) take the WebSocket upgrade through the same origin.
+    // Every API call goes to the backend on the same origin, so the httpOnly refresh cookies
+    // work without CORS. Live updates (Socket.IO) take the WebSocket upgrade the same way; that
+    // entry comes first, so it wins over the general one.
     proxy: {
-      ...Object.fromEntries(['auth', 'me', 'cities', 'sellers', 'products', 'catalogue', 'client-errors', 'search', 'admin', 'files', 'seller', 'rider', 'cart', 'orders', 'notice'].map((p) => [`/api/v1/${p}`, backend])),
       '/api/v1/socket': { target: backend, ws: true },
+      '/api/v1': backend,
     },
   },
   build: {

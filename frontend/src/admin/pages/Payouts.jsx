@@ -69,8 +69,8 @@ const Payouts = () => {
             {data && data.sellers.length === 0 && <tr><td colSpan="6" className="p-6 text-center text-grey-600">No shop has delivered orders waiting to be paid.</td></tr>}
             {(data?.sellers ?? []).map((s) => (
               <tr key={s.sellerId} className="border-b border-grey-800/5 last:border-0">
-                <td className="p-3 font-bold">{s.shopName}{s.demo && <Pill tone="sun" className="ml-1">Demo</Pill>}</td>
-                <td className="p-3"><span className="font-extrabold">{rupees(Math.max(0, s.due.netPaise))}</span><span className="block text-xs text-grey-600">{rupees(s.due.grossPaise)} − {rupees(s.due.commissionPaise)}{s.due.finesPaise ? ` − ${rupees(s.due.finesPaise)} fines` : ''}{s.due.returnedPaise ? ` + ${rupees(s.due.returnedPaise)}` : ''}</span></td>
+                <td className="p-3 font-semibold">{s.shopName}{s.demo && <Pill tone="grey" className="ml-1">Sample</Pill>}</td>
+                <td className="p-3"><span className="font-bold">{rupees(Math.max(0, s.due.netPaise))}</span><span className="block text-xs text-grey-600">{rupees(s.due.grossPaise)} − {rupees(s.due.commissionPaise)}{s.due.finesPaise ? ` − ${rupees(s.due.finesPaise)} fines` : ''}{s.due.returnedPaise ? ` + ${rupees(s.due.returnedPaise)}` : ''}</span></td>
                 <td className="p-3">{s.due.ordersCount}</td>
                 <td className="p-3 text-grey-600">{s.due.waitingCount ? `${s.due.waitingCount} · ${rupees(s.due.waitingGrossPaise)}` : '–'}</td>
                 <td className="p-3">{s.bank ? <span>{s.bank.holder}<span className="block font-mono text-xs text-grey-600">{s.bank.ifsc} · ••{s.bank.last4}</span></span> : <span className="font-semibold text-red-text">Missing</span>}</td>
@@ -91,26 +91,26 @@ const Payouts = () => {
         <Card className="mt-4 p-5" role="region" aria-label={`Statement ${open.id}`}>
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h2 className="text-lg font-extrabold">Statement #{open.id} · {open.shopName}</h2>
+              <h2 className="text-lg font-bold">Statement #{open.id} · {open.shopName}</h2>
               <p className="text-sm text-grey-600">{open.ordersCount} orders delivered {when(open.firstDeliveredAt)} to {when(open.lastDeliveredAt)} · commission {open.commissionPct}%</p>
             </div>
             <Pill tone={STATUS[open.status][1]}>{STATUS[open.status][0]}</Pill>
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-5">
-            <div><dt className="text-grey-600">Food value</dt><dd className="font-bold">{rupees(open.grossPaise)}</dd></div>
-            <div><dt className="text-grey-600">Commission</dt><dd className="font-bold">−{rupees(open.commissionPaise)}</dd></div>
-            <div><dt className="text-grey-600">Fines</dt><dd className="font-bold">−{rupees(open.finesPaise)}</dd></div>
-            <div><dt className="text-grey-600">Returned</dt><dd className="font-bold">+{rupees(open.returnedPaise)}</dd></div>
-            <div><dt className="text-grey-600">To transfer</dt><dd className="text-lg font-extrabold">{rupees(open.netPaise)}</dd></div>
+            <div><dt className="text-grey-600">Food value</dt><dd className="font-semibold">{rupees(open.grossPaise)}</dd></div>
+            <div><dt className="text-grey-600">Commission</dt><dd className="font-semibold">−{rupees(open.commissionPaise)}</dd></div>
+            <div><dt className="text-grey-600">Fines</dt><dd className="font-semibold">−{rupees(open.finesPaise)}</dd></div>
+            <div><dt className="text-grey-600">Returned</dt><dd className="font-semibold">+{rupees(open.returnedPaise)}</dd></div>
+            <div><dt className="text-grey-600">To transfer</dt><dd className="text-lg font-bold">{rupees(open.netPaise)}</dd></div>
           </dl>
           <p className="mt-2 text-sm">To: {open.bank ? <><b>{open.bank.holder}</b>, IFSC <span className="font-mono">{open.bank.ifsc}</span>, account ending <b>{open.bank.last4}</b></> : <span className="font-semibold text-red-text">no bank account on file</span>}</p>
           <details className="mt-3 text-sm">
-            <summary className="cursor-pointer font-bold">{open.lines.length} lines</summary>
+            <summary className="cursor-pointer font-semibold">{open.lines.length} lines</summary>
             <ul className="mt-2 grid gap-1 sm:grid-cols-2">
               {open.lines.map((l) => (
                 <li key={`${l.kind}${l.refId}`} className="flex justify-between rounded-lg bg-grey-50 px-3 py-1.5">
                   <span>{l.kind === 'ORDER' ? `Order #${l.refId}` : l.kind === 'FINE' ? `Fine #${l.refId}` : `Fine #${l.refId} returned`}</span>
-                  <span className={cx('font-bold', l.kind === 'FINE' && 'text-red-text')}>{l.kind === 'ORDER' ? `${rupees(l.grossPaise)} − ${rupees(l.commissionPaise)}` : l.kind === 'FINE' ? `−${rupees(l.amountPaise)}` : `+${rupees(l.amountPaise)}`}</span>
+                  <span className={cx('font-semibold', l.kind === 'FINE' && 'text-red-text')}>{l.kind === 'ORDER' ? `${rupees(l.grossPaise)} − ${rupees(l.commissionPaise)}` : l.kind === 'FINE' ? `−${rupees(l.amountPaise)}` : `+${rupees(l.amountPaise)}`}</span>
                 </li>
               ))}
             </ul>
@@ -119,14 +119,14 @@ const Payouts = () => {
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div>
                 <label className="block">
-                  <span className="mb-1 block text-sm font-bold">Bank transfer reference (UTR)</span>
+                  <span className="mb-1 block text-sm font-semibold">Bank transfer reference (UTR)</span>
                   <input value={reference} maxLength={60} onChange={(e) => setReference(e.target.value)} placeholder="UTR or transaction id" aria-invalid={Boolean(reference) && !refOk} className="field h-11 font-mono" />
                 </label>
                 <Button className="mt-2" onClick={pay} disabled={!refOk}>Mark {rupees(open.netPaise)} paid</Button>
               </div>
               <div>
                 <label className="block">
-                  <span className="mb-1 block text-sm font-bold">Or cancel, with a reason</span>
+                  <span className="mb-1 block text-sm font-semibold">Or cancel, with a reason</span>
                   <input value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} placeholder="Bank details being checked" className="field h-11" />
                 </label>
                 <Button className="mt-2" variant="ghost" onClick={cancel} disabled={reason.trim().length < 5}>Cancel statement</Button>
@@ -137,7 +137,7 @@ const Payouts = () => {
         </Card>
       )}
 
-      <h2 className="mt-8 text-xl font-extrabold">Recent statements</h2>
+      <h2 className="mt-8 text-xl font-bold">Recent statements</h2>
       <Card className="mt-3 overflow-x-auto p-0" tabIndex={0} role="region" aria-label="Recent statements">
         <table className="w-full min-w-[640px] text-sm">
           <thead className="text-left text-grey-600"><tr className="border-b border-grey-800/5"><th className="p-3">Statement</th><th className="p-3">Shop</th><th className="p-3">Amount</th><th className="p-3">Status</th><th className="p-3">Reference</th></tr></thead>
@@ -145,9 +145,9 @@ const Payouts = () => {
             {data && data.payouts.length === 0 && <tr><td colSpan="5" className="p-6 text-center text-grey-600">No statements yet.</td></tr>}
             {(data?.payouts ?? []).map((p) => (
               <tr key={p.id} className="border-b border-grey-800/5 last:border-0">
-                <td className="p-3"><button className="font-bold text-orange-text underline-offset-2 hover:underline" onClick={() => show(p.id)}>#{p.id}</button><span className="block text-xs text-grey-600">{when(p.createdAt)}</span></td>
+                <td className="p-3"><button className="font-semibold text-orange-text underline-offset-2 hover:underline" onClick={() => show(p.id)}>#{p.id}</button><span className="block text-xs text-grey-600">{when(p.createdAt)}</span></td>
                 <td className="p-3">{p.shopName}</td>
-                <td className="p-3 font-bold">{rupees(p.netPaise)}</td>
+                <td className="p-3 font-semibold">{rupees(p.netPaise)}</td>
                 <td className="p-3"><Pill tone={STATUS[p.status][1]}>{STATUS[p.status][0]}</Pill></td>
                 <td className="p-3 font-mono text-xs">{p.reference ?? p.cancelReason ?? ''}</td>
               </tr>

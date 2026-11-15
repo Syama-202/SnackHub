@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../../services/api';
 import { Button, Card, Logo } from '../../components/ui';
-import DemoBanner from '../../components/layout/DemoBanner';
 import Backdrop from '../../components/ui/Backdrop';
 
 /**
@@ -57,15 +56,14 @@ export default function Enrol() {
   return (
     <div className="min-h-dvh">
       <Backdrop />
-      <DemoBanner tone="dark" />
       <div className="mx-auto grid min-h-[80vh] max-w-md place-items-center px-4 py-8">
         <Card className="w-full p-8">
           <Logo />
-          <p className="mt-1 text-xs font-extrabold uppercase tracking-wider text-red-text">Admin console · set up your second factor</p>
+          <p className="mt-1 text-xs font-bold uppercase tracking-wider text-red-text">Admin console · set up your second factor</p>
 
           {codes ? (
             <>
-              <h1 className="mt-6 text-2xl font-extrabold">Save your recovery codes</h1>
+              <h1 className="mt-6 text-2xl font-bold">Save your recovery codes</h1>
               <p className="mt-1 text-sm text-grey-600">If you lose your phone, each code signs you in once. They are shown only now; SnackHub keeps only a hash of each.</p>
               <ol className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-grey-50 p-4 font-mono text-base">
                 {codes.map((c) => (
@@ -84,16 +82,16 @@ export default function Enrol() {
             </>
           ) : info ? (
             <form onSubmit={activate}>
-              <h1 className="mt-6 text-2xl font-extrabold">Scan with your authenticator app</h1>
+              <h1 className="mt-6 text-2xl font-bold">Scan with your authenticator app</h1>
               <p className="mt-1 text-sm text-grey-600">
                 For <b>{info.email}</b>. Use Google Authenticator, Microsoft Authenticator or any TOTP app.
               </p>
               <img src={info.qr} alt="QR code for your authenticator app" width="240" height="240" className="mx-auto mt-4 rounded-xl border border-grey-800/10" />
               <details className="mt-3 text-sm">
-                <summary className="cursor-pointer font-bold text-orange-text">Cannot scan? Enter the key by hand</summary>
+                <summary className="cursor-pointer font-semibold text-orange-text">Cannot scan? Enter the key by hand</summary>
                 <p className="mt-2 break-all rounded-xl bg-grey-50 p-3 font-mono">{info.secret}</p>
               </details>
-              <label htmlFor="first-code" className="mt-5 block text-sm font-bold">Then enter the 6-digit code the app shows</label>
+              <label htmlFor="first-code" className="mt-5 block text-sm font-semibold">Then enter the 6-digit code the app shows</label>
               <input
                 id="first-code"
                 inputMode="numeric"
@@ -102,13 +100,13 @@ export default function Enrol() {
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 className="mt-2 h-14 w-full rounded-2xl border-2 border-grey-800/15 text-center font-mono text-2xl tracking-[0.4em] focus:border-orange focus:outline-none"
               />
-              {error && <p className="mt-2 text-sm font-bold text-red-text" role="alert">{error}</p>}
+              {error && <p className="mt-2 text-sm font-semibold text-red-text" role="alert">{error}</p>}
               <Button type="submit" className="mt-4 w-full" disabled={code.length !== 6} loading={busy}>Turn on two-step sign-in</Button>
             </form>
           ) : (
             <>
-              <h1 className="mt-6 text-2xl font-extrabold">Set up two-step sign-in</h1>
-              {error ? <p className="mt-2 text-sm font-bold text-red-text" role="alert">{error}</p> : <p className="mt-2 text-sm text-grey-600">Checking your link…</p>}
+              <h1 className="mt-6 text-2xl font-bold">Set up two-step sign-in</h1>
+              {error ? <p className="mt-2 text-sm font-semibold text-red-text" role="alert">{error}</p> : <p className="mt-2 text-sm text-grey-600">Checking your link…</p>}
             </>
           )}
         </Card>

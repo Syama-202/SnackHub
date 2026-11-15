@@ -56,10 +56,10 @@ const Cash = () => {
             {cash && riders.length === 0 && <tr><td colSpan="5" className="p-6 text-center text-grey-600">No rider has collected cash yet.</td></tr>}
             {riders.map((r) => (
               <tr key={r.riderId} className="border-b border-grey-800/5 last:border-0">
-                <td className="p-3"><span className="font-bold">{r.name}</span><span className="block text-xs capitalize text-grey-600">{r.cityId?.replace(/-/g, ' ')}</span></td>
+                <td className="p-3"><span className="font-semibold">{r.name}</span><span className="block text-xs capitalize text-grey-600">{r.cityId?.replace(/-/g, ' ')}</span></td>
                 <td className="p-3">{rupees(r.collectedPaise)}</td>
                 <td className="p-3">{rupees(r.depositedPaise)}</td>
-                <td className="p-3"><span className={cx('font-extrabold', r.overLimit && 'text-red-text')}>{rupees(r.heldPaise)}</span> {r.overLimit && <Pill tone="red">Over limit</Pill>}</td>
+                <td className="p-3"><span className={cx('font-bold', r.overLimit && 'text-red-text')}>{rupees(r.heldPaise)}</span> {r.overLimit && <Pill tone="red">Over limit</Pill>}</td>
                 <td className="p-3 text-right">
                   <Button size="sm" variant="ghost" disabled={r.heldPaise < 100} onClick={() => setForm({ riderId: r.riderId, name: r.name, max: r.heldPaise, amount: (r.heldPaise / 100).toFixed(2), note: '' })}>Record deposit</Button>
                 </td>
@@ -71,15 +71,15 @@ const Cash = () => {
 
       {form && (
         <Card className="mt-4 p-5" role="region" aria-label={`Deposit from ${form.name}`}>
-          <h2 className="text-lg font-extrabold">Deposit from {form.name}</h2>
+          <h2 className="text-lg font-bold">Deposit from {form.name}</h2>
           <p className="text-sm text-grey-600">They hold {rupees(form.max)}. Count the cash before you record it.</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-[12rem_1fr]">
             <label className="block">
-              <span className="mb-1 block text-sm font-bold">Amount (₹)</span>
+              <span className="mb-1 block text-sm font-semibold">Amount (₹)</span>
               <input type="number" inputMode="decimal" min="1" step="0.01" max={(form.max / 100).toFixed(2)} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} aria-invalid={!valid} className="field h-11" />
             </label>
             <label className="block">
-              <span className="mb-1 block text-sm font-bold">Note (optional)</span>
+              <span className="mb-1 block text-sm font-semibold">Note (optional)</span>
               <input value={form.note} maxLength={200} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Handed in at the hub" className="field h-11" />
             </label>
           </div>
@@ -91,7 +91,7 @@ const Cash = () => {
         </Card>
       )}
 
-      <h2 className="mt-8 text-xl font-extrabold">Recent deposits</h2>
+      <h2 className="mt-8 text-xl font-bold">Recent deposits</h2>
       <Card className="mt-3 overflow-x-auto p-0" tabIndex={0} role="region" aria-label="Recent deposits">
         <table className="w-full min-w-[640px] text-sm">
           <thead className="text-left text-grey-600"><tr className="border-b border-grey-800/5"><th className="p-3">When</th><th className="p-3">Rider</th><th className="p-3">Amount</th><th className="p-3">Note</th><th className="p-3"><span className="sr-only">Action</span></th></tr></thead>
@@ -102,10 +102,10 @@ const Cash = () => {
               return (
                 <tr key={d.id} className="border-b border-grey-800/5 last:border-0">
                   <td className="p-3 text-grey-600">{new Date(d.at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</td>
-                  <td className="p-3 font-bold">{nameOf(d.riderId)}</td>
+                  <td className="p-3 font-semibold">{nameOf(d.riderId)}</td>
                   <td className="p-3">{d.kind === 'REVERSAL' ? <span className="text-red-text">−{rupees(d.amountPaise)} reversal</span> : rupees(d.amountPaise)} {reversed && <Pill tone="grey">Reversed</Pill>}</td>
                   <td className="p-3 text-grey-600">{d.note ?? ''}</td>
-                  <td className="p-3 text-right">{d.kind === 'DEPOSIT' && !reversed && <button onClick={() => setReversing({ id: d.id, reason: '' })} className="text-sm font-bold text-red-text">Reverse</button>}</td>
+                  <td className="p-3 text-right">{d.kind === 'DEPOSIT' && !reversed && <button onClick={() => setReversing({ id: d.id, reason: '' })} className="text-sm font-semibold text-red-text">Reverse</button>}</td>
                 </tr>
               );
             })}
@@ -115,10 +115,10 @@ const Cash = () => {
 
       {reversing && (
         <Card className="mt-4 p-5" role="region" aria-label="Reverse a deposit">
-          <h2 className="text-lg font-extrabold">Reverse this deposit?</h2>
+          <h2 className="text-lg font-bold">Reverse this deposit?</h2>
           <p className="text-sm text-grey-600">The deposit stays on record; a reversal row cancels it and the rider holds that cash again.</p>
           <label className="mt-3 block">
-            <span className="mb-1 block text-sm font-bold">Reason</span>
+            <span className="mb-1 block text-sm font-semibold">Reason</span>
             <input value={reversing.reason} maxLength={200} onChange={(e) => setReversing({ ...reversing, reason: e.target.value })} placeholder="Recorded against the wrong rider" className="field h-11" />
           </label>
           <div className="mt-4 flex gap-2">

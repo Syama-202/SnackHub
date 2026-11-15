@@ -93,7 +93,11 @@ export function seedRows(data = buildSeed()) {
       radius_km: s.radiusKm,
       busy_extra_min: s.busyExtraMin,
       paused: s.paused,
-      open_hours: s.openHours,
+      open_hours: null,
+      weekly_hours: s.weeklyHours ? JSON.stringify(s.weeklyHours) : null,
+      locality: s.locality ?? null,
+      address_line: s.addressLine ?? null,
+      pincode: s.pincode ?? null,
       status: s.status,
       licence_no: s.licenceNo,
       licence_expires_on: s.licenceExpiresOn,
@@ -109,6 +113,7 @@ export function seedRows(data = buildSeed()) {
       category: i.category,
       serving_temp: i.servingTemp,
       active: true,
+      default_hours: i.defaultHours ? JSON.stringify(i.defaultHours) : null,
       attrs: JSON.stringify({ weight: i.weight, spice: i.spice, vegetarian: i.vegetarian, allergens: i.allergens, tags: i.tags, collections: i.collections, art: i.art }),
     })),
     products: data.products.map((p) => ({
@@ -126,6 +131,7 @@ export function seedRows(data = buildSeed()) {
       mrp_paise: p.mrpPaise,
       image_path: null,
       active: p.active,
+      available_hours: p.availableHours ? JSON.stringify(p.availableHours) : null,
       attrs: JSON.stringify({
         spice: p.spice,
         weight: p.weight,

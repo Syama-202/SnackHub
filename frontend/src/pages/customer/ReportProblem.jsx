@@ -5,7 +5,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { fetchOrder, fileComplaint } from '../../store/slices/order';
-import { isDemoSession } from '../../store/slices/auth';
 import { COMPLAINT_TYPES } from '@shared/domain/triage';
 import { rupees } from '@shared/domain/money';
 import { Button, Card, Icon, Pill, cx } from '../../components/ui';
@@ -48,8 +47,7 @@ export default function ReportProblem() {
   const onSubmit = async (v) => {
     setServerError(null);
     try {
-      // a real account uploads the photos; the demo mock only needs their count
-      const c = await dispatch(fileComplaint({ id, ...v, files: photos.map((p) => p.file), demo: isDemoSession() })).unwrap();
+      const c = await dispatch(fileComplaint({ id, ...v, files: photos.map((p) => p.file) })).unwrap();
       setResult(c);
     } catch (e) {
       setServerError(e.message);
@@ -76,27 +74,27 @@ export default function ReportProblem() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 pt-6">
-      <Link to={`/orders/${id}`} className="inline-flex h-11 items-center gap-1 text-sm font-bold text-grey-600"><Icon name="arrowLeft" className="h-4 w-4" /> Order #{id}</Link>
+      <Link to={`/orders/${id}`} className="inline-flex h-11 items-center gap-1 text-sm font-semibold text-grey-600"><Icon name="arrowLeft" className="h-4 w-4" /> Order #{id}</Link>
       <h1 className="page-title">Report a problem</h1>
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 space-y-6">
         <Card className="p-5">
           <fieldset>
-            <legend className="text-lg font-extrabold">What kind of problem?</legend>
+            <legend className="text-lg font-bold">What kind of problem?</legend>
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               {Object.entries(COMPLAINT_TYPES).map(([k, t]) => (
                 <label key={k} className={cx('cursor-pointer rounded-2xl border-2 p-3', category === k ? 'border-orange bg-sun/10' : 'border-grey-800/10')}>
                   <input type="radio" value={k} {...register('category', { onChange: () => setValue('subtype', '') })} className="sr-only" />
-                  <span className="block font-bold">{t.label}</span>
+                  <span className="block font-semibold">{t.label}</span>
                   <span className="text-xs text-grey-600">Report within {t.window}</span>
                 </label>
               ))}
             </div>
           </fieldset>
           <fieldset className="mt-5">
-            <legend className="font-bold">What went wrong?</legend>
+            <legend className="font-semibold">What went wrong?</legend>
             <div className="mt-2 flex flex-wrap gap-2">
               {Object.entries(type.subtypes).map(([k, l]) => (
-                <label key={k} className={cx('cursor-pointer rounded-full px-4 py-2 text-sm font-bold ring-1', watch('subtype') === k ? 'bg-grey-800 text-white ring-grey-800' : 'bg-white ring-grey-800/15')}>
+                <label key={k} className={cx('cursor-pointer rounded-full px-4 py-2 text-sm font-semibold ring-1', watch('subtype') === k ? 'bg-grey-800 text-white ring-grey-800' : 'bg-white ring-grey-800/15')}>
                   <input type="radio" value={k} {...register('subtype')} className="sr-only" />
                   {l}
                 </label>
@@ -109,29 +107,28 @@ export default function ReportProblem() {
         {category === 'FOOD_QUALITY' && order && (
           <Card className="p-5">
             <fieldset>
-              <legend className="font-bold">Which items?</legend>
+              <legend className="font-semibold">Which items?</legend>
               <div className="mt-2 grid gap-2">
                 {order.items.map((i) => (
                   <label key={i.productId} className="flex items-center gap-3 rounded-xl bg-grey-50 p-3">
                     <input type="checkbox" value={i.productId} {...register('itemIds')} className="h-4 w-4 accent-orange-deep" />
                     <span className="flex-1">{i.title} × {i.qty}</span>
-                    <span className="text-sm font-bold">{rupees(i.unitPricePaise * i.qty)}</span>
+                    <span className="text-sm font-semibold">{rupees(i.unitPricePaise * i.qty)}</span>
                   </label>
                 ))}
               </div>
             </fieldset>
             <div className="mt-4">
-              <label className="font-bold" htmlFor="photos">Photos (1 to 3, required)</label>
-              <input id="photos" type="file" accept="image/*" multiple onChange={onPhotos} className="mt-2 block w-full text-sm file:mr-3 file:h-10 file:rounded-full file:border-0 file:bg-sun file:px-4 file:font-bold" />
+              <label className="font-semibold" htmlFor="photos">Photos (1 to 3, required)</label>
+              <input id="photos" type="file" accept="image/*" multiple onChange={onPhotos} className="mt-2 block w-full text-sm file:mr-3 file:h-10 file:rounded-full file:border-0 file:bg-sun file:px-4 file:font-semibold" />
               <div className="mt-2 flex gap-2">{photos.map((p) => <img key={p.url} src={p.url} alt={`Uploaded ${p.name}`} className="h-20 w-20 rounded-xl object-cover" />)}</div>
               {errors.photoCount && <p className="mt-1 text-sm font-semibold text-red-text">{errors.photoCount.message}</p>}
-              <p className="mt-1 text-xs text-grey-600">Photos stay on this device in the demo.</p>
             </div>
           </Card>
         )}
 
         <Card className="p-5">
-          <label className="font-bold" htmlFor="desc">Anything else? (optional)</label>
+          <label className="font-semibold" htmlFor="desc">Anything else? (optional)</label>
           <textarea id="desc" rows={3} {...register('description')} className="field mt-2 py-2.5" />
           {errors.description && <p className="text-sm font-semibold text-red-text">{errors.description.message}</p>}
         </Card>

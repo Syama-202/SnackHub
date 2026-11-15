@@ -68,7 +68,7 @@ export default function DocumentCard({ kind, requirement, doc, checklistState, c
     <div className={cx('rounded-2xl border bg-white/80 p-4 shadow-sm', checklistState === 'rejected' || checklistState === 'expired' ? 'border-red/40' : 'border-grey-800/10')}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="flex flex-wrap items-center gap-2 font-display text-lg font-bold">
+          <h3 className="flex flex-wrap items-center gap-2 font-display text-lg font-semibold">
             <Icon name="file" className="h-5 w-5 text-orange-text" /> {requirement.label}
             <Pill tone={requirement.required ? 'dark' : 'grey'}>{requirement.required ? 'Required' : 'Optional'}</Pill>
           </h3>
@@ -81,11 +81,11 @@ export default function DocumentCard({ kind, requirement, doc, checklistState, c
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-grey-600">
           <span>Version {doc.version}</span>
           {doc.number && <span>No. {doc.number}</span>}
-          {doc.expiresOn && <span className={cx(doc.expiry === 'expired' && 'font-bold text-red-text', doc.expiry === 'expiring' && 'font-bold text-orange-text')}>{doc.expiry === 'expired' ? 'Expired' : 'Expires'} {doc.expiresOn}{doc.daysLeft !== null && doc.daysLeft >= 0 ? ` (${doc.daysLeft} days)` : ''}</span>}
+          {doc.expiresOn && <span className={cx(doc.expiry === 'expired' && 'font-semibold text-red-text', doc.expiry === 'expiring' && 'font-semibold text-orange-text')}>{doc.expiry === 'expired' ? 'Expired' : 'Expires'} {doc.expiresOn}{doc.daysLeft !== null && doc.daysLeft >= 0 ? ` (${doc.daysLeft} days)` : ''}</span>}
           {doc.scanStatus === 'not_scanned' && <span title="No virus scanner is set up on this server">Not virus-scanned</span>}
-          <button type="button" onClick={view} className="font-bold text-orange-text">View</button>
+          <button type="button" onClick={view} className="font-semibold text-orange-text">View</button>
           {canWithdraw && doc.status === 'PENDING' && (
-            <button type="button" onClick={() => dispatch(withdrawDocument({ kind, id: doc.id }))} className="font-bold text-grey-600">Remove</button>
+            <button type="button" onClick={() => dispatch(withdrawDocument({ kind, id: doc.id }))} className="font-semibold text-grey-600">Remove</button>
           )}
         </div>
       )}
@@ -107,8 +107,8 @@ export default function DocumentCard({ kind, requirement, doc, checklistState, c
           {requirement.issued && <Input label="Issue date" type="date" max={today()} value={fields.issuedOn} onChange={set('issuedOn')} id={`${requirement.docType}-issued`} />}
           {requirement.expires && <Input label="Expiry date" type="date" min={today()} value={fields.expiresOn} onChange={set('expiresOn')} id={`${requirement.docType}-expires`} />}
           <label className="sm:col-span-2" htmlFor={`${requirement.docType}-file`}>
-            <span className="mb-1.5 block text-sm font-bold text-grey-800">File (PDF, JPEG, PNG or WebP, up to 5 MB)</span>
-            <input id={`${requirement.docType}-file`} type="file" accept={ACCEPT} onChange={pick} className="block w-full rounded-xl border border-dashed border-grey-800/25 bg-white p-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-grey-800 file:px-4 file:py-2 file:font-bold file:text-white" />
+            <span className="mb-1.5 block text-sm font-semibold text-grey-800">File (PDF, JPEG, PNG or WebP, up to 5 MB)</span>
+            <input id={`${requirement.docType}-file`} type="file" accept={ACCEPT} onChange={pick} className="block w-full rounded-xl border border-dashed border-grey-800/25 bg-white p-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-grey-800 file:px-4 file:py-2 file:font-semibold file:text-white" />
           </label>
           {busy && (
             <div className="sm:col-span-2" role="status" aria-live="polite">

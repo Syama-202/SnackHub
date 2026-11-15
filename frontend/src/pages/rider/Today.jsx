@@ -3,20 +3,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { deliveryStep, fetchActiveDelivery, fetchOffers, fetchRiderProfile, respondToOffer, sendLocation, setRiderStatus } from '../../store/slices/rider';
 import { addToast } from '../../store/slices/toast';
 import { rupees, rupeesExact } from '@shared/domain/money';
-import { distanceM } from '@shared/domain/geo';
 import { useNow, usePolling } from '../../hooks';
-import { isDemoSession } from '../../store/slices/auth';
 import { Button, Card, Pill, Icon, TempBadge, Modal, CloseButton, cx } from '../../components/ui';
 import { OrderMap } from '../../components/tracking/TrackMap';
 
-// a real rider's phone shares its position while online, at most every 5 seconds
+// the rider's phone shares its position while online, at most every 5 seconds (to test on a
+// computer, set a location in the browser's sensor tools)
 const GPS_EVERY_MS = 5000;
-// the demo has no phone behind it, so its drive is simulated; a real account only ever sends
-// the phone's own GPS (to test one on a computer, set a location in the browser's sensor tools)
-const canSimulate = () => isDemoSession();
-let simulating = false;
 
-/** Real GPS for a real account (watchPosition); the server checks every ping. */
+/** The phone's GPS (watchPosition); the server checks every ping. */
 function useRiderGps(enabled, delivering) {
   const dispatch = useDispatch();
   // during a delivery each accepted fix also refreshes the distance, ETA and code lock shown here
@@ -34,7 +29,7 @@ function useRiderGps(enabled, delivering) {
     const id = navigator.geolocation.watchPosition(
       (p) => {
         setState('on');
-        if (simulating || Date.now() - last < GPS_EVERY_MS) return;
+        if (Date.now() - last < GPS_EVERY_MS) return;
         last = Date.now();
         dispatch(sendLocation({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), accuracyM: Math.round(p.coords.accuracy) }))
           .unwrap()
@@ -53,8 +48,7 @@ const RiderToday = () => {
   const dispatch = useDispatch();
   const { me, offers, active } = useSelector((state) => state.rider);
   const online = me && me.status !== 'OFFLINE';
-  const demo = isDemoSession();
-  const gps = useRiderGps(Boolean(online) && !demo, Boolean(active));
+  const gps = useRiderGps(Boolean(online), Boolean(active));
 
   useEffect(() => {
     dispatch(fetchRiderProfile());
@@ -88,14 +82,14 @@ const RiderToday = () => {
       <Card className="flex items-center gap-4 p-4">
         <span className={cx('grid h-12 w-12 place-items-center rounded-2xl', online ? 'bg-emerald-500 text-white' : 'bg-grey-50 text-grey-600')}><Icon name="scooter" className="h-6 w-6" /></span>
         <div className="flex-1">
-          <p className="font-extrabold">{online ? 'You are online' : 'You are offline'}</p>
+          <p className="font-bold">{online ? 'You are online' : 'You are offline'}</p>
           <p className="text-sm text-grey-600">{online ? 'Offers arrive here with a 20 second timer.' : 'Go online to receive offers.'}</p>
         </div>
         <button role="switch" aria-checked={Boolean(online)} aria-label="Online" onClick={toggle} className={cx('relative h-8 w-14 rounded-full transition', online ? 'bg-emerald-500' : 'bg-grey-400')}>
           <span className={cx('absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all', online ? 'left-7' : 'left-1')} />
         </button>
       </Card>
-      {!demo && online && gps !== 'on' && (
+      {online && gps !== 'on' && (
         <p role="status" className={cx('mt-3 rounded-xl p-3 text-sm', gps === 'denied' ? 'bg-red/10 font-semibold text-red-text' : 'bg-sun/20')}>
           {gps === 'denied' ? 'Location is blocked. Allow it for SnackHub so offers near you reach you and the customer can follow the delivery.' : gps === 'unavailable' ? 'Your location is not available right now. Offers need a recent position.' : 'Finding your location…'}
         </p>
@@ -105,13 +99,13 @@ const RiderToday = () => {
         <ActiveDelivery o={active} />
       ) : (
         <div className="mt-6">
-          <h2 className="text-xl font-extrabold">Offers</h2>
+          <h2 className="text-xl font-bold">Offers</h2>
           <div className="mt-3 space-y-3">
             {offers.map((of) => <OfferCard key={of.id} of={of} />)}
             {online && offers.length === 0 && (
               <Card className="p-6 text-center text-grey-600">
-                <p className="font-bold text-grey-800">Waiting for offers…</p>
-                <p className="mt-1 text-sm">{demo ? 'To get one: in the seller console (another tab) press “Simulate an incoming order”, then Accept it. The offer appears here for 20 seconds.' : 'Keep this screen open. When a shop near you accepts an order, the offer appears here for 20 seconds.'}</p>
+                <p className="font-semibold text-grey-800">Waiting for offers…</p>
+                <p className="mt-1 text-sm">Keep this screen open. When a shop near you accepts an order, the offer appears here for 20 seconds.</p>
               </Card>
             )}
           </div>
@@ -143,10 +137,10 @@ function OfferCard({ of }) {
       <div className="p-4">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-lg font-extrabold">{of.shop}</p>
+            <p className="text-lg font-bold">{of.shop}</p>
             <p className="text-sm text-grey-600">{of.items} items · pickup {of.pickupKm} km · drop {of.dropKm} km</p>
           </div>
-          <span className="font-display text-3xl font-extrabold" aria-label={`${left} seconds left`}>{left}s</span>
+          <span className="font-display text-3xl font-bold" aria-label={`${left} seconds left`}>{left}s</span>
         </div>
         <div className="mt-2 flex items-center gap-2"><TempBadge temp={of.tempClass} /><Pill tone="green">Est. {rupees(of.estPayPaise)}</Pill></div>
         <div className="mt-4 grid grid-cols-2 gap-2">
@@ -164,9 +158,7 @@ function ActiveDelivery({ o }) {
   const [sealed, setSealed] = useState(false);
   const [code, setCode] = useState('');
   const [cash, setCash] = useState(o.paymentMode === 'COD' ? String(Math.round(o.totalPaise / 100)) : '');
-  const [driving, setDriving] = useState(false);
   const [sos, setSos] = useState(false);
-  const drive = useRef(null);
   const t = o.track;
   const pickedUp = ['PICKED_UP', 'ON_THE_WAY', 'ARRIVED'].includes(o.status);
   const target = pickedUp ? o.drop : o.seller;
@@ -181,28 +173,6 @@ function ActiveDelivery({ o }) {
     }
   };
 
-  // Demo only: one simulated ping a second toward the next stop (a real phone uses watchPosition)
-  useEffect(() => {
-    simulating = driving;
-    if (!driving) return;
-    let pos = t.riderPos || o.seller;
-    drive.current = setInterval(async () => {
-      const d = distanceM(pos, target);
-      if (d < 20) {
-        setDriving(false);
-        return;
-      }
-      const k = Math.min(1, 28 / d); // about 100 km/h, under the server's 120 km/h check
-      pos = { lat: pos.lat + (target.lat - pos.lat) * k, lng: pos.lng + (target.lng - pos.lng) * k };
-      await dispatch(sendLocation(pos));
-      dispatch(fetchActiveDelivery());
-    }, 1000);
-    return () => {
-      clearInterval(drive.current);
-      simulating = false;
-    };
-  }, [driving]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${target.lat},${target.lng}`;
 
   return (
@@ -210,7 +180,7 @@ function ActiveDelivery({ o }) {
       <Card className="overflow-hidden">
         <div className="bg-grey-900 px-4 pt-3 text-white">
           <div className="flex items-center justify-between text-sm">
-            <span className="font-bold">Order #{o.id} · {o.status.replace(/_/g, ' ').toLowerCase()}</span>
+            <span className="font-semibold">Order #{o.id} · {o.status.replace(/_/g, ' ').toLowerCase()}</span>
             <TempBadge temp={o.tempClass} />
           </div>
         </div>
@@ -218,22 +188,19 @@ function ActiveDelivery({ o }) {
           <OrderMap track={t} shopName={o.seller.shopName} dropLabel="Drop point" height={260} />
         </div>
         <div className="p-4">
-          <p className="font-extrabold">{pickedUp ? 'Deliver to' : 'Collect from'}: {pickedUp ? o.addressText : o.seller.shopName}</p>
+          <p className="font-bold">{pickedUp ? 'Deliver to' : 'Collect from'}: {pickedUp ? o.addressText : o.seller.shopName}</p>
           <p className="text-sm text-grey-600">{pickedUp ? `${(t.distanceM / 1000).toFixed(2)} km to drop · about ${t.etaMin} min` : 'Head to the shop'}</p>
           {pickedUp && o.addressDetail?.instructions && <p className="mt-2 rounded-xl bg-sun/20 p-2 text-sm"><b>Customer's note:</b> {o.addressDetail.instructions}</p>}
-          {o.hotHoldWarning && <p className="mt-2 rounded-xl bg-red/10 p-2 text-sm font-bold text-red-text">Packed over 10 minutes ago. Ask the shop to re-pack hot items.</p>}
+          {o.hotHoldWarning && <p className="mt-2 rounded-xl bg-red/10 p-2 text-sm font-semibold text-red-text">Packed over 10 minutes ago. Ask the shop to re-pack hot items.</p>}
           <div className="mt-3 flex flex-wrap gap-2">
-            <a href={mapsUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1 rounded-full bg-grey-50 px-4 text-sm font-bold"><Icon name="map" className="h-4 w-4" /> Navigate</a>
-            {canSimulate() && (!pickedUp || o.status === 'ON_THE_WAY') && (
-              <Button size="sm" variant={driving ? 'dark' : 'ghost'} onClick={() => setDriving((d) => !d)}>{driving ? 'Stop simulated drive' : 'Simulate drive (demo GPS)'}</Button>
-            )}
+            <a href={mapsUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1 rounded-full bg-grey-50 px-4 text-sm font-semibold"><Icon name="map" className="h-4 w-4" /> Navigate</a>
           </div>
         </div>
       </Card>
 
       {['ACCEPTED', 'PACKING', 'PACKED'].includes(o.status) && (
         <Card className="p-4">
-          <h3 className="font-extrabold">Pickup</h3>
+          <h3 className="font-bold">Pickup</h3>
           <ul className="mt-2 text-sm">{o.items.map((i) => <li key={i.productId}>{i.qty} × {i.title}</li>)}</ul>
           <label className="mt-3 flex items-center gap-3 rounded-xl bg-grey-50 p-3 font-semibold">
             <input type="checkbox" checked={sealed} onChange={(e) => setSealed(e.target.checked)} className="h-5 w-5 accent-orange-deep" />
@@ -247,7 +214,7 @@ function ActiveDelivery({ o }) {
 
       {pickedUp && (
         <Card className="p-4">
-          <h3 className="font-extrabold">Delivery code</h3>
+          <h3 className="font-bold">Delivery code</h3>
           {o.insideGeofence || o.status === 'ARRIVED' ? (
             <form
               onSubmit={(e) => {
@@ -260,18 +227,18 @@ function ActiveDelivery({ o }) {
               <input id="otp" inputMode="numeric" autoComplete="one-time-code" maxLength={4} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} className="mt-2 h-14 w-full rounded-2xl border-2 border-grey-800/15 text-center font-display text-3xl tracking-[0.5em] focus:border-orange focus:outline-none" placeholder="••••" />
               {o.paymentMode === 'COD' && (
                 <label className="mt-3 block">
-                  <span className="text-sm font-bold">Cash collected (to collect: {rupeesExact(o.totalPaise)})</span>
+                  <span className="text-sm font-semibold">Cash collected (to collect: {rupeesExact(o.totalPaise)})</span>
                   <input type="number" inputMode="decimal" min="0" step="1" value={cash} onChange={(e) => setCash(e.target.value)} className="field mt-1 h-11" placeholder={(o.totalPaise / 100).toFixed(0)} />
                 </label>
               )}
               <Button type="submit" className="mt-3 w-full" disabled={code.length !== 4 || o.otpLocked} loading={stepPending}>Complete delivery</Button>
-              {o.otpLocked && <p className="mt-2 text-sm font-bold text-red-text">Too many wrong codes. An admin has been alerted.</p>}
+              {o.otpLocked && <p className="mt-2 text-sm font-semibold text-red-text">Too many wrong codes. An admin has been alerted.</p>}
             </form>
           ) : (
             <p className="mt-1 flex items-center gap-2 text-sm text-grey-600"><Icon name="lock" className="h-4 w-4" /> Code entry unlocks inside 150 m of the drop point.</p>
           )}
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <a href="tel:+910000000000" className="inline-flex h-11 items-center justify-center gap-1 rounded-full bg-grey-50 text-sm font-bold"><Icon name="phone" className="h-4 w-4" /> Call customer</a>
+            <a href="tel:+910000000000" className="inline-flex h-11 items-center justify-center gap-1 rounded-full bg-grey-50 text-sm font-semibold"><Icon name="phone" className="h-4 w-4" /> Call customer</a>
             <Button variant="ghost" className="whitespace-nowrap text-sm" onClick={() => step('unreachable', {}, { type: 'sun', title: 'Waiting 5 minutes', message: 'Then an admin takes over. No penalty for you.' })}>Not reachable</Button>
           </div>
         </Card>
@@ -281,7 +248,7 @@ function ActiveDelivery({ o }) {
       <Modal open={sos} onClose={() => setSos(false)} title="Emergency">
         <div className="relative p-6">
           <CloseButton onClick={() => setSos(false)} className="absolute right-3 top-3" />
-          <h2 className="text-2xl font-extrabold">Accident or breakdown?</h2>
+          <h2 className="text-2xl font-bold">Accident or breakdown?</h2>
           <p className="mt-2 text-grey-600">We alert an admin and send the nearest rider to your last position. No penalty once the admin confirms.</p>
           <Button
             variant="danger"

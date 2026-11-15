@@ -9,6 +9,9 @@ export const CATEGORIES = [
   { id: 'healthy', label: 'Healthy Munchies' },
   { id: 'regional', label: 'Regional Specialities' },
   { id: 'festive', label: 'Festive Treats' },
+  { id: 'breakfast', label: 'Breakfast & Tiffin' },
+  { id: 'chaat', label: 'Evening Chaat' },
+  { id: 'late-night', label: 'Late-Night Bites' },
 ];
 
 // What kind of seller a shop is (catalog.sellers.kind): the badge on cards and the filter

@@ -12,7 +12,9 @@
  */
 
 import { MORE_SNACKS, MORE_SHOPS, LOCAL_SHOPS } from './regional.js';
+import { TIMED_SNACKS, TIMED_SHOPS, SERVING_TIMES, CHAAT, timeOf, hoursFor, AREA_PINCODES } from './timed.js';
 import { BASE_CITIES, CITIES } from '../domain/cities.js';
+import { openIntervals } from '../domain/hours.js';
 
 // art: shape + two colours for the illustrative SnackArt component
 const S = (title, o) => ({ title, ...o });
@@ -75,7 +77,20 @@ const BASE_SNACKS = {
 
 // the city list lives in shared/domain/cities.js; re-exported for the seed's users
 export { CITIES };
-const SNACKS = { ...BASE_SNACKS, ...MORE_SNACKS };
+// chaat carts' snacks are their own category; breakfast, chaat and late-night snacks keep their own time
+const SNACKS = Object.fromEntries(
+  Object.entries({ ...BASE_SNACKS, ...MORE_SNACKS, ...TIMED_SNACKS }).map(([name, d]) => [name, CHAAT.includes(name) ? { ...d, cat: 'chaat' } : d]),
+);
+const servingTimesOf = (name) => SERVING_TIMES[timeOf(name)] ?? null;
+
+// a snack's own time must meet its shop's hours at least once a week; otherwise it follows the shop
+const WEEK_FROM = Date.UTC(2026, 10, 2) - 330 * 60_000; // a Monday, India time
+function meetsShop(snackHours, shopHours) {
+  if (!snackHours || !shopHours) return true;
+  const a = openIntervals(shopHours, { from: WEEK_FROM, days: 7 });
+  const b = openIntervals(snackHours, { from: WEEK_FROM, days: 7 });
+  return a.some(([x, y]) => b.some(([p, q]) => Math.max(x, p) < Math.min(y, q)));
+}
 
 // [neighbourhood, signature, offset lat, offset lng, product names, kind]
 // kind: 'shop' (the default), 'stall' (a street cart, bandi or kadai) or 'home' (a home kitchen)
@@ -144,6 +159,10 @@ const UI_COLLECTIONS = (d) => {
   if (d.tags.includes('healthy')) out.push('healthy');
   if (d.tags.includes('festive')) out.push('festive');
   if (d.tags.includes('new')) out.push('regional');
+  const time = timeOf(d.title);
+  if (time === 'breakfast' || time === 'tiffin' || d.cat === 'tiffin') out.push('breakfast');
+  if (time === 'chaat' || d.cat === 'chaat') out.push('chaat');
+  if (time === 'latenight') out.push('late-night');
   return out;
 };
 
@@ -163,7 +182,7 @@ export function buildSeed() {
   let pid = 1;
   let sid = 1;
   // original: a shop from seed.js, which carries the built-in test cases by city and index
-  const addShop = (city, [hood, sig, dLat, dLng, names, kind = 'shop'], idx, original) => {
+  const addShop = (city, [hood, sig, dLat, dLng, names, kind = 'shop', hours], idx, original) => {
     const id = sid++;
     let status = 'active';
     if (original && city.id === 'jaipur' && idx === 1) status = 'suspended';
@@ -177,6 +196,9 @@ export function buildSeed() {
       cityId: city.id,
       city: city.name,
       region: city.state,
+      locality: hood,
+      addressLine: `${hood}, ${city.name}`,
+      pincode: AREA_PINCODES[city.id]?.[hood] ?? null,
       lat: +(city.lat + dLat).toFixed(6),
       lng: +(city.lng + dLng).toFixed(6),
       radiusKm: 5,
@@ -188,7 +210,8 @@ export function buildSeed() {
       qualityScore: status === 'probation' ? 78 : Math.round(80 + rand() * 18),
       rating: +(4 + rand() * 0.9).toFixed(1),
       acceptanceRate: +(0.88 + rand() * 0.11).toFixed(2),
-      openHours: '08:00-22:00',
+      // its own week: a chaat cart opens at dusk, a tiffin centre at dawn, a home kitchen rests on Sunday
+      weeklyHours: hoursFor({ kind, signature: sig, hours, names, index: id }),
       verified: ['active', 'probation'].includes(status),
       isNew: status === 'probation',
     };
@@ -197,7 +220,7 @@ export function buildSeed() {
       const d = SNACKS[name];
       const slug = slugify(name);
       if (!itemOf.has(name)) {
-        const item = { id: catalogItems.length + 1, slug, title: name, category: d.cat, servingTemp: d.temp, weight: d.w, spice: d.spice, tags: d.tags, collections: UI_COLLECTIONS(d), art: { shape: d.shape, colors: d.c }, allergens: allergensFor(d), vegetarian: true, description: describeItem(name, d) };
+        const item = { id: catalogItems.length + 1, slug, title: name, category: d.cat, servingTemp: d.temp, weight: d.w, spice: d.spice, tags: d.tags, collections: UI_COLLECTIONS(d), art: { shape: d.shape, colors: d.c }, allergens: allergensFor(d), vegetarian: true, description: describeItem(name, d), defaultHours: servingTimesOf(name) };
         catalogItems.push(item);
         itemOf.set(name, item.id);
       }
@@ -234,6 +257,8 @@ export function buildSeed() {
         imageAlt: `${name}, ${city.state} style (AI illustration placeholder)`,
         description: describe(name, d, city),
         attrs: { allergens: allergensFor(d), vegetarian: true },
+        // the snack's usual time, when it fits the shop's week (else all of the shop's hours)
+        availableHours: meetsShop(servingTimesOf(name), seller.weeklyHours) ? servingTimesOf(name) : null,
       });
     });
   };
@@ -242,6 +267,8 @@ export function buildSeed() {
   for (const city of CITIES) (MORE_SHOPS[city.id] || []).forEach((shop, idx) => addShop(city, shop, idx, false));
   // last, the street stalls and home kitchens known for one snack, again after every earlier id
   for (const city of CITIES) (LOCAL_SHOPS[city.id] || []).forEach((shop, idx) => addShop(city, shop, idx, false));
+  // and last the tiffin centres, chaat carts and night stalls, after every earlier id
+  for (const city of CITIES) (TIMED_SHOPS[city.id] || []).forEach((shop, idx) => addShop(city, shop, idx, false));
 
   const riders = [];
   let rid = 1;
@@ -293,14 +320,15 @@ function allergensFor(d) {
   const a = [];
   if (['fried', 'namkeen'].includes(d.cat)) a.push('gram flour');
   if (d.cat === 'sweet') a.push('milk', 'ghee');
-  if (d.cat === 'baked') a.push('wheat');
+  if (d.cat === 'baked' || d.cat === 'chaat') a.push('wheat');
   if (d.shape === 'pile') a.push('peanuts');
   return a;
 }
 
 function describeItem(name, d) {
   const temp = d.temp === 'HOT' ? 'Best eaten hot' : 'Travels well';
-  return `${name}: ${d.cat === 'sweet' ? 'a sweet' : 'a savoury'} ${d.cat === 'namkeen' ? 'namkeen' : d.cat === 'baked' ? 'bake' : d.cat === 'fried' ? 'fried snack' : 'treat'}. ${temp}.`;
+  const kind = { namkeen: 'namkeen', baked: 'bake', fried: 'fried snack', tiffin: 'South Indian tiffin', chaat: 'street chaat' }[d.cat] ?? 'treat';
+  return `${name}: ${d.cat === 'sweet' ? 'a sweet' : 'a savoury'} ${kind}. ${temp}.`;
 }
 
 function describe(name, d, city) {

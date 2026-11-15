@@ -27,6 +27,7 @@ import { auditLogModel } from '../models/identity/auditLog.js';
 import { triage, canAutoResolve } from '../../../shared/domain/triage.js';
 import { riderLateMin } from '../../../shared/domain/penalty.js';
 import { isUniqueViolation } from '../db/errors.js';
+import { queueSearchSync } from '../utils/searchSync.js';
 
 const PHOTO_MIME = ['image/jpeg', 'image/png', 'image/webp'];
 const CREDIT_DAYS = 30;
@@ -150,7 +151,10 @@ export function complaintsController({ env, dbs, storage, scanner }) {
     }
     // unsafe food: the shop is hidden at once, until an admin looks at it
     if (t.safety) {
-      await sellerModel.setPaused(dbs.catalog, order.seller_id, true);
+      await dbs.catalog.transaction(async (trx) => {
+        await sellerModel.setPaused(trx, order.seller_id, true);
+        await queueSearchSync(trx, { sellerId: order.seller_id, reason: 'shop.paused_for_safety' });
+      });
       await auditLogModel.append(dbs.identity, { actorId: null, action: 'shop.paused_for_safety', target: `seller:${order.seller_id}`, after: { complaintId: id } });
       const shop = await sellerModel.findById(dbs.catalog, order.seller_id);
       realtime.publish([{ userId: shop?.user_id, role: 'seller' }], 'shop');

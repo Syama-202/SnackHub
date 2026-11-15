@@ -1,8 +1,7 @@
 // Crash reports to the API's error log (shared/domain/errors.js): uncaught errors, rejected
 // promises nobody handled, and pages the error boundary caught. Only the error, the page path
 // (never the query string) and the browser name are sent; the server scrubs the text again.
-// Each distinct error is sent once per page load, at most ten per load, and never from the
-// demo's in-browser mock data.
+// Each distinct error is sent once per page load, at most ten per load.
 import { API_URL } from './api';
 import { deviceLabel } from '../utils/push';
 

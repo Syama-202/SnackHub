@@ -23,7 +23,8 @@ import { cartModel } from '../models/ordering/cart.js';
 import { customerCreditModel } from '../models/ordering/customerCredit.js';
 import { addressModel } from '../models/identity/address.js';
 import { productModel } from '../models/catalog/product.js';
-import { sellerModel, isOpenForOrders, closedReason, hoursOf } from '../models/catalog/seller.js';
+import { sellerModel, hoursOf } from '../models/catalog/seller.js';
+import { assertOrderable } from '../utils/availability.js';
 import { pincodeServed } from '../../../shared/domain/hours.js';
 import { stockHoldModel } from '../models/catalog/stockHold.js';
 import { riderModel } from '../models/dispatch/rider.js';
@@ -42,15 +43,22 @@ export function ordersController({ env, dbs }) {
     return order;
   };
 
-  /** The cart, the address and the shop, checked the same way for a quote and an order. */
-  async function prepare(customerId, addressId) {
+  /**
+   * The cart, the address and the shop, checked the same way for a quote and an order. A quote
+   * still answers when a line cannot be ordered now (the cart lists it under blocked); placing
+   * the order (strict) refuses it.
+   */
+  async function prepare(customerId, addressId, { strict = false } = {}) {
     const cart = await cartView(dbs, customerId);
     if (!cart.items.length) throw new AppError(400, 'CART_EMPTY', 'Your cart is empty');
     const address = await addressModel.findForUser(dbs.identity, addressId, customerId);
     if (!address) throw new AppError(422, 'ADDRESS_REQUIRED', 'Choose one of your delivery addresses');
     const seller = await sellerModel.findById(dbs.catalog, cart.sellerId);
-    if (seller.is_demo) throw new AppError(409, 'DEMO_SHOP', `${seller.shop_name} is a demo shop and takes no real orders`);
-    if (!isOpenForOrders(seller)) throw new AppError(409, 'SHOP_UNAVAILABLE', closedReason(seller));
+    // the shop may have closed, a snack's serving time ended or it sold out since it went in
+    // the cart: each line is checked again now (stock is then reserved all or nothing)
+    const rows = new Map((await productModel.listWithStock(dbs.catalog, cart.items.map((i) => i.productId))).map((p) => [p.id, p]));
+    if (strict) for (const i of cart.items) assertOrderable(rows.get(i.productId), seller, { qty: 0 });
+    else if (!seller || seller.is_demo || !rows.size) assertOrderable(rows.values().next().value, seller, { qty: 0 });
     const policy = await currentPolicy(dbs);
     const drop = { lat: Number(address.lat), lng: Number(address.lng) };
     const km = distanceM({ lat: Number(seller.lat), lng: Number(seller.lng) }, drop) / 1000;
@@ -83,7 +91,7 @@ export function ordersController({ env, dbs }) {
     const online = req.body.paymentMode === 'ONLINE';
     if (online && !gateway.enabled) throw new AppError(409, 'ONLINE_PAYMENT_UNAVAILABLE', 'Online payment is not available right now. Choose pay on delivery.');
 
-    const { cart, address, seller, policy, promise, drop } = await prepare(customerId, req.body.addressId);
+    const { cart, address, seller, policy, promise, drop } = await prepare(customerId, req.body.addressId, { strict: true });
     if (!online && !policy.config.codEnabled) throw new AppError(409, 'COD_DISABLED', 'Pay on delivery is switched off right now');
     // serviceability is run again at checkout (doc 10.8); the client's prices are never used
     if (!promise.serviceable) throw new AppError(409, 'NOT_SERVICEABLE', promise.reasons[0] ?? 'This address is out of range', { reasons: promise.reasons });
@@ -216,7 +224,7 @@ export function ordersController({ env, dbs }) {
   async function checkPayment(req, res) {
     const order = await ownOrder(req);
     const p = order.payment_mode === 'ONLINE' ? await paymentModel.findByOrder(dbs.payment, order.id) : null;
-    // the page asks every few seconds: PhonePe is asked at most once every 3 seconds per order
+    // the page asks every few seconds: the provider is asked at most once every 3 seconds per order
     const fresh = p?.checked_at && Date.now() - new Date(p.checked_at).getTime() < 3000;
     if (p && !fresh && ['CREATED', 'EXPIRED', 'FAILED'].includes(p.status)) await settlePayment(dbs, p);
     res.set('Cache-Control', 'no-store').json(await viewOrder(dbs, await orderModel.findById(dbs.ordering, order.id), 'customer'));

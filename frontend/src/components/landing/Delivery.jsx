@@ -13,11 +13,11 @@ export default function Delivery() {
     <section id="delivery" ref={ref} className="scroll-mt-24 bg-sun py-24">
       <div className="page grid items-center gap-12 lg:grid-cols-[1fr_1.1fr]">
         <div>
-          <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-grey-800">How delivery works</p>
-          <h2 className="mt-2 text-[clamp(2.2rem,5vw,3.8rem)] font-extrabold leading-[1.02] text-grey-800">Craving Now? We're Already on Our Way.</h2>
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-grey-800">How delivery works</p>
+          <h2 className="mt-2 text-[clamp(1.75rem,1.2rem+2vw,2.5rem)] font-bold leading-[1.1] text-grey-800">Craving Now? We're Already on Our Way.</h2>
           <div className="mt-8 flex items-end gap-3">
-            <CountTo value={25} className="font-display text-[clamp(5rem,14vw,9rem)] font-extrabold leading-[0.8] text-grey-800" />
-            <span className="pb-3 font-display text-3xl font-extrabold text-red-text">to 30<br />MIN</span>
+            <CountTo value={25} className="font-display text-[clamp(3.5rem,9vw,6rem)] font-bold leading-[0.85] text-grey-800" />
+            <span className="pb-3 font-display text-3xl font-bold text-red-text">to 30<br />MIN</span>
           </div>
           <p className="mt-4 max-w-md text-sm text-grey-800">{PROMISE_WORDING} A shop that cannot reach you in time is simply not shown.</p>
         </div>
@@ -28,8 +28,8 @@ export default function Delivery() {
               <li key={s.n} className="reveal flex items-start gap-4 rounded-[22px] bg-white/80 p-5 shadow-lg" style={{ transitionDelay: `${i * 120}ms` }}>
                 <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-orange text-grey-800"><Icon name={s.icon} className="h-6 w-6" /></span>
                 <span>
-                  <span className="block text-xs font-extrabold text-red-text">STEP {s.n}</span>
-                  <span className="block font-display text-xl font-bold text-grey-800">{s.title}</span>
+                  <span className="block text-xs font-bold text-red-text">STEP {s.n}</span>
+                  <span className="block font-display text-xl font-semibold text-grey-800">{s.title}</span>
                   <span className="block text-grey-600">{s.body}</span>
                 </span>
               </li>
@@ -40,7 +40,7 @@ export default function Delivery() {
               {Array.from({ length: 2 }).map((_, k) => (
                 <span key={k} className="flex items-center gap-6">
                   <Icon name="scooter" className="h-7 w-7 text-grey-800" />
-                  <span className="font-display font-bold text-grey-800">Illustration only. Live tracking appears on your order page.</span>
+                  <span className="font-display font-semibold text-grey-800">Illustration only. Live tracking appears on your order page.</span>
                   <Icon name="box" className="h-6 w-6 text-red-text" />
                 </span>
               ))}
@@ -89,7 +89,7 @@ function RouteRide() {
           {!reduced && inView ? <animateMotion dur="5.5s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.82;1" calcMode="spline" keySplines=".45 0 .25 1;0 0 1 1"><mpath href="#route-line" /></animateMotion> : <animateMotion dur="0.01s" fill="freeze" keyPoints="1;1" keyTimes="0;1"><mpath href="#route-line" /></animateMotion>}
         </g>
       </svg>
-      <div className="mt-1 flex justify-between px-1 text-xs font-extrabold text-grey-600">
+      <div className="mt-1 flex justify-between px-1 text-xs font-bold text-grey-600">
         <span>Verified shop</span>
         <span>Your door</span>
       </div>

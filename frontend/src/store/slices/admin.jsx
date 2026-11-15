@@ -22,7 +22,7 @@ export const fetchAudit = get('audit', '/admin/audit');
 export const fetchEarningsAdmin = get('earnings', '/admin/earnings');
 export const fetchCash = get('cash', '/admin/cash');
 export const fetchPayouts = get('payouts', '/admin/payouts');
-// refunds PhonePe refused, and sending one again (fresh second factor)
+// refunds the payment provider refused, and sending one again (fresh second factor)
 export const fetchFailedRefunds = get('failedRefunds', '/admin/refunds/failed');
 export const retryRefund = apiThunk('admin/retryRefund', async (id, { apiFetch }) => apiFetch(`/admin/refunds/${id}/retry`, { method: 'POST' }));
 // the error log: groups by status and source, one with its stack, and closing or reopening one
