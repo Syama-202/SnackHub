@@ -9,8 +9,10 @@
   command = "cd ../.. && npm ci --no-audit --no-fund && npm run build:admin"
   publish = "../../dist-admin"
   # Netlify skips a build when nothing under the base directory changed, and the admin code
-  # lives outside this folder: build when the frontend or the shared rules change.
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../.. ../../../shared"
+  # lives outside this folder: skip a new commit only when it leaves the frontend and the
+  # shared rules alone. A rebuild of the same commit, such as Trigger deploy after changing a
+  # variable, always builds.
+  ignore = '[ "$CACHED_COMMIT_REF" != "$COMMIT_REF" ] && git diff --quiet "$CACHED_COMMIT_REF" "$COMMIT_REF" -- . ../.. ../../../shared'
 
 [build.environment]
   NODE_VERSION = "22"
