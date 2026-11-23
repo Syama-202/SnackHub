@@ -78,7 +78,7 @@ const server = database.extend({
   SMTP_SECURE: bool.prefault('false'),
   SMTP_USER: z.string().default(''),
   SMTP_PASS: z.string().default(''),
-  MAIL_FROM: z.string().min(3).default('SnackHub (demo) <no-reply@snackhub.test>'),
+  MAIL_FROM: z.string().min(3).default('SnackHub <no-reply@snackhub.test>'),
   // Text messages: '' (off), dev-mail (development only: each text is saved with the emails)
   // or twilio. Unset means dev-mail in development and off everywhere else.
   SMS_PROVIDER: z.enum(['', 'dev-mail', 'twilio']).optional(),
